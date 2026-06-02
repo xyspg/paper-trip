@@ -1,12 +1,11 @@
 {
   "name": "Trip Ops",
   "short_name": "Trip Ops",
-  "description": "Local-first travel planner for timelines, parking, checklists, and documents.",
+  "description": "Parking-first itinerary planner for travel operations.",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f1ea",
-  "theme_color": "#f4f1ea",
+  "background_color": "#eef2f0",
+  "theme_color": "#101817",
   "icons": [
     {
       "src": "/favicon.svg",
