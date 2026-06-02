@@ -1,6 +1,6 @@
 import type { Trip, TripItem } from './types'
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
+const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
   weekday: 'short',
   month: 'short',
   day: 'numeric',
@@ -14,14 +14,14 @@ export const formatDuration = (minutes: number) => {
   const remainder = minutes % 60
 
   if (hours === 0) {
-    return `${remainder}m`
+    return `${remainder} 分钟`
   }
 
   if (remainder === 0) {
-    return `${hours}h`
+    return `${hours} 小时`
   }
 
-  return `${hours}h ${remainder}m`
+  return `${hours} 小时 ${remainder} 分钟`
 }
 
 export const groupItemsByDate = (items: TripItem[]) => {
@@ -42,9 +42,9 @@ export const toMarkdown = (trip: Trip) => {
           const notes = item.notes.map((note) => `    - ${note}`).join('\n')
           const parking = item.parking
             ? [
-                `    - Parking: ${item.parking.primary}`,
-                `    - Backup parking: ${item.parking.backup}`,
-                item.parking.warning ? `    - Warning: ${item.parking.warning}` : '',
+                `    - 停车：${item.parking.primary}`,
+                `    - 备用停车：${item.parking.backup}`,
+                item.parking.warning ? `    - 提醒：${item.parking.warning}` : '',
               ]
                 .filter(Boolean)
                 .join('\n')
@@ -52,11 +52,11 @@ export const toMarkdown = (trip: Trip) => {
 
           return [
             `- ${item.time} ${item.title}`,
-            `  - Location: ${item.location}`,
-            `  - Address: ${item.address}`,
-            item.leaveBy ? `  - Leave by: ${item.leaveBy}` : '',
-            notes ? `  - Notes:\n${notes}` : '',
-            parking ? `  - Logistics:\n${parking}` : '',
+            `  - 地点：${item.location}`,
+            `  - 地址：${item.address}`,
+            item.leaveBy ? `  - 最晚离开：${item.leaveBy}` : '',
+            notes ? `  - 备注：\n${notes}` : '',
+            parking ? `  - 后勤：\n${parking}` : '',
           ]
             .filter(Boolean)
             .join('\n')
@@ -76,7 +76,7 @@ export const toMarkdown = (trip: Trip) => {
     })
     .join('\n\n')
 
-  return `# ${trip.title}\n\n${trip.subtitle}\n\nBase: ${trip.base.hotel}\nCar: ${trip.base.car}\n\n${dayBlocks}\n\n# Checklists\n\n${checklists}\n`
+  return `# ${trip.title}\n\n${trip.subtitle}\n\n据点：${trip.base.hotel}\n车辆：${trip.base.car}\n\n${dayBlocks}\n\n# 清单\n\n${checklists}\n`
 }
 
 export const downloadText = (filename: string, text: string, type = 'text/plain') => {

@@ -1,7 +1,7 @@
 {
-  "name": "Trip Ops",
-  "short_name": "Trip Ops",
-  "description": "Parking-first itinerary planner for travel operations.",
+  "name": "Anime Expo 2026 行程作战表",
+  "short_name": "AX 2026 行程",
+  "description": "面向停车、时间线和随身清单的 Anime Expo 2026 行程规划工具。",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#eef2f0",
