@@ -1,80 +1,80 @@
-import { Plane, Hotel, Ticket, Car } from 'lucide-react'
+import { Plane, Hotel, Ticket, Car } from "lucide-react";
 
 type LedgerDef = {
-  id: string
-  cat: string
-  name: string
-  sub: string
-  amount: number
-  credit: number
-  icon: React.ReactNode
-}
+  id: string;
+  cat: string;
+  name: string;
+  sub: string;
+  amount: number;
+  credit: number;
+  icon: React.ReactNode;
+};
 
 const ledger: LedgerDef[] = [
   {
-    id: 'flight',
-    cat: 'var(--cyan)',
-    name: '机票 · JetBlue 往返',
-    sub: 'JFK ⇄ LAX / ONT · 2 人',
+    id: "flight",
+    cat: "var(--cyan)",
+    name: "机票 · JetBlue 往返",
+    sub: "JFK ⇄ LAX / ONT · 2 人",
     amount: 993.6,
     credit: 0,
     icon: <Plane size={20} strokeWidth={2} />,
   },
   {
-    id: 'hotel',
-    cat: 'var(--violet)',
-    name: '酒店 · Holiday Inn Diamond Bar',
-    sub: '2 晚 · 2 Queen Standard',
+    id: "hotel",
+    cat: "var(--violet)",
+    name: "酒店 · Holiday Inn Diamond Bar",
+    sub: "2 晚 · 2 Queen Standard",
     amount: 356.62,
     credit: 250,
     icon: <Hotel size={20} strokeWidth={2} />,
   },
   {
-    id: 'tickets',
-    cat: 'var(--magenta)',
-    name: '门票 · Anime Expo 2026',
-    sub: '2 × 4-Day General Attendee',
+    id: "tickets",
+    cat: "var(--magenta)",
+    name: "门票 · Anime Expo 2026",
+    sub: "2 × 4-Day General Attendee",
     amount: 382.84,
     credit: 0,
     icon: <Ticket size={20} strokeWidth={2} />,
   },
   {
-    id: 'car',
-    cat: 'var(--yellow)',
-    name: '租车 · Hertz',
-    sub: '3 天 · Kia K5 或同级',
-    amount: 293.11,
+    id: "car",
+    cat: "var(--yellow)",
+    name: "租车 · Hertz",
+    sub: "3 天",
+    amount: 332.24,
     credit: 0,
     icon: <Car size={20} strokeWidth={2} />,
   },
-]
+];
 
 const fmt = (n: number) =>
-  '$' +
-  (Math.round(n * 100) / 100).toLocaleString('en-US', {
+  "$" +
+  (Math.round(n * 100) / 100).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })
+  });
 
 export function LedgerPage() {
-  const subtotal = ledger.reduce((sum, item) => sum + item.amount, 0)
-  const creditTotal = ledger.reduce((sum, item) => sum + item.credit, 0)
+  const subtotal = ledger.reduce((sum, item) => sum + item.amount, 0);
+  const creditTotal = ledger.reduce((sum, item) => sum + item.credit, 0);
   const grand = ledger.reduce(
     (sum, item) => sum + Math.max(0, item.amount - item.credit),
     0,
-  )
-  const each = grand / 2
+  );
+  const each = grand / 2;
 
   return (
     <>
       <header className="masthead">
         <span className="mh-kicker k-green">
-          <span className="dot" />账目明细 · Trip Expenses
+          <span className="dot" />
+          账目明细 · Trip Expenses
         </span>
         <h1 className="mh-title">
           行程<span className="em em-green">花销</span>
         </h1>
-        <p className="mh-tagline">机票 · 酒店 · 门票 · 租车 — 全部已支付，两人均摊。</p>
       </header>
 
       <section className="summary">
@@ -87,26 +87,26 @@ export function LedgerPage() {
         </div>
         <div className="sum-div" />
         <div className="sum-cell accent">
-          <div className="sum-k">
-            每人均摊 Per Person <span className="x2">÷2</span>
-          </div>
+          <div className="sum-k">Per Person</div>
           <div className="sum-v big">{fmt(each)}</div>
-          <div className="sum-note">两人各承担一半</div>
         </div>
       </section>
 
       <section className="ledger">
         <div className="ledger-head">
-          <span className="lh-t">花销明细 · Ledger</span>
+          <span className="lh-t">花销明细</span>
         </div>
 
         <div>
           {ledger.map((item) => {
-            const net = Math.max(0, item.amount - item.credit)
+            const net = Math.max(0, item.amount - item.credit);
             return (
               <div className="row" key={item.id}>
                 <div className="row-top">
-                  <span className="tag" style={{ ['--cat' as string]: item.cat }}>
+                  <span
+                    className="tag"
+                    style={{ ["--cat" as string]: item.cat }}
+                  >
                     {item.icon}
                   </span>
                   <span className="row-name">
@@ -125,20 +125,20 @@ export function LedgerPage() {
                 )}
                 <div className="row-bottom">
                   <span className="rb-left">
-                    实付 <b>{fmt(net)}</b>
+                    <b>{fmt(net)}</b>
                   </span>
                   <span className="per">
-                    每人 <b>{fmt(net / 2)}</b>
+                    <b>{fmt(net / 2)}</b> per person
                   </span>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
         <div className="totals">
           <div className="trow">
-            <span>小计 Subtotal</span>
+            <span>Subtotal</span>
             <span className="tv">{fmt(subtotal)}</span>
           </div>
           <div className="trow credit">
@@ -146,17 +146,15 @@ export function LedgerPage() {
             <span className="tv">−{fmt(creditTotal)}</span>
           </div>
           <div className="trow grand">
-            <span>实付合计 Net Total</span>
+            <span>Net Total</span>
             <span className="tv">{fmt(grand)}</span>
           </div>
           <div className="trow each">
-            <span>每人均摊 Per Person</span>
+            <span>Per Person</span>
             <span className="tv">{fmt(each)}</span>
           </div>
         </div>
       </section>
-
-      <p className="foot">机票 · 酒店 · 门票 · 租车 — 全部已付 · 两人均摊</p>
     </>
-  )
+  );
 }
