@@ -560,10 +560,18 @@
 }
 
 .t-addr {
+  display: inline-block;
   margin-top: 2px;
   color: var(--ink-soft);
+  text-decoration: none;
   font-family: var(--grotesk);
   font-size: 13px;
+}
+
+.t-addr:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .plans {
@@ -1309,14 +1317,20 @@
 }
 
 .hotel-addr {
-  display: flex;
+  display: inline-flex;
   gap: 8px;
   align-items: center;
   margin-top: 16px;
   color: var(--jetblue);
+  text-decoration: none;
   font-family: var(--cjk);
   font-size: 14px;
   font-weight: 700;
+}
+
+.hotel-addr:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .hotel-addr svg {

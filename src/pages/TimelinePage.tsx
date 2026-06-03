@@ -1,3 +1,5 @@
+import { appleMapsUrl } from '../maps'
+
 type ItemStatus = 'planned' | 'booked' | 'watch'
 type Category = 'travel' | 'food' | 'event' | 'hotel' | 'errand'
 
@@ -278,7 +280,14 @@ function TicketStop({
             <span className={`status ${item.status}`}>{statusLabel[item.status]}</span>
           </div>
           <div className="t-loc">{item.location}</div>
-          <div className="t-addr">{item.address}</div>
+          <a
+            className="t-addr"
+            href={appleMapsUrl(`${item.location}, ${item.address}`)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {item.address}
+          </a>
           <div className="plans">
             <Plan kind="main" label="主方案" text={item.parkingPrimary} />
             <Plan kind="alt" label="备用" text={item.parkingBackup} />

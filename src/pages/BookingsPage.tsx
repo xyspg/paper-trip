@@ -1,5 +1,6 @@
 import { Plane, Hotel, MapPin, Gem } from 'lucide-react'
 import { ImageSlot } from '../components/ImageSlot'
+import { appleMapsUrl } from '../maps'
 
 type Endpoint = {
   time: string
@@ -103,10 +104,17 @@ export function BookingsPage() {
                 <div className="hd-t">12:00 · 中午</div>
               </div>
             </div>
-            <div className="hotel-addr">
+            <a
+              className="hotel-addr"
+              href={appleMapsUrl(
+                'Holiday Inn Diamond Bar Pomona, 21725 E Gateway Center Dr, Diamond Bar, CA 91765',
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
               <MapPin size={16} strokeWidth={2.2} />
               21725 E Gateway Center Dr, Diamond Bar, CA 91765 US
-            </div>
+            </a>
           </div>
         </div>
         <div className="hotel-foot">
