@@ -1,17 +1,18 @@
+import { Link } from '@tanstack/react-router'
 import { routes } from '../routes'
 
-export function PageNav({ activeId }: { activeId: string }) {
+export function PageNav() {
   return (
     <nav className="pagenav" aria-label="页面导航">
       {routes.map((route) => (
-        <a
+        <Link
           key={route.id}
-          href={`#/${route.id}`}
-          className={activeId === route.id ? 'active' : ''}
-          aria-current={activeId === route.id ? 'page' : undefined}
+          to={route.path}
+          activeOptions={{ exact: true }}
+          activeProps={{ className: 'active' }}
         >
           {route.label}
-        </a>
+        </Link>
       ))}
     </nav>
   )
