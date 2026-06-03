@@ -59,10 +59,7 @@ const fmt = (n: number) =>
 export function LedgerPage() {
   const subtotal = ledger.reduce((sum, item) => sum + item.amount, 0);
   const creditTotal = ledger.reduce((sum, item) => sum + item.credit, 0);
-  const grand = ledger.reduce(
-    (sum, item) => sum + Math.max(0, item.amount - item.credit),
-    0,
-  );
+  const grand = ledger.reduce((sum, item) => sum + Math.max(0, item.amount - item.credit), 0);
   const each = grand / 2;
 
   return (
@@ -103,10 +100,7 @@ export function LedgerPage() {
             return (
               <div className="row" key={item.id}>
                 <div className="row-top">
-                  <span
-                    className="tag"
-                    style={{ ["--cat" as string]: item.cat }}
-                  >
+                  <span className="tag" style={{ ["--cat" as string]: item.cat }}>
                     {item.icon}
                   </span>
                   <span className="row-name">

@@ -105,12 +105,8 @@ export function BookingsPage() {
             <img src="/hotel.jpg" alt="Holiday Inn Diamond Bar - Pomona" />
           </div>
           <div className="hotel-info">
-            <div className="h-name">
-              Holiday Inn DIAMOND BAR – POMONA by IHG
-            </div>
-            <div className="h-room">
-              2 Queen Standard · 两张大床 (2 Queen bed)
-            </div>
+            <div className="h-name">Holiday Inn DIAMOND BAR – POMONA by IHG</div>
+            <div className="h-room">2 Queen Standard · 两张大床 (2 Queen bed)</div>
             <div className="hotel-dates">
               <div className="hd in">
                 <div className="hd-k">入住 Check-in</div>
@@ -149,9 +145,7 @@ export function BookingsPage() {
         </div>
       </article>
 
-      <p className="foot">
-        JFK ✈ LAX · 落地 Diamond Bar · 返程记得开去 ONT · 一路平安
-      </p>
+      <p className="foot">JFK ✈ LAX · 落地 Diamond Bar · 返程记得开去 ONT · 一路平安</p>
     </>
   );
 }
@@ -216,9 +210,7 @@ function BoardingPass({ flight }: { flight: Flight }) {
       </div>
       <div className="pass-main">
         <div className="pass-top">
-          <span className={`leg ${flight.legClass ?? ""}`}>
-            {flight.legLabel}
-          </span>
+          <span className={`leg ${flight.legClass ?? ""}`}>{flight.legLabel}</span>
           <span className="date">{flight.date}</span>
           <span className="airline">
             <span className="b6dot" />
@@ -230,9 +222,7 @@ function BoardingPass({ flight }: { flight: Flight }) {
             <div className="ep-time">{flight.from.time}</div>
             <div className="ep-code">{flight.from.code}</div>
             <div className="ep-city">{flight.from.city}</div>
-            {flight.from.flag && (
-              <span className="ep-flag">{flight.from.flag}</span>
-            )}
+            {flight.from.flag && <span className="ep-flag">{flight.from.flag}</span>}
           </div>
           <div className="pass-mid">
             <PlaneArc />
@@ -242,9 +232,7 @@ function BoardingPass({ flight }: { flight: Flight }) {
             <div className="ep-time">{flight.to.time}</div>
             <div className="ep-code">{flight.to.code}</div>
             <div className="ep-city">{flight.to.city}</div>
-            {flight.to.flag && (
-              <span className="ep-flag">{flight.to.flag}</span>
-            )}
+            {flight.to.flag && <span className="ep-flag">{flight.to.flag}</span>}
           </div>
         </div>
         <div className="pass-detail">

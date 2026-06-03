@@ -782,7 +782,9 @@
   border: 2px solid var(--ink);
   border-radius: 999px;
   box-shadow: 3px 3px 0 var(--ink);
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
   font-family: var(--grotesk);
   font-size: 12px;
   font-weight: 800;

@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router'
-import { routes } from '../routes'
+import { Link } from "@tanstack/react-router";
+import { routes } from "../routes";
 
 export function PageNav() {
   return (
@@ -9,11 +9,11 @@ export function PageNav() {
           key={route.id}
           to={route.path}
           activeOptions={{ exact: true }}
-          activeProps={{ className: 'active' }}
+          activeProps={{ className: "active" }}
         >
           {route.label}
         </Link>
       ))}
     </nav>
-  )
+  );
 }

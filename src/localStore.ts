@@ -3,26 +3,26 @@
 
 export const readLocal = (key: string): string | null => {
   try {
-    return window.localStorage.getItem(key)
+    return window.localStorage.getItem(key);
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 export const writeLocal = (key: string, value: string): boolean => {
   try {
-    window.localStorage.setItem(key, value)
-    return true
+    window.localStorage.setItem(key, value);
+    return true;
   } catch {
     // unavailable or quota exceeded — caller decides how to surface this
-    return false
+    return false;
   }
-}
+};
 
 export const removeLocal = (key: string): void => {
   try {
-    window.localStorage.removeItem(key)
+    window.localStorage.removeItem(key);
   } catch {
     // ignore
   }
-}
+};
