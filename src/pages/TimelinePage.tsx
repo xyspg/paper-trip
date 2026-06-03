@@ -169,14 +169,6 @@ export function TimelinePage() {
           LAX 抵达 · downtown 停车攻防 · badge 安排 · 酒店据点 · 返程缓冲。每个停靠点都备好主方案和备用方案。
         </p>
 
-        <div className="route" aria-label="行程路线">
-          <span className="node n1">LAX</span>
-          <span className="arrow">→</span>
-          <span className="node n2">LACC</span>
-          <span className="arrow">→</span>
-          <span className="node n3">DIAMOND BAR</span>
-        </div>
-
         <div className="mh-stats">
           <SummaryStat value={tripItems.length.toString()} label="停靠点 · 横跨 3 天" tone="c1" />
           <SummaryStat value={parkingCount.toString()} label="主方案 + 备用方案" tone="c2" />

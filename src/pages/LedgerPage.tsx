@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import { Plane, Hotel, Ticket, Car, RotateCcw } from 'lucide-react'
-import { readLocal, writeLocal } from '../localStore'
+import { Plane, Hotel, Ticket, Car } from 'lucide-react'
 
 type LedgerDef = {
   id: string
@@ -51,43 +49,6 @@ const ledger: LedgerDef[] = [
   },
 ]
 
-const STORE = 'ax2026-ledger-v1'
-
-// The raw input text is the source of truth so a field can be cleared/edited
-// freely; numbers are derived via toNumber for the math.
-type Amounts = Record<string, string>
-
-const defaults = (): Amounts =>
-  Object.fromEntries(ledger.map((item) => [item.id, String(item.amount)]))
-
-// A field's non-negative numeric value; blank, negative, or garbage → 0.
-const toNumber = (raw: string | undefined): number => {
-  const n = parseFloat(raw ?? '')
-  return Number.isFinite(n) && n > 0 ? n : 0
-}
-
-const loadAmounts = (): Amounts => {
-  const stored = readLocal(STORE)
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored) as Record<string, unknown>
-      const valid: Amounts = {}
-      for (const item of ledger) {
-        const v = parsed[item.id]
-        // Only adopt a value that's a finite number or a numeric/blank string;
-        // anything else (corrupt/hand-edited payload) keeps the default.
-        if (typeof v === 'number' && Number.isFinite(v)) valid[item.id] = String(v)
-        else if (typeof v === 'string' && (v === '' || Number.isFinite(parseFloat(v))))
-          valid[item.id] = v
-      }
-      return { ...defaults(), ...valid }
-    } catch {
-      // corrupt payload — fall through to defaults
-    }
-  }
-  return defaults()
-}
-
 const fmt = (n: number) =>
   '$' +
   (Math.round(n * 100) / 100).toLocaleString('en-US', {
@@ -96,17 +57,10 @@ const fmt = (n: number) =>
   })
 
 export function LedgerPage() {
-  const [amounts, setAmounts] = useState<Amounts>(loadAmounts)
-
-  const persist = (next: Amounts) => {
-    setAmounts(next)
-    writeLocal(STORE, JSON.stringify(next))
-  }
-
-  const subtotal = ledger.reduce((sum, item) => sum + toNumber(amounts[item.id]), 0)
+  const subtotal = ledger.reduce((sum, item) => sum + item.amount, 0)
   const creditTotal = ledger.reduce((sum, item) => sum + item.credit, 0)
   const grand = ledger.reduce(
-    (sum, item) => sum + Math.max(0, toNumber(amounts[item.id]) - item.credit),
+    (sum, item) => sum + Math.max(0, item.amount - item.credit),
     0,
   )
   const each = grand / 2
@@ -144,12 +98,11 @@ export function LedgerPage() {
       <section className="ledger">
         <div className="ledger-head">
           <span className="lh-t">花销明细 · Ledger</span>
-          <span className="lh-r">点金额可改</span>
         </div>
 
         <div>
           {ledger.map((item) => {
-            const net = Math.max(0, toNumber(amounts[item.id]) - item.credit)
+            const net = Math.max(0, item.amount - item.credit)
             return (
               <div className="row" key={item.id}>
                 <div className="row-top">
@@ -161,20 +114,7 @@ export function LedgerPage() {
                     <span className="rs">{item.sub}</span>
                   </span>
                   <span className="amt-box">
-                    <span className="amt-input">
-                      <span className="cur">$</span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        min="0"
-                        value={amounts[item.id] ?? ''}
-                        aria-label={`${item.name} 金额`}
-                        onChange={(event) =>
-                          persist({ ...amounts, [item.id]: event.target.value })
-                        }
-                      />
-                    </span>
+                    <span className="amt">{fmt(item.amount)}</span>
                   </span>
                 </div>
                 {item.credit > 0 && (
@@ -215,13 +155,6 @@ export function LedgerPage() {
           </div>
         </div>
       </section>
-
-      <div className="reset-wrap">
-        <button type="button" className="reset" onClick={() => persist(defaults())}>
-          <RotateCcw size={13} strokeWidth={2.5} />
-          恢复原始金额
-        </button>
-      </div>
 
       <p className="foot">机票 · 酒店 · 门票 · 租车 — 全部已付 · 两人均摊</p>
     </>
