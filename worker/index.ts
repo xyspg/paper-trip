@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { sampleTrip } from "../src/trip/sampleTrip";
+import { tripData } from "../src/trip/tripData";
 import type { Trip } from "../src/trip/types";
 
 const app = new Hono();
 
-let tripState: Trip = sampleTrip;
+let tripState: Trip = tripData;
 
 app.use("/api/*", cors());
 
@@ -30,7 +30,7 @@ app.put("/api/trip", async (context) => {
 
 app.post("/api/trip/reset", (context) => {
   tripState = {
-    ...sampleTrip,
+    ...tripData,
     updatedAt: new Date().toISOString(),
   };
   return context.json(tripState);

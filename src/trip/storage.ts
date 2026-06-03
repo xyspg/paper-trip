@@ -1,4 +1,4 @@
-import { sampleTrip } from "./sampleTrip";
+import { tripData } from "./tripData";
 import type { ChecklistItem, ItemStatus, Trip, TripItem } from "./types";
 
 const storageKey = "trip-ops:v1";
@@ -14,14 +14,14 @@ export const loadTrip = async (): Promise<Trip> => {
   const stored = window.localStorage.getItem(storageKey);
 
   if (!stored) {
-    return cloneTrip(sampleTrip);
+    return cloneTrip(tripData);
   }
 
   try {
     return JSON.parse(stored) as Trip;
   } catch {
     window.localStorage.removeItem(storageKey);
-    return cloneTrip(sampleTrip);
+    return cloneTrip(tripData);
   }
 };
 
@@ -31,7 +31,7 @@ export const saveTrip = async (trip: Trip): Promise<Trip> => {
   return nextTrip;
 };
 
-export const resetTrip = async (): Promise<Trip> => saveTrip(cloneTrip(sampleTrip));
+export const resetTrip = async (): Promise<Trip> => saveTrip(cloneTrip(tripData));
 
 export const updateTripItem = async (trip: Trip, item: TripItem): Promise<Trip> => {
   return saveTrip({

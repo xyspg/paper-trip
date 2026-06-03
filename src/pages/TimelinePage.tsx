@@ -1,145 +1,26 @@
 import { appleMapsUrl } from "../maps";
+import { tripData } from "../trip/tripData";
+import type { ItemStatus, TripItem } from "../trip/types";
 
-type ItemStatus = "planned" | "booked" | "watch";
-type Category = "travel" | "food" | "event" | "hotel" | "errand";
+type DayAccent = "magenta" | "cyan" | "green";
 
-type TripDay = {
-  id: string;
-  num: string;
-  date: string;
-  label: string;
-  tag: string;
-  accent: "magenta" | "cyan" | "green";
+// Per-day presentational metadata keyed by the real trip dates. The dates and
+// ordering come from the data; only the editorial label/tag/accent live here.
+const dayMeta: Record<string, { label: string; tag: string; accent: DayAccent }> = {
+  "2026-07-03": { label: "抵达 + Anime Expo 第一天", tag: "Arrival Day", accent: "magenta" },
+  "2026-07-04": { label: "Anime Expo 全天", tag: "Main Event", accent: "cyan" },
+  "2026-07-05": { label: "返程缓冲", tag: "Departure", accent: "green" },
 };
 
-type TripItem = {
-  id: string;
-  dayId: string;
-  time: string;
-  subTime: string;
-  title: string;
-  category: Category;
-  location: string;
-  address: string;
-  parkingPrimary: string;
-  parkingBackup: string;
-  status: ItemStatus;
-};
-
-const days: TripDay[] = [
-  {
-    id: "jul-03",
-    num: "01",
-    date: "7/3 · FRI",
-    label: "抵达 + Anime Expo 第一天",
-    tag: "Arrival Day",
-    accent: "magenta",
-  },
-  {
-    id: "jul-04",
-    num: "02",
-    date: "7/4 · SAT",
-    label: "Anime Expo 全天",
-    tag: "Main Event",
-    accent: "cyan",
-  },
-  {
-    id: "jul-05",
-    num: "03",
-    date: "7/5 · SUN",
-    label: "返程缓冲",
-    tag: "Departure",
-    accent: "green",
-  },
-];
-
-const tripItems: TripItem[] = [
-  {
-    id: "flight-arrival",
-    dayId: "jul-03",
-    time: "08:53",
-    subTime: "Arrive",
-    title: "抵达 LAX",
-    category: "travel",
-    location: "Los Angeles International Airport",
-    address: "1 World Way, Los Angeles, CA",
-    parkingPrimary: "从航站楼到达层搭 Hertz shuttle 去取车。",
-    parkingBackup: "如果租车柜台严重延误，再考虑 LAX-it rideshare。",
-    status: "booked",
-  },
-  {
-    id: "in-n-out",
-    dayId: "jul-03",
-    time: "10:45",
-    subTime: "Fuel up",
-    title: "In-N-Out LAX 停靠",
-    category: "food",
-    location: "In-N-Out Burger",
-    address: "9149 S Sepulveda Blvd, Los Angeles, CA",
-    parkingPrimary: "餐厅停车场；绕一圈还没位就放弃。",
-    parkingBackup: "停车场爆满就跳过，改到 LACC 附近吃。",
-    status: "planned",
-  },
-  {
-    id: "ax-lacc-day1",
-    dayId: "jul-03",
-    time: "12:30",
-    subTime: "Badge",
-    title: "Anime Expo badge + 第一轮逛场",
-    category: "event",
-    location: "Los Angeles Convention Center",
-    address: "1201 S Figueroa St, Los Angeles, CA",
-    parkingPrimary: "LACC West Hall Garage。",
-    parkingBackup: "LA Live parking 后步行；如果 downtown 堵死，改 Little Tokyo + Metro。",
-    status: "watch",
-  },
-  {
-    id: "hotel-checkin",
-    dayId: "jul-03",
-    time: "20:15",
-    subTime: "Check-in",
-    title: "酒店 check-in",
-    category: "hotel",
-    location: "Holiday Inn Diamond Bar - Pomona",
-    address: "21725 Gateway Center Dr, Diamond Bar, CA",
-    parkingPrimary: "酒店地面停车场。",
-    parkingBackup: "卸行李前先问前台 overflow 停车。",
-    status: "booked",
-  },
-  {
-    id: "ax-full-day",
-    dayId: "jul-04",
-    time: "全天",
-    subTime: "All day",
-    title: "Anime Expo 全天逛场",
-    category: "event",
-    location: "Los Angeles Convention Center",
-    address: "1201 S Figueroa St, Los Angeles, CA",
-    parkingPrimary: "尽量提前预订 downtown garage（LACC 周边）。",
-    parkingBackup: "Union Station / Little Tokyo parking + Metro A/E line 进场。",
-    status: "watch",
-  },
-  {
-    id: "checkout-buffer",
-    dayId: "jul-05",
-    time: "弹性",
-    subTime: "Flex",
-    title: "酒店据点 · 装车返程",
-    category: "errand",
-    location: "Holiday Inn Diamond Bar - Pomona",
-    address: "21725 Gateway Center Dr, Diamond Bar, CA",
-    parkingPrimary: "装车时停酒店地面停车场。",
-    parkingBackup: "如果停车场满，问前台临停位置。",
-    status: "planned",
-  },
-];
+const orderedDates = [...new Set(tripData.items.map((item) => item.date))];
 
 // Global 1-based stop number per item, precomputed so the render doesn't scan
 // the array with indexOf for every stop.
-const stopNumbers = new Map(tripItems.map((item, index) => [item.id, index + 1]));
+const stopNumbers = new Map(tripData.items.map((item, index) => [item.id, index + 1]));
 
-const categoryMeta: Record<Category, { label: string; className: string }> = {
-  travel: { label: "Transit", className: "cat-cyan" },
+const categoryMeta: Record<TripItem["category"], { label: string; className: string }> = {
+  flight: { label: "Transit", className: "cat-cyan" },
+  drive: { label: "Drive", className: "cat-cyan" },
   food: { label: "Food", className: "cat-yellow" },
   event: { label: "Event", className: "cat-magenta" },
   hotel: { label: "Stay", className: "cat-violet" },
@@ -148,13 +29,45 @@ const categoryMeta: Record<Category, { label: string; className: string }> = {
 
 const statusLabel: Record<ItemStatus, string> = {
   planned: "计划中",
-  booked: "已预订",
-  watch: "关注",
+  locked: "已锁定",
+  done: "已完成",
+};
+
+const formatDayDate = (iso: string): string => {
+  const date = new Date(`${iso}T00:00:00`);
+  const md = `${date.getMonth() + 1}/${date.getDate()}`;
+  const weekday = date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+  return `${md} · ${weekday}`;
+};
+
+const shortDate = (iso: string): string => {
+  const date = new Date(`${iso}T00:00:00`);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+};
+
+type StopPlan = { kind: "main" | "alt"; label: string; text: string };
+
+const itemPlans = (item: TripItem): StopPlan[] => {
+  if (item.parking) {
+    return [
+      { kind: "main", label: "主方案", text: item.parking.primary },
+      { kind: "alt", label: "备用", text: item.parking.backup },
+    ];
+  }
+  return item.notes.slice(0, 2).map((text, index) => ({
+    kind: index === 0 ? "main" : "alt",
+    label: index === 0 ? "提示" : "备注",
+    text,
+  }));
 };
 
 export function TimelinePage() {
-  const nextItem = tripItems.find((item) => item.status !== "planned") ?? tripItems[0];
-  const parkingCount = tripItems.filter((item) => item.parkingPrimary && item.parkingBackup).length;
+  const nextItem = tripData.items.find((item) => item.status !== "done") ?? tripData.items[0];
+  const nextPlan = nextItem.parking?.primary ?? nextItem.notes[0] ?? nextItem.location;
+  const parkingCount = tripData.items.filter(
+    (item) => item.parking?.primary && item.parking?.backup,
+  ).length;
+  const dateRange = `${shortDate(tripData.dates.start)}–${shortDate(tripData.dates.end)}`;
 
   return (
     <>
@@ -172,9 +85,13 @@ export function TimelinePage() {
         </p>
 
         <div className="mh-stats">
-          <SummaryStat value={tripItems.length.toString()} label="停靠点 · 横跨 3 天" tone="c1" />
+          <SummaryStat
+            value={tripData.items.length.toString()}
+            label={`停靠点 · 横跨 ${orderedDates.length} 天`}
+            tone="c1"
+          />
           <SummaryStat value={parkingCount.toString()} label="主方案 + 备用方案" tone="c2" />
-          <SummaryStat value="7/3–7/5" label="周五抵达 · 周日返程" tone="c3" />
+          <SummaryStat value={dateRange} label="周五抵达 · 周日返程" tone="c3" />
         </div>
       </header>
 
@@ -184,43 +101,46 @@ export function TimelinePage() {
         <div className="nu-body">
           <div className="nu-title">{nextItem.title}</div>
           <div className="nu-note">
-            {nextItem.parkingPrimary} · {statusLabel[nextItem.status]}
+            {nextPlan} · {statusLabel[nextItem.status]}
           </div>
         </div>
       </section>
 
-      {days.map((day) => (
-        <section className={`day accent-${day.accent}`} key={day.id}>
-          <div className="day-head">
-            <div className="dh-num">{day.num}</div>
-            <div className="dh-meta">
-              <div className="dh-date">{day.date}</div>
-              <div className="dh-label">{day.label}</div>
+      {orderedDates.map((date, index) => {
+        const meta = dayMeta[date] ?? { label: date, tag: "", accent: "cyan" as DayAccent };
+        return (
+          <section className={`day accent-${meta.accent}`} key={date}>
+            <div className="day-head">
+              <div className="dh-num">{(index + 1).toString().padStart(2, "0")}</div>
+              <div className="dh-meta">
+                <div className="dh-date">{formatDayDate(date)}</div>
+                <div className="dh-label">{meta.label}</div>
+              </div>
+              <div className="dh-tag">{meta.tag}</div>
             </div>
-            <div className="dh-tag">{day.tag}</div>
-          </div>
 
-          <div className="timeline">
-            {tripItems
-              .filter((item) => item.dayId === day.id)
-              .map((item) => (
-                <TicketStop
-                  item={item}
-                  stopNumber={stopNumbers.get(item.id) ?? 0}
-                  key={item.id}
-                  compactTime={!item.time.includes(":")}
-                />
-              ))}
-          </div>
-        </section>
-      ))}
+            <div className="timeline">
+              {tripData.items
+                .filter((item) => item.date === date)
+                .map((item) => (
+                  <TicketStop
+                    item={item}
+                    stopNumber={stopNumbers.get(item.id) ?? 0}
+                    key={item.id}
+                    compactTime={!item.time.includes(":")}
+                  />
+                ))}
+            </div>
+          </section>
+        );
+      })}
 
       <section className="legend">
         <h2>图例 · Legend</h2>
         <div className="legend-grid">
-          <LegendItem swatch="sw-green" label="已预订 Booked" />
           <LegendItem swatch="sw-cyan" label="计划中 Planned" />
-          <LegendItem swatch="sw-amber" label="关注 Watch" />
+          <LegendItem swatch="sw-green" label="已锁定 Locked" />
+          <LegendItem swatch="sw-amber" label="已完成 Done" />
           <LegendItem swatch="sw-cyan" label="交通" />
           <LegendItem swatch="sw-yellow" label="用餐" />
           <LegendItem swatch="sw-magenta" label="活动" />
@@ -254,6 +174,7 @@ function TicketStop({
 }) {
   const category = categoryMeta[item.category];
   const isDarkStub = item.category === "event" || item.category === "hotel";
+  const plans = itemPlans(item);
 
   return (
     <article className={`stop ${category.className}`}>
@@ -264,7 +185,7 @@ function TicketStop({
           <span className="perf-notch bot" />
           <div>
             <div className={`s-time ${compactTime ? "s-time-compact" : ""}`}>{item.time}</div>
-            <div className="s-sub">{item.subTime}</div>
+            <div className="s-sub">{item.durationMinutes} min</div>
           </div>
           <div className="s-cat">{category.label}</div>
         </div>
@@ -282,10 +203,13 @@ function TicketStop({
           >
             {item.address}
           </a>
-          <div className="plans">
-            <Plan kind="main" label="主方案" text={item.parkingPrimary} />
-            <Plan kind="alt" label="备用" text={item.parkingBackup} />
-          </div>
+          {plans.length > 0 && (
+            <div className="plans">
+              {plans.map((plan) => (
+                <Plan key={plan.label} kind={plan.kind} label={plan.label} text={plan.text} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </article>

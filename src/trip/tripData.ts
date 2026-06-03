@@ -1,9 +1,9 @@
 import type { Trip } from "./types";
 
-export const sampleTrip: Trip = {
+export const tripData: Trip = {
   id: "anime-expo-2026",
   title: "Anime Expo 2026",
-  subtitle: "Los Angeles 行程作战计划",
+  subtitle: "Los Angeles 行程",
   dates: {
     start: "2026-07-03",
     end: "2026-07-05",

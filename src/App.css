@@ -500,7 +500,7 @@
   font-weight: 800;
 }
 
-.status.booked {
+.status.locked {
   background: var(--green);
 }
 
@@ -508,7 +508,7 @@
   background: var(--cyan);
 }
 
-.status.watch {
+.status.done {
   background: var(--amber);
 }
 
