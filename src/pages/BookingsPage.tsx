@@ -1,5 +1,4 @@
 import { Plane, Hotel, MapPin, Gem } from "lucide-react";
-import { ImageSlot } from "../components/ImageSlot";
 import { appleMapsUrl } from "../maps";
 
 type Endpoint = {
@@ -103,7 +102,7 @@ export function BookingsPage() {
         <div className="hotel-top">
           <div className="hotel-photo">
             <span className="badge">Stay</span>
-            <ImageSlot id="hotel-diamondbar" placeholder="拖入酒店照片" />
+            <img src="/hotel.jpg" alt="Holiday Inn Diamond Bar - Pomona" />
           </div>
           <div className="hotel-info">
             <div className="h-name">
