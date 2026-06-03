@@ -1,74 +1,91 @@
-import { Plane, Hotel, MapPin, Gem } from 'lucide-react'
-import { ImageSlot } from '../components/ImageSlot'
-import { appleMapsUrl } from '../maps'
+import { Plane, Hotel, MapPin, Gem } from "lucide-react";
+import { ImageSlot } from "../components/ImageSlot";
+import { appleMapsUrl } from "../maps";
 
 type Endpoint = {
-  time: string
-  code: string
-  city: string
-  flag?: string
-}
+  time: string;
+  code: string;
+  city: string;
+  flag?: string;
+};
 
 type Flight = {
-  rail: string
-  railColor?: string
-  legLabel: string
-  legClass?: string
-  date: string
-  from: Endpoint
-  to: Endpoint
-  duration: string
-  flightNo: string
-  aircraft: string
-  fareClass: string
-  fareNote: string
-}
+  rail: string;
+  railColor?: string;
+  legLabel: string;
+  legClass?: string;
+  date: string;
+  from: Endpoint;
+  to: Endpoint;
+  duration: string;
+  flightNo: string;
+  aircraft: string;
+  fareClass: string;
+  fareNote: string;
+};
 
 const flights: Flight[] = [
   {
-    rail: 'Outbound · 去程',
-    legLabel: '去程 · Depart',
-    date: '周五 · 7月3日 2026',
-    from: { time: '07:30 AM', code: 'JFK', city: '纽约 · New York' },
-    to: { time: '10:21 AM', code: 'LAX', city: '洛杉矶 · Los Angeles' },
-    duration: '5h 51m',
-    flightNo: 'B6 223',
-    aircraft: 'Airbus A318',
-    fareClass: 'Blue Basic',
-    fareNote: '经济舱 · class L',
+    rail: "Outbound · 去程",
+    legLabel: "去程 · Depart",
+    date: "周五 · 7月3日 2026",
+    from: { time: "07:30 AM", code: "JFK", city: "纽约 · New York" },
+    to: { time: "10:21 AM", code: "LAX", city: "洛杉矶 · Los Angeles" },
+    duration: "5h 51m",
+    flightNo: "B6 223",
+    aircraft: "Airbus A318",
+    fareClass: "Blue Basic",
+    fareNote: "经济舱 · class L",
   },
   {
-    rail: 'Return · 返程',
-    railColor: 'var(--magenta)',
-    legLabel: '返程 · Return',
-    legClass: 'ret',
-    date: '周日 · 7月5日 2026',
-    from: { time: '11:59 PM', code: 'ONT', city: '安大略 · Ontario, CA', flag: '⚠ 不同机场 · 非 LAX' },
-    to: { time: '08:25 AM', code: 'JFK', city: '纽约 · New York', flag: '⚠ 隔天到 · 7月6日 周一' },
-    duration: '5h 26m',
-    flightNo: 'B6 454',
-    aircraft: 'Airbus A321',
-    fareClass: 'Blue Basic',
-    fareNote: '经济舱 · class L',
+    rail: "Return · 返程",
+    railColor: "var(--magenta)",
+    legLabel: "返程 · Return",
+    legClass: "ret",
+    date: "周日 · 7月5日 2026",
+    from: {
+      time: "11:59 PM",
+      code: "ONT",
+      city: "安大略 · Ontario, CA",
+      flag: "⚠ 不同机场 · 非 LAX",
+    },
+    to: {
+      time: "08:25 AM",
+      code: "JFK",
+      city: "纽约 · New York",
+      flag: "⚠ 隔天到 · 7月6日 周一",
+    },
+    duration: "5h 26m",
+    flightNo: "B6 454",
+    aircraft: "Airbus A321",
+    fareClass: "Blue Basic",
+    fareNote: "经济舱 · class L",
   },
-]
+];
 
 export function BookingsPage() {
   return (
     <>
       <header className="masthead">
         <span className="mh-kicker k-cyan">
-          <span className="dot" />预订信息 · Bookings
+          <span className="dot" />
+          预订信息 · Bookings
         </span>
         <h1 className="mh-title">
           机票 <span className="em em-cyan">&amp;</span> 酒店
         </h1>
         <p className="mh-sub">
-          JetBlue 往返 + Holiday Inn 据点。注意返程从 <b>ONT 安大略</b>起飞，且<b>隔天清晨</b>到 JFK。
+          JetBlue 往返 + Holiday Inn 据点。注意返程从 <b>ONT 安大略</b>起飞，且
+          <b>隔天清晨</b>到 JFK。
         </p>
       </header>
 
-      <SectionTitle icon={<Plane size={22} strokeWidth={2.2} />} accent="var(--cyan)" title="JetBlue 往返" count="2 段航程" />
+      <SectionTitle
+        icon={<Plane size={22} strokeWidth={2.2} />}
+        accent="var(--cyan)"
+        title="JetBlue 往返"
+        count="2 段航程"
+      />
 
       {flights.map((flight) => (
         <BoardingPass flight={flight} key={flight.flightNo} />
@@ -78,19 +95,23 @@ export function BookingsPage() {
         icon={<Hotel size={22} strokeWidth={2.2} color="#fff" />}
         accent="var(--violet)"
         iconBg="var(--violet)"
-        title="酒店据点"
+        title="酒店"
         count="2 晚 · IHG"
       />
 
       <article className="hotel">
         <div className="hotel-top">
           <div className="hotel-photo">
-            <span className="badge">酒店 · Stay</span>
+            <span className="badge">Stay</span>
             <ImageSlot id="hotel-diamondbar" placeholder="拖入酒店照片" />
           </div>
           <div className="hotel-info">
-            <div className="h-name">Holiday Inn DIAMOND BAR – POMONA by IHG</div>
-            <div className="h-room">2 Queen Standard · 两张大床 (2 Queen bed)</div>
+            <div className="h-name">
+              Holiday Inn DIAMOND BAR – POMONA by IHG
+            </div>
+            <div className="h-room">
+              2 Queen Standard · 两张大床 (2 Queen bed)
+            </div>
             <div className="hotel-dates">
               <div className="hd in">
                 <div className="hd-k">入住 Check-in</div>
@@ -107,7 +128,7 @@ export function BookingsPage() {
             <a
               className="hotel-addr"
               href={appleMapsUrl(
-                'Holiday Inn Diamond Bar Pomona, 21725 E Gateway Center Dr, Diamond Bar, CA 91765',
+                "Holiday Inn Diamond Bar Pomona, 21725 E Gateway Center Dr, Diamond Bar, CA 91765",
               )}
               target="_blank"
               rel="noreferrer"
@@ -119,7 +140,7 @@ export function BookingsPage() {
         </div>
         <div className="hotel-foot">
           <span className="cancel">
-            <span className="tick">✓</span>免费取消{' '}
+            <span className="tick">✓</span>免费取消{" "}
             <small>截至 7月2日 周四 12:00 AM（酒店当地时间）</small>
           </span>
           <span className="rewards">
@@ -129,9 +150,11 @@ export function BookingsPage() {
         </div>
       </article>
 
-      <p className="foot">JFK ✈ LAX · 落地 Diamond Bar · 返程记得开去 ONT · 一路平安</p>
+      <p className="foot">
+        JFK ✈ LAX · 落地 Diamond Bar · 返程记得开去 ONT · 一路平安
+      </p>
     </>
-  )
+  );
 }
 
 function SectionTitle({
@@ -141,21 +164,21 @@ function SectionTitle({
   title,
   count,
 }: {
-  icon: React.ReactNode
-  accent: string
-  iconBg?: string
-  title: string
-  count: string
+  icon: React.ReactNode;
+  accent: string;
+  iconBg?: string;
+  title: string;
+  count: string;
 }) {
   return (
-    <div className="sec-title" style={{ ['--accent' as string]: accent }}>
+    <div className="sec-title" style={{ ["--accent" as string]: accent }}>
       <span className="st-ic" style={{ background: iconBg ?? accent }}>
         {icon}
       </span>
       <h2>{title}</h2>
       <span className="st-count">{count}</span>
     </div>
-  )
+  );
 }
 
 function PlaneArc() {
@@ -180,21 +203,27 @@ function PlaneArc() {
         </g>
       </svg>
     </div>
-  )
+  );
 }
 
 function BoardingPass({ flight }: { flight: Flight }) {
   return (
     <article className="pass">
-      <div className="pass-rail" style={flight.railColor ? { background: flight.railColor } : undefined}>
+      <div
+        className="pass-rail"
+        style={flight.railColor ? { background: flight.railColor } : undefined}
+      >
         <span className="rail-txt">{flight.rail}</span>
       </div>
       <div className="pass-main">
         <div className="pass-top">
-          <span className={`leg ${flight.legClass ?? ''}`}>{flight.legLabel}</span>
+          <span className={`leg ${flight.legClass ?? ""}`}>
+            {flight.legLabel}
+          </span>
           <span className="date">{flight.date}</span>
           <span className="airline">
-            <span className="b6dot" />JetBlue Airways
+            <span className="b6dot" />
+            JetBlue Airways
           </span>
         </div>
         <div className="pass-route">
@@ -202,7 +231,9 @@ function BoardingPass({ flight }: { flight: Flight }) {
             <div className="ep-time">{flight.from.time}</div>
             <div className="ep-code">{flight.from.code}</div>
             <div className="ep-city">{flight.from.city}</div>
-            {flight.from.flag && <span className="ep-flag">{flight.from.flag}</span>}
+            {flight.from.flag && (
+              <span className="ep-flag">{flight.from.flag}</span>
+            )}
           </div>
           <div className="pass-mid">
             <PlaneArc />
@@ -212,7 +243,9 @@ function BoardingPass({ flight }: { flight: Flight }) {
             <div className="ep-time">{flight.to.time}</div>
             <div className="ep-code">{flight.to.code}</div>
             <div className="ep-city">{flight.to.city}</div>
-            {flight.to.flag && <span className="ep-flag">{flight.to.flag}</span>}
+            {flight.to.flag && (
+              <span className="ep-flag">{flight.to.flag}</span>
+            )}
           </div>
         </div>
         <div className="pass-detail">
@@ -249,5 +282,5 @@ function BoardingPass({ flight }: { flight: Flight }) {
         </div>
       </div>
     </article>
-  )
+  );
 }
