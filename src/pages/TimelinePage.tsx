@@ -139,11 +139,11 @@ const tripItems: TripItem[] = [
 const stopNumbers = new Map(tripItems.map((item, index) => [item.id, index + 1]))
 
 const categoryMeta: Record<Category, { label: string; className: string }> = {
-  travel: { label: '交通 · Transit', className: 'cat-cyan' },
-  food: { label: '用餐 · Food', className: 'cat-yellow' },
-  event: { label: '活动 · Event', className: 'cat-magenta' },
-  hotel: { label: '酒店 · Stay', className: 'cat-violet' },
-  errand: { label: '杂项 · Misc', className: 'cat-green' },
+  travel: { label: 'Transit', className: 'cat-cyan' },
+  food: { label: 'Food', className: 'cat-yellow' },
+  event: { label: 'Event', className: 'cat-magenta' },
+  hotel: { label: 'Stay', className: 'cat-violet' },
+  errand: { label: 'Misc', className: 'cat-green' },
 }
 
 const statusLabel: Record<ItemStatus, string> = {
