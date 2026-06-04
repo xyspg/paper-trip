@@ -760,10 +760,6 @@
    SHARED · page nav + masthead variants
    ============================================================ */
 
-.wrap-narrow {
-  width: min(760px, 100%);
-}
-
 .pagenav {
   display: flex;
   flex-wrap: wrap;
