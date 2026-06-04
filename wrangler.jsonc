@@ -10,4 +10,12 @@
   "observability": {
     "enabled": true,
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AX26",
+        "class_name": "AX26DurableObject",
+      },
+    ],
+  },
 }

@@ -12,5 +12,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["worker", "src/trip/sampleTrip.ts", "src/trip/types.ts"]
+  "include": ["worker", "src/trip/tripData.ts", "src/trip/types.ts"]
 }

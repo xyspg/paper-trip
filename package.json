@@ -12,7 +12,8 @@
     "typecheck:worker": "tsc -p tsconfig.worker.json",
     "preview": "vite preview",
     "worker:dev": "wrangler dev",
-    "worker:deploy": "wrangler deploy"
+    "worker:deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",

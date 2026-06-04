@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { tripData } from "../src/trip/tripData";
 import type { Trip } from "../src/trip/types";
+import { DurableObject } from "cloudflare:workers";
 
 const app = new Hono();
 
