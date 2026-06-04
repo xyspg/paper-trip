@@ -5,7 +5,7 @@
   "compatibility_date": "2026-06-02",
   "assets": {
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": ["/api", "/api/*"],
   },
   "observability": {
     "enabled": true,
@@ -18,4 +18,5 @@
       },
     ],
   },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AX26DurableObject"] }],
 }

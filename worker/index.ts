@@ -1,40 +1,20 @@
 import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { tripData } from "../src/trip/tripData";
-import type { Trip } from "../src/trip/types";
-import { DurableObject } from "cloudflare:workers";
 
-const app = new Hono();
+import type { Env } from "./env";
 
-let tripState: Trip = tripData;
+export { AX26DurableObject } from "./AX26DurableObject";
 
-app.use("/api/*", cors());
+const TRIP_ID = "anime-expo-2026";
 
-app.get("/api/health", (context) =>
-  context.json({
-    ok: true,
-    service: "trip-ops",
-    updatedAt: new Date().toISOString(),
-  }),
-);
+const app = new Hono<{ Bindings: Env }>();
 
-app.get("/api/trip", (context) => context.json(tripState));
+app.get("/api", (c) => c.text("ok"));
 
-app.put("/api/trip", async (context) => {
-  const trip = await context.req.json<Trip>();
-  tripState = {
-    ...trip,
-    updatedAt: new Date().toISOString(),
-  };
-  return context.json(tripState);
-});
+app.all("/api/trip", (c) => stub(c.env).fetch(c.req.raw));
+app.all("/api/trip/*", (c) => stub(c.env).fetch(c.req.raw));
 
-app.post("/api/trip/reset", (context) => {
-  tripState = {
-    ...tripData,
-    updatedAt: new Date().toISOString(),
-  };
-  return context.json(tripState);
-});
+function stub(env: Env) {
+  return env.AX26.getByName(TRIP_ID);
+}
 
 export default app;
