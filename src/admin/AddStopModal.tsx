@@ -71,9 +71,8 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
           <span className="am-label">时间</span>
           <input
             className="am-input"
+            type="time"
             value={time}
-            inputMode="numeric"
-            placeholder="09:00"
             onChange={(e) => setTime(e.target.value)}
           />
         </label>

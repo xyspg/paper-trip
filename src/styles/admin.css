@@ -1642,6 +1642,12 @@
 
 .admin-app .amt-box {
   flex-shrink: 0;
+  /* Neutralize the public ledger's global `.amt-box` mobile overrides
+     (App.css @media max-width:480px sets width:100% etc.), which would
+     otherwise blow the box to full width and collapse `.exp-name`. */
+  width: auto;
+  padding-left: 0;
+  margin-top: 0;
 }
 
 .admin-app .amt-input {
