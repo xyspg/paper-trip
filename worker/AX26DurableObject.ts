@@ -43,7 +43,7 @@ export class AX26DurableObject extends DurableObject<Env> {
   private broadcast(message: unknown): void {
     const websockets = this.ctx.getWebSockets();
     for (const ws of websockets) {
-      ws.send(JSON.stringify(message))
+      ws.send(JSON.stringify(message));
     }
   }
 }

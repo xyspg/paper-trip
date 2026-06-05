@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 
+import auth from "./auth";
 import type { Env } from "./env";
 
 export { AX26DurableObject } from "./AX26DurableObject";
@@ -9,6 +10,8 @@ const TRIP_ID = "anime-expo-2026";
 const app = new Hono<{ Bindings: Env }>();
 
 app.get("/api", (c) => c.text("ok"));
+
+app.route("/api/auth", auth);
 
 app.all("/api/trip", (c) => stub(c.env).fetch(c.req.raw));
 app.all("/api/trip/*", (c) => stub(c.env).fetch(c.req.raw));

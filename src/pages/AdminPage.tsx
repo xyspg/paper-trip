@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../styles/admin.css";
-import { EXPENSES_SEED, memberById, STOPS_SEED, SUGGESTIONS_SEED } from "../admin/adminData";
-import type { Expense, Stop, Suggestion } from "../admin/adminData";
+import { EXPENSES_SEED, STOPS_SEED, SUGGESTIONS_SEED } from "../admin/adminData";
+import type { AdminMember, Expense, Stop, Suggestion } from "../admin/adminData";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
 import { AdminLogin } from "../admin/AdminLogin";
+import { ADMIN_SESSION_KEY, adminLogout, fetchAdminUser } from "../admin/auth";
 import { ItinerarySection } from "../admin/ItinerarySection";
 import { SplitSection } from "../admin/SplitSection";
 import { SuggestionsSection } from "../admin/SuggestionsSection";
@@ -22,7 +24,13 @@ const NAV: NavEntry[] = [
 ];
 
 export function AdminPage() {
-  const [authed, setAuthed] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: user, isLoading } = useQuery({
+    queryKey: ADMIN_SESSION_KEY,
+    queryFn: fetchAdminUser,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
   const [section, setSection] = useState<SectionKey>("itinerary");
   const [stops, setStops] = useState<Stop[]>(STOPS_SEED);
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() =>
@@ -30,8 +38,6 @@ export function AdminPage() {
   );
   const [expenses, setExpenses] = useState<Expense[]>(() => EXPENSES_SEED.map((e) => ({ ...e })));
   const { toasts, toast } = useAdminToasts();
-
-  const me = memberById("you");
 
   const applyRewrite = (stopId: string, planId: string, toText: string) =>
     setStops((prev) =>
@@ -49,13 +55,41 @@ export function AdminPage() {
     split: expenses.length,
   };
 
-  if (!authed) {
+  if (isLoading) {
     return (
       <div className="admin-app">
-        <AdminLogin onAuth={() => setAuthed(true)} />
+        <div className="login">
+          <span className="login-spin" />
+        </div>
       </div>
     );
   }
+
+  if (!user) {
+    return (
+      <div className="admin-app">
+        <AdminLogin />
+      </div>
+    );
+  }
+
+  const display = user.name?.trim() || user.login;
+  const me: AdminMember = {
+    id: "me",
+    name: display,
+    handle: user.login,
+    role: "管理员",
+    color: "var(--magenta)",
+    traveler: true,
+    initials: display.slice(0, 2).toUpperCase(),
+    avatarUrl: user.avatarUrl,
+  };
+
+  const logout = async () => {
+    await adminLogout();
+    queryClient.setQueryData(ADMIN_SESSION_KEY, null);
+    toast("已退出登录", "warn");
+  };
 
   const renderSection = () => {
     if (section === "itinerary")
@@ -100,14 +134,7 @@ export function AdminPage() {
           </div>
           <Avatar m={me} size="sm" />
         </div>
-        <button
-          className="tb-logout"
-          title="退出登录"
-          onClick={() => {
-            setAuthed(false);
-            toast("已退出登录", "warn");
-          }}
-        >
+        <button className="tb-logout" title="退出登录" onClick={logout}>
           <Icons.logout sw={2.2} />
         </button>
       </header>

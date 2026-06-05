@@ -14,6 +14,7 @@ export type AdminMember = {
   color: string;
   traveler: boolean;
   initials: string;
+  avatarUrl?: string;
 };
 
 export type Plan = {

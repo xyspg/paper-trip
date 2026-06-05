@@ -1,1 +1,1 @@
-{"root":["./worker/ax26durableobject.ts","./worker/env.ts","./worker/index.ts","./src/trip/tripdata.ts","./src/trip/types.ts","./src/trip/ops.ts"],"version":"6.0.3"}
+{"root":["./worker/ax26durableobject.ts","./worker/auth.ts","./worker/env.ts","./worker/index.ts","./src/trip/tripdata.ts","./src/trip/types.ts","./src/trip/ops.ts"],"version":"6.0.3"}

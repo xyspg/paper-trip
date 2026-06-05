@@ -1,13 +1,24 @@
 import { useState } from "react";
 import { Icons } from "./AdminIcons";
+import { ADMIN_LOGIN_URL } from "./auth";
 
-// GitHub OAuth full-screen login (UI only — fakes the OAuth round-trip).
-export function AdminLogin({ onAuth }: { onAuth: () => void }) {
+const ERRORS: Record<string, string> = {
+  forbidden: "该 GitHub 账号无权进入后台。",
+  oauth: "登录校验失败，请重试。",
+  token: "GitHub 授权失败，请重试。",
+  user: "无法读取 GitHub 身份，请重试。",
+  config: "OAuth 未正确配置。",
+};
+
+// GitHub OAuth full-screen login. The button hands off to the Worker, which runs
+// the OAuth round-trip and redirects back to /admin.
+export function AdminLogin() {
   const [busy, setBusy] = useState(false);
+  const error = new URLSearchParams(window.location.search).get("error");
 
   const signIn = () => {
     setBusy(true);
-    setTimeout(() => onAuth(), 1100);
+    window.location.href = ADMIN_LOGIN_URL;
   };
 
   return (
@@ -16,18 +27,17 @@ export function AdminLogin({ onAuth }: { onAuth: () => void }) {
         <div className="login-top">
           <span className="login-kicker">
             <span className="dot" />
-            Admin · 行程作战表后台
+            Admin
           </span>
           <h1 className="login-title">
             Anime Expo <span className="yr">2026</span>
           </h1>
-          <p className="login-sub">
-            管理行程停靠点、审批同行人建议、更新分账金额。仅管理员可进入。
-          </p>
         </div>
 
         <div className="login-body">
-          <button className={`gh-btn${busy ? " busy" : ""}`} onClick={signIn}>
+          {error && <p className="login-err">{ERRORS[error] ?? "登录失败，请重试。"}</p>}
+
+          <button className={`gh-btn${busy ? " busy" : ""}`} onClick={signIn} disabled={busy}>
             {busy ? (
               <>
                 <span className="spin" />
@@ -40,10 +50,6 @@ export function AdminLogin({ onAuth }: { onAuth: () => void }) {
               </>
             )}
           </button>
-
-          <p className="login-foot">
-            仅 <b>repo collaborators</b> 可登录管理后台 · 纯前端演示
-          </p>
         </div>
       </div>
     </div>

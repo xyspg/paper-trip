@@ -180,6 +180,30 @@
   color: var(--ink);
 }
 
+.admin-app .login-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-app .login-err {
+  margin: 0 2px;
+  text-align: center;
+  font-family: var(--cjk);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--magenta);
+}
+
+.admin-app .login-spin {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 4px solid rgba(20, 18, 16, 0.14);
+  border-top-color: var(--magenta);
+  animation: spin 0.7s linear infinite;
+}
+
 .admin-app .topbar {
   position: sticky;
   top: 0;
@@ -305,10 +329,18 @@
   border: 2px solid var(--paper);
   display: grid;
   place-items: center;
+  overflow: hidden;
   color: var(--ink);
   font-family: var(--grotesk);
   font-weight: 900;
   letter-spacing: 0.02em;
+}
+
+.admin-app .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .admin-app .avatar.sm {
