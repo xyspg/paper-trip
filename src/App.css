@@ -619,6 +619,16 @@ button.status:active {
   color: #fff;
 }
 
+.map-pop-ic--plain {
+  background: #fff;
+}
+
+.map-pop-img {
+  display: block;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
 .map-pop-lb {
   flex: 1;
 }

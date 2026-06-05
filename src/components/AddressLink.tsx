@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Popover } from "@base-ui-components/react/popover";
 import { ChevronRight } from "lucide-react";
-import { siApple, siGooglemaps } from "simple-icons";
 import { appleMapsUrl, googleMapsUrl } from "../maps";
 
 // There is no web API to pop the OS "open with" app chooser for a map link, so
@@ -13,22 +12,73 @@ type Provider = {
   id: string;
   label: string;
   href: (query: string) => string;
-  icon: { path: string; hex: string };
+  brand: string;
+  glyph: ReactNode;
+  // Both providers use their real app marks, which sit on a plain white tile.
+  plainTile?: boolean;
 };
 
-const PROVIDERS: Provider[] = [
-  { id: "apple", label: "Apple 地图", href: appleMapsUrl, icon: siApple },
-  { id: "google", label: "Google 地图", href: googleMapsUrl, icon: siGooglemaps },
-];
-
-function BrandGlyph({ icon, title }: { icon: Provider["icon"]; title: string }) {
+// Real Apple Maps app icon (downloaded to /public).
+function AppleMapsGlyph({ title }: { title: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor" aria-hidden>
+    <img
+      src="/apple-maps.webp"
+      alt={title}
+      width={26}
+      height={26}
+      className="map-pop-img"
+    />
+  );
+}
+
+// Official 2020 Google Maps pin, kept full-color so it reads as the real brand
+// mark rather than a flat tint.
+function GoogleMapsGlyph({ title }: { title: string }) {
+  return (
+    <svg viewBox="0 0 92.3 132.3" width={16} height={18} aria-hidden>
       <title>{title}</title>
-      <path d={icon.path} />
+      <path
+        fill="#1a73e8"
+        d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"
+      />
+      <path
+        fill="#ea4335"
+        d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"
+      />
+      <path
+        fill="#4285f4"
+        d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"
+      />
+      <path
+        fill="#fbbc04"
+        d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"
+      />
+      <path
+        fill="#34a853"
+        d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"
+      />
     </svg>
   );
 }
+
+const PROVIDERS: Provider[] = [
+  {
+    id: "apple",
+    label: "Apple 地图",
+    href: appleMapsUrl,
+    brand: "#1f8eff",
+    glyph: <AppleMapsGlyph title="Apple 地图" />,
+    plainTile: true,
+  },
+  {
+    id: "google",
+    label: "Google 地图",
+    href: googleMapsUrl,
+    brand: "#4285f4",
+    glyph: <GoogleMapsGlyph title="Google 地图" />,
+    plainTile: true,
+  },
+];
 
 export function AddressLink({
   query,
@@ -67,10 +117,12 @@ export function AddressLink({
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => setOpen(false)}
-                  style={{ "--brand": `#${p.icon.hex}` } as CSSProperties}
+                  style={{ "--brand": p.brand } as CSSProperties}
                 >
-                  <span className="map-pop-ic">
-                    <BrandGlyph icon={p.icon} title={p.label} />
+                  <span
+                    className={`map-pop-ic${p.plainTile ? " map-pop-ic--plain" : ""}`}
+                  >
+                    {p.glyph}
                   </span>
                   <span className="map-pop-lb">{p.label}</span>
                   <ChevronRight className="map-pop-go" size={16} strokeWidth={2.4} />
