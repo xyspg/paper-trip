@@ -1,68 +1,57 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  loadTrip,
-  resetTrip,
-  saveTrip,
-  updateChecklistItem,
-  updateTripItem,
-  updateTripItemStatus,
-} from "./storage";
-import type { ChecklistItem, ItemStatus, TripItem } from "./types";
+import { useMountEffect } from "../useMountEffect";
+import { fetchTrip, sendOp, tripWsUrl, type TripSnapshot } from "./api";
+import { applyOp, type TripOp } from "./ops";
+import type { Trip } from "./types";
 
-const tripQueryKey = ["trip"];
+const tripKey = ["trip"] as const;
 
-export const useTrip = () => useQuery({ queryKey: tripQueryKey, queryFn: loadTrip });
+export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip });
 
-export const useSaveTripItem = () => {
+export const useTripOp = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (item: TripItem) => {
-      const trip = await loadTrip();
-      return updateTripItem(trip, item);
+    mutationFn: sendOp,
+    onMutate: async (op: TripOp) => {
+      await queryClient.cancelQueries({ queryKey: tripKey });
+      const prev = queryClient.getQueryData<TripSnapshot>(tripKey);
+      if (prev) {
+        queryClient.setQueryData<TripSnapshot>(tripKey, {
+          rev: prev.rev,
+          trip: applyOp(prev.trip, op),
+        });
+      }
+      return { prev };
     },
-    onSuccess: (trip) => queryClient.setQueryData(tripQueryKey, trip),
-  });
-};
-
-export const useSetTripItemStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ itemId, status }: { itemId: string; status: ItemStatus }) => {
-      const trip = await loadTrip();
-      return updateTripItemStatus(trip, itemId, status);
+    onError: (_err, _op, context) => {
+      if (context?.prev) queryClient.setQueryData(tripKey, context.prev);
     },
-    onSuccess: (trip) => queryClient.setQueryData(tripQueryKey, trip),
+    onSuccess: (snapshot) => queryClient.setQueryData(tripKey, snapshot),
   });
 };
 
-export const useSetChecklistItem = () => {
+type ServerMessage = { type: "snapshot" | "update"; rev: number; trip: Trip };
+
+export const useTripLiveSync = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ checklistId, item }: { checklistId: string; item: ChecklistItem }) => {
-      const trip = await loadTrip();
-      return updateChecklistItem(trip, checklistId, item);
-    },
-    onSuccess: (trip) => queryClient.setQueryData(tripQueryKey, trip),
-  });
-};
+  useMountEffect(() => {
+    const ws = new WebSocket(tripWsUrl());
 
-export const useResetTrip = () => {
-  const queryClient = useQueryClient();
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data) as ServerMessage;
 
-  return useMutation({
-    mutationFn: resetTrip,
-    onSuccess: (trip) => queryClient.setQueryData(tripQueryKey, trip),
-  });
-};
+      const current = queryClient.getQueryData<TripSnapshot>(tripKey);
 
-export const useReplaceTrip = () => {
-  const queryClient = useQueryClient();
+      if (!current) return;
 
-  return useMutation({
-    mutationFn: saveTrip,
-    onSuccess: (trip) => queryClient.setQueryData(tripQueryKey, trip),
+      if (message.rev > current.rev) {
+        queryClient.setQueryData<TripSnapshot>(tripKey, { rev: message.rev, trip: message.trip });
+
+      }
+    };
+
+    return () => ws.close();
   });
 };

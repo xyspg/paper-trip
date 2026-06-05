@@ -1,5 +1,5 @@
-import { tripData } from "../src/trip/tripData";
-import type { ChecklistItem, ItemStatus, Trip, TripItem } from "../src/trip/types";
+import { tripData } from "./tripData";
+import type { ChecklistItem, ItemStatus, Trip, TripItem } from "./types";
 
 export type TripOp =
   | { type: "setItemStatus"; itemId: string; status: ItemStatus }

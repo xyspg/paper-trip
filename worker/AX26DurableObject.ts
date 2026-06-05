@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { tripData } from "../src/trip/tripData";
 import type { Trip } from "../src/trip/types";
-import { applyOp, type TripOp } from "./ops";
+import { applyOp, type TripOp } from "../src/trip/ops";
 import type { Env } from "./env";
 
 type Snapshot = { rev: number; trip: Trip };
