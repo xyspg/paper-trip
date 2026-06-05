@@ -23,3 +23,16 @@ export const tripWsUrl = (): string => {
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${location.host}/api/trip`;
 };
+
+export type CreditCard = {
+  name: string;
+  issuer: string;
+  approvedAt: string;
+  imageUrl: string;
+};
+
+export const fetchCreditCards = async (): Promise<CreditCard[]> => {
+  const res = await fetch("https://xyspg.moe/api/credit-cards");
+  if (!res.ok) throw new Error(`GET credit-cards failed: ${res.status}`);
+  return (await res.json()) as CreditCard[];
+};

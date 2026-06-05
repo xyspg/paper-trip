@@ -1,12 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMountEffect } from "../useMountEffect";
-import { fetchTrip, sendOp, tripWsUrl, type TripSnapshot } from "./api";
+import { fetchCreditCards, fetchTrip, sendOp, tripWsUrl, type TripSnapshot } from "./api";
 import { applyOp, type TripOp } from "./ops";
 import type { Trip } from "./types";
 
 const tripKey = ["trip"] as const;
 
 export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip });
+
+// Resolve a card's art by its catalog name. The card list rarely changes, so it
+// is cached indefinitely; cards missing from the catalog (or before the fetch
+// resolves) return undefined and fall back to a swatch.
+export const useCardImage = (): ((name?: string) => string | undefined) => {
+  const { data } = useQuery({
+    queryKey: ["credit-cards"],
+    queryFn: fetchCreditCards,
+    staleTime: Infinity,
+  });
+  return (name) => (name ? data?.find((card) => card.name === name)?.imageUrl : undefined);
+};
 
 export const useTripOp = () => {
   const queryClient = useQueryClient();

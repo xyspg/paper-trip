@@ -1,5 +1,7 @@
+import type { CSSProperties, ReactNode } from "react";
 import { appleMapsUrl } from "../maps";
-import { useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
+import { cardRecs } from "../trip/cardRecs";
+import { useCardImage, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
 import type { ItemStatus, TripItem } from "../trip/types";
 
@@ -21,6 +23,23 @@ const categoryMeta: Record<TripItem["category"], { label: string; className: str
   hotel: { label: "Stay", className: "cat-violet" },
   errand: { label: "Misc", className: "cat-green" },
 };
+
+// The card module tints itself to match its own ticket stub, so the per-stop
+// accent stays consistent within a ticket.
+const categoryColor: Record<TripItem["category"], string> = {
+  flight: "--cyan",
+  drive: "--cyan",
+  food: "--yellow",
+  event: "--magenta",
+  hotel: "--violet",
+  errand: "--green",
+};
+
+// Render lightweight **bold** spans inside an otherwise plain editorial string.
+const renderRich = (text: string): ReactNode[] =>
+  text.split(/\*\*(.+?)\*\*/g).map((part, index) =>
+    index % 2 === 1 ? <b key={index}>{part}</b> : part,
+  );
 
 const statusLabel: Record<ItemStatus, string> = {
   planned: "计划中",
@@ -159,6 +178,10 @@ export function TimelinePage() {
           <LegendItem swatch="sw-violet" label="酒店" />
           <LegendItem swatch="sw-green" label="杂项" />
         </div>
+        <p className="legend-note">
+          回报率 = 积分倍数 × 估值（cpp）。例：加油 <b>Citi AA 2× × 2.0¢ = 4%</b>；餐饮{" "}
+          <b>CSP 3× × ~1.65¢ ≈ 4.96%</b>。停车 / 酒店多按 <b>Travel</b> 类入账。
+        </p>
       </section>
 
       <p className="foot">NYC → LAX</p>
@@ -189,6 +212,7 @@ function TicketStop({
   const category = categoryMeta[item.category];
   const isDarkStub = item.category === "event" || item.category === "hotel";
   const plans = itemPlans(item);
+  const cardRec = cardRecs[item.id];
 
   return (
     <article className={`stop ${category.className}`}>
@@ -231,9 +255,60 @@ function TicketStop({
               ))}
             </div>
           )}
+          {cardRec && <PayWith rec={cardRec} accent={categoryColor[item.category]} />}
         </div>
       </div>
     </article>
+  );
+}
+
+function PayWith({ rec, accent }: { rec: (typeof cardRecs)[string]; accent: string }) {
+  const cardImage = useCardImage();
+  const bestImage = cardImage(rec.best.cardName);
+  return (
+    <div className="paywith" style={{ "--pw": `var(${accent})` } as CSSProperties}>
+      <div className="pw-bar">
+        <span className="pw-tag">刷卡建议</span>
+        <span className="pw-catname">{rec.category}</span>
+      </div>
+      <div className="pw-hero">
+        <div className="cardimg">
+          {bestImage && <img src={bestImage} alt={rec.best.name} loading="lazy" />}
+        </div>
+        <div className="pw-hero-txt">
+          <div className="pw-hero-name">
+            {rec.best.name}
+            {rec.best.last4 && <span className="l4"> {rec.best.last4}</span>}
+          </div>
+          <div className="pw-hero-why">{rec.best.why}</div>
+        </div>
+        <div className="pw-hero-rate">
+          <span className="rnum">{rec.best.rate}</span>
+          <span className="rpct">%</span>
+        </div>
+      </div>
+      <div className="pw-alts">
+        {rec.alts.map((alt) => {
+          const altImage = cardImage(alt.cardName);
+          return (
+            <div className="pw-alt" key={alt.name}>
+              <span className="alt-sw" style={{ "--c": alt.swatch } as CSSProperties}>
+                {altImage && <img src={altImage} alt={alt.name} loading="lazy" />}
+              </span>
+              <span className="alt-n">{alt.name}</span>
+              <span className="alt-c">{alt.tag}</span>
+              <span className="alt-r">{alt.rate}</span>
+            </div>
+          );
+        })}
+      </div>
+      {rec.note && (
+        <div className="pw-note">
+          <span className="nk">{rec.note.kind}</span>
+          <span>{renderRich(rec.note.text)}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
