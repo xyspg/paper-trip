@@ -1,0 +1,50 @@
+import { useRef } from "react";
+import { useMountEffect } from "../useMountEffect";
+
+type EditableProps = {
+  value: string;
+  onCommit: (value: string) => void;
+  className?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  multiline?: boolean;
+};
+
+// Inline contentEditable that commits on blur. The DOM text is set imperatively so
+// React never reconciles the editable content (which would fight the caret). Initial
+// text is written on mount; callers pass a `key` derived from the value so an external
+// change (e.g. adopting a rewrite) remounts the node with fresh text — reset-with-key,
+// not a per-render effect.
+export function Editable({
+  value,
+  onCommit,
+  className,
+  placeholder,
+  ariaLabel,
+  multiline,
+}: EditableProps) {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useMountEffect(() => {
+    if (ref.current) ref.current.textContent = value;
+  });
+
+  return (
+    <span
+      ref={ref}
+      className={`edit ${className ?? ""}`}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label={ariaLabel}
+      data-ph={placeholder}
+      onKeyDown={(e) => {
+        if (!multiline && e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
+      onBlur={(e) => onCommit((e.currentTarget.textContent ?? "").replace(/\s+$/, ""))}
+    />
+  );
+}

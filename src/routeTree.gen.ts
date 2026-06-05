@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TimelineRoute = TimelineRouteImport.update({
@@ -29,6 +30,11 @@ const BookingsRoute = BookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/bookings' | '/ledger' | '/timeline'
+  fullPaths: '/' | '/admin' | '/bookings' | '/ledger' | '/timeline'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bookings' | '/ledger' | '/timeline'
-  id: '__root__' | '/' | '/bookings' | '/ledger' | '/timeline'
+  to: '/' | '/admin' | '/bookings' | '/ledger' | '/timeline'
+  id: '__root__' | '/' | '/admin' | '/bookings' | '/ledger' | '/timeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BookingsRoute: typeof BookingsRoute
   LedgerRoute: typeof LedgerRoute
   TimelineRoute: typeof TimelineRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BookingsRoute: BookingsRoute,
   LedgerRoute: LedgerRoute,
   TimelineRoute: TimelineRoute,
