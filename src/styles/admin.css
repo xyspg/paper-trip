@@ -2064,3 +2064,184 @@
     margin-left: auto;
   }
 }
+
+/* ---- New-stop modal (Base Web Modal shell, neo-brutalist content) ---- */
+.admin-app .add-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-app .am-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  border-bottom: 3px solid var(--ink);
+}
+
+.admin-app .am-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.admin-app .am-kicker svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-app .am-close {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid rgba(251, 247, 236, 0.3);
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.admin-app .am-close:hover {
+  background: var(--magenta);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+
+.admin-app .am-close svg {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-app .am-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 14px;
+  padding: 18px;
+}
+
+.admin-app .am-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.admin-app .am-field-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-app .am-label {
+  font-family: var(--grotesk);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.admin-app .am-input,
+.admin-app .am-select {
+  font-family: var(--cjk);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+  box-shadow: var(--shadow-xs);
+  width: 100%;
+}
+
+.admin-app .am-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.admin-app .am-input:focus,
+.admin-app .am-select:focus {
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.admin-app .am-input::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+
+.admin-app .am-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.admin-app .am-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--grotesk);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.admin-app .am-chip .am-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1.5px solid var(--ink);
+  background: var(--chip, var(--cyan));
+}
+
+.admin-app .am-chip.on {
+  background: var(--chip, var(--ink));
+  box-shadow: var(--shadow-xs);
+}
+
+.admin-app .am-chip.on .am-dot {
+  background: var(--ink);
+}
+
+.admin-app .am-chip.status-booked.on {
+  background: var(--green);
+}
+
+.admin-app .am-chip.status-planned.on {
+  background: var(--cyan);
+}
+
+.admin-app .am-chip.status-watch.on {
+  background: var(--amber);
+}
+
+.admin-app .am-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 3px solid var(--ink);
+  background: var(--paper);
+}
+
+@media (max-width: 440px) {
+  .admin-app .am-body {
+    grid-template-columns: 1fr;
+  }
+}
