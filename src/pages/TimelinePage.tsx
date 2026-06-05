@@ -28,7 +28,6 @@ const statusLabel: Record<ItemStatus, string> = {
   done: "已完成",
 };
 
-// 点击 status 徽章时在这三态间轮转
 const statusCycle: ItemStatus[] = ["planned", "locked", "done"];
 const nextStatus = (status: ItemStatus): ItemStatus =>
   statusCycle[(statusCycle.indexOf(status) + 1) % statusCycle.length];
@@ -49,10 +48,11 @@ type StopPlan = { kind: "main" | "alt"; label: string; text: string };
 
 const itemPlans = (item: TripItem): StopPlan[] => {
   if (item.parking) {
-    return [
-      { kind: "main", label: "主方案", text: item.parking.primary },
-      { kind: "alt", label: "备用", text: item.parking.backup },
-    ];
+    const plans: StopPlan[] = [{ kind: "main", label: "主方案", text: item.parking.primary }];
+    if (item.parking.backup) {
+      plans.push({ kind: "alt", label: "备用", text: item.parking.backup });
+    }
+    return plans;
   }
   return item.notes.slice(0, 2).map((text, index) => ({
     kind: index === 0 ? "main" : "alt",
@@ -88,15 +88,12 @@ export function TimelinePage() {
       <header className="masthead">
         <span className="mh-kicker">
           <span className="dot" />
-          行程作战表 · Travel Ops
+          Plan
         </span>
         <h1 className="mh-title">
           Anime Expo <span className="yr">2026</span>
         </h1>
-        <p className="mh-sub">
-          LAX 抵达 · downtown 停车攻防 · badge 安排 · 酒店据点 ·
-          返程缓冲。每个停靠点都备好主方案和备用方案。
-        </p>
+        <p className="mh-sub">Jul 3 - Jul 5 JFK-LAX/ONT-JFK</p>
 
         <div className="mh-stats">
           <SummaryStat
@@ -164,7 +161,7 @@ export function TimelinePage() {
         </div>
       </section>
 
-      <p className="foot">LAX → LACC → Diamond Bar · 主方案落空就走备用 · 一路平安</p>
+      <p className="foot">NYC → LAX</p>
     </>
   );
 }

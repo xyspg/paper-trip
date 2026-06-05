@@ -42,7 +42,7 @@ export const toMarkdown = (trip: Trip) => {
           const parking = item.parking
             ? [
                 `    - 停车：${item.parking.primary}`,
-                `    - 备用停车：${item.parking.backup}`,
+                item.parking.backup ? `    - 备用停车：${item.parking.backup}` : "",
                 item.parking.warning ? `    - 提醒：${item.parking.warning}` : "",
               ]
                 .filter(Boolean)

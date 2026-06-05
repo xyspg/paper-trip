@@ -17,7 +17,7 @@ export type TripItem = {
   notes: string[];
   parking?: {
     primary: string;
-    backup: string;
+    backup?: string;
     warning?: string;
   };
   links: {
