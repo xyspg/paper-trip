@@ -1,6 +1,9 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { CATS, STATUS, uid } from "./adminData";
 import type { Stop, StopCat, StopStatus } from "./adminData";
+import { AddStopModal } from "./AddStopModal";
+import type { NewStopInput } from "./AddStopModal";
 import { Icons } from "./AdminIcons";
 import { Editable } from "./Editable";
 import { cssVars } from "./style";
@@ -79,24 +82,34 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
     toast("已删除停靠点", "warn");
   };
 
-  const addStop = (day: number, date: string) => {
+  const [addDay, setAddDay] = useState<number | null>(null);
+
+  const createStop = (input: NewStopInput) => {
     const newStop: Stop = {
       id: uid("s"),
-      day,
-      date,
-      time: "00:00",
-      cat: "misc",
-      status: "planned",
-      title: "新停靠点",
+      day: input.day,
+      date: input.date,
+      time: input.time,
+      cat: input.cat,
+      status: input.status,
+      title: input.title || "新停靠点",
       loc: "地点待定",
       addr: "",
       plans: [{ id: uid("p"), kind: "main", text: "主方案待补充。" }],
     };
-    const arr = [...stops];
-    const idx = arr.map((s) => s.day).lastIndexOf(day);
-    if (idx === -1) arr.push(newStop);
-    else arr.splice(idx + 1, 0, newStop);
-    setStops(arr);
+    setStops((prev) => {
+      // Insert within the chosen day, kept in ascending time order so the new
+      // stop lands where the user expects instead of being appended out of view.
+      let at = prev.findIndex((s) => s.day === input.day && s.time > input.time);
+      if (at === -1) {
+        const lastInDay = prev.map((s) => s.day).lastIndexOf(input.day);
+        at = lastInDay === -1 ? prev.length : lastInDay + 1;
+      }
+      const arr = [...prev];
+      arr.splice(at, 0, newStop);
+      return arr;
+    });
+    setAddDay(null);
     toast("已新增停靠点");
   };
 
@@ -112,6 +125,9 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
   });
 
   const first = days[0];
+  const dayOpts = days.length
+    ? days.map((d) => ({ day: d.day, date: d.date }))
+    : [{ day: 1, date: "7/3 · FRI" }];
 
   return (
     <div>
@@ -122,10 +138,7 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
           <div className="sb-d">点任意字段直接改 · 增删停靠点与方案 · 切换状态 / 类别</div>
         </div>
         <div className="sb-actions">
-          <button
-            className="pbtn ink"
-            onClick={() => addStop(first ? first.day : 1, first ? first.date : "7/3 · FRI")}
-          >
+          <button className="pbtn ink" onClick={() => setAddDay(first ? first.day : 1)}>
             <Icons.plus sw={2.6} />
             新增停靠点
           </button>
@@ -167,7 +180,7 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
               <span className="dd-date">{d.date}</span>
             </span>
             <span className="dd-line" />
-            <button className="pbtn ghost tiny" onClick={() => addStop(d.day, d.date)}>
+            <button className="pbtn ghost tiny" onClick={() => setAddDay(d.day)}>
               <Icons.plus sw={2.6} />
               本日加一站
             </button>
@@ -276,6 +289,14 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
           })}
         </div>
       ))}
+
+      <AddStopModal
+        isOpen={addDay !== null}
+        days={dayOpts}
+        initialDay={addDay ?? first?.day ?? 1}
+        onClose={() => setAddDay(null)}
+        onCreate={createStop}
+      />
     </div>
   );
 }
