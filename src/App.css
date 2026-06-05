@@ -512,6 +512,17 @@
   background: var(--amber);
 }
 
+button.status {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: transform 0.08s ease;
+}
+
+button.status:active {
+  transform: scale(0.94);
+}
+
 .t-loc {
   margin-top: 8px;
   color: var(--ink);

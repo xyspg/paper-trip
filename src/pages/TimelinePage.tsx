@@ -1,4 +1,5 @@
 import { appleMapsUrl } from "../maps";
+import { useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
 import type { ItemStatus, TripItem } from "../trip/types";
 
@@ -11,12 +12,6 @@ const dayMeta: Record<string, { label: string; tag: string; accent: DayAccent }>
   "2026-07-04": { label: "Anime Expo 全天", tag: "Main Event", accent: "cyan" },
   "2026-07-05": { label: "返程缓冲", tag: "Departure", accent: "green" },
 };
-
-const orderedDates = [...new Set(tripData.items.map((item) => item.date))];
-
-// Global 1-based stop number per item, precomputed so the render doesn't scan
-// the array with indexOf for every stop.
-const stopNumbers = new Map(tripData.items.map((item, index) => [item.id, index + 1]));
 
 const categoryMeta: Record<TripItem["category"], { label: string; className: string }> = {
   flight: { label: "Transit", className: "cat-cyan" },
@@ -32,6 +27,11 @@ const statusLabel: Record<ItemStatus, string> = {
   locked: "已锁定",
   done: "已完成",
 };
+
+// 点击 status 徽章时在这三态间轮转
+const statusCycle: ItemStatus[] = ["planned", "locked", "done"];
+const nextStatus = (status: ItemStatus): ItemStatus =>
+  statusCycle[(statusCycle.indexOf(status) + 1) % statusCycle.length];
 
 const formatDayDate = (iso: string): string => {
   const date = new Date(`${iso}T00:00:00`);
@@ -62,12 +62,26 @@ const itemPlans = (item: TripItem): StopPlan[] => {
 };
 
 export function TimelinePage() {
-  const nextItem = tripData.items.find((item) => item.status !== "done") ?? tripData.items[0];
+  useTripLiveSync(); // 挂载时连 WS，收别人的改动
+  const op = useTripOp();
+  const { data } = useTrip();
+  // 加载首帧用静态 tripData 兜底，拿到服务端数据后自动替换
+  const trip = data?.trip ?? tripData;
+
+  const orderedDates = [...new Set(trip.items.map((item) => item.date))];
+  // Global 1-based stop number per item, precomputed so the render doesn't scan
+  // the array with indexOf for every stop.
+  const stopNumbers = new Map(trip.items.map((item, index) => [item.id, index + 1]));
+
+  const nextItem = trip.items.find((item) => item.status !== "done") ?? trip.items[0];
   const nextPlan = nextItem.parking?.primary ?? nextItem.notes[0] ?? nextItem.location;
-  const parkingCount = tripData.items.filter(
+  const parkingCount = trip.items.filter(
     (item) => item.parking?.primary && item.parking?.backup,
   ).length;
-  const dateRange = `${shortDate(tripData.dates.start)}–${shortDate(tripData.dates.end)}`;
+  const dateRange = `${shortDate(trip.dates.start)}–${shortDate(trip.dates.end)}`;
+
+  const cycleStatus = (item: TripItem) =>
+    op.mutate({ type: "setItemStatus", itemId: item.id, status: nextStatus(item.status) });
 
   return (
     <>
@@ -86,7 +100,7 @@ export function TimelinePage() {
 
         <div className="mh-stats">
           <SummaryStat
-            value={tripData.items.length.toString()}
+            value={trip.items.length.toString()}
             label={`停靠点 · 横跨 ${orderedDates.length} 天`}
             tone="c1"
           />
@@ -120,7 +134,7 @@ export function TimelinePage() {
             </div>
 
             <div className="timeline">
-              {tripData.items
+              {trip.items
                 .filter((item) => item.date === date)
                 .map((item) => (
                   <TicketStop
@@ -128,6 +142,7 @@ export function TimelinePage() {
                     stopNumber={stopNumbers.get(item.id) ?? 0}
                     key={item.id}
                     compactTime={!item.time.includes(":")}
+                    onCycleStatus={cycleStatus}
                   />
                 ))}
             </div>
@@ -167,10 +182,12 @@ function TicketStop({
   item,
   stopNumber,
   compactTime,
+  onCycleStatus,
 }: {
   item: TripItem;
   stopNumber: number;
   compactTime: boolean;
+  onCycleStatus: (item: TripItem) => void;
 }) {
   const category = categoryMeta[item.category];
   const isDarkStub = item.category === "event" || item.category === "hotel";
@@ -192,7 +209,14 @@ function TicketStop({
         <div className="tbody">
           <div className="tbody-head">
             <h2 className="t-title">{item.title}</h2>
-            <span className={`status ${item.status}`}>{statusLabel[item.status]}</span>
+            <button
+              type="button"
+              className={`status ${item.status}`}
+              onClick={() => onCycleStatus(item)}
+              title="点击切换状态"
+            >
+              {statusLabel[item.status]}
+            </button>
           </div>
           <div className="t-loc">{item.location}</div>
           <a
