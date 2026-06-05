@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { appleMapsUrl } from "../maps";
+import { AddressLink } from "../components/AddressLink";
 import { cardRecs } from "../trip/cardRecs";
 import { useCardImage, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
@@ -37,9 +37,9 @@ const categoryColor: Record<TripItem["category"], string> = {
 
 // Render lightweight **bold** spans inside an otherwise plain editorial string.
 const renderRich = (text: string): ReactNode[] =>
-  text.split(/\*\*(.+?)\*\*/g).map((part, index) =>
-    index % 2 === 1 ? <b key={index}>{part}</b> : part,
-  );
+  text
+    .split(/\*\*(.+?)\*\*/g)
+    .map((part, index) => (index % 2 === 1 ? <b key={index}>{part}</b> : part));
 
 const statusLabel: Record<ItemStatus, string> = {
   planned: "计划中",
@@ -240,14 +240,9 @@ function TicketStop({
             </button>
           </div>
           <div className="t-loc">{item.location}</div>
-          <a
-            className="t-addr"
-            href={appleMapsUrl(`${item.location}, ${item.address}`)}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <AddressLink className="t-addr" query={`${item.location}, ${item.address}`}>
             {item.address}
-          </a>
+          </AddressLink>
           {plans.length > 0 && (
             <div className="plans">
               {plans.map((plan) => (
