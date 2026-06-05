@@ -46,6 +46,19 @@ export type TripDocument = {
   note: string;
 };
 
+export type SuggestionStatus = "pending" | "adopted" | "ignored";
+
+// A comment a traveler leaves on a stop from the public timeline. No author
+// identity is collected (the timeline is unauthenticated); the admin console
+// reviews these and marks each adopted or ignored.
+export type TripSuggestion = {
+  id: string;
+  itemId: string;
+  body: string;
+  status: SuggestionStatus;
+  createdAt: string;
+};
+
 export type Trip = {
   id: string;
   title: string;
@@ -62,5 +75,6 @@ export type Trip = {
   items: TripItem[];
   checklists: Checklist[];
   documents: TripDocument[];
+  suggestions: TripSuggestion[];
   updatedAt: string;
 };

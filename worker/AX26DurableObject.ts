@@ -16,6 +16,8 @@ export class AX26DurableObject extends DurableObject<Env> {
     // 第一次启动存储为空，就用 tripData 作为种子
     ctx.blockConcurrencyWhile(async () => {
       this.trip = (await ctx.storage.get<Trip>("trip")) ?? structuredClone(tripData);
+      // Backfill state persisted before suggestions existed so reads never see undefined.
+      this.trip.suggestions ??= [];
       this.rev = (await ctx.storage.get<number>("rev")) ?? 0;
     });
   }

@@ -141,7 +141,7 @@ export function BookingsPage() {
         </div>
       </article>
 
-      <p className="foot">JFK ✈ LAX · 落地 Diamond Bar · 返程记得开去 ONT · 一路平安</p>
+      <p className="foot">JFK ✈ LAX</p>
     </>
   );
 }

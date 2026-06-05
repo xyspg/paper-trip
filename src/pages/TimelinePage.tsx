@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AddressLink } from "../components/AddressLink";
+import { SuggestBox } from "../components/SuggestBox";
 import { cardRecs } from "../trip/cardRecs";
+import { categoryColor } from "../trip/categoryColor";
 import { useCardImage, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
 import type { ItemStatus, TripItem } from "../trip/types";
@@ -22,17 +24,6 @@ const categoryMeta: Record<TripItem["category"], { label: string; className: str
   event: { label: "Event", className: "cat-magenta" },
   hotel: { label: "Stay", className: "cat-violet" },
   errand: { label: "Misc", className: "cat-green" },
-};
-
-// The card module tints itself to match its own ticket stub, so the per-stop
-// accent stays consistent within a ticket.
-const categoryColor: Record<TripItem["category"], string> = {
-  flight: "--cyan",
-  drive: "--cyan",
-  food: "--yellow",
-  event: "--magenta",
-  hotel: "--violet",
-  errand: "--green",
 };
 
 // Render lightweight **bold** spans inside an otherwise plain editorial string.
@@ -251,6 +242,9 @@ function TicketStop({
             </div>
           )}
           {cardRec && <PayWith rec={cardRec} accent={categoryColor[item.category]} />}
+          <div className="stop-foot">
+            <SuggestBox itemId={item.id} itemTitle={item.title} />
+          </div>
         </div>
       </div>
     </article>

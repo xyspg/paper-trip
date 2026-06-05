@@ -14,6 +14,7 @@ export const tripData: Trip = {
     timezone: "America/Los_Angeles",
   },
   updatedAt: new Date("2026-06-04T00:00:00.000Z").toISOString(),
+  suggestions: [],
   items: [
     {
       id: "arrive-lax",

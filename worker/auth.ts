@@ -84,6 +84,14 @@ async function verifySession(token: string, secret: string): Promise<SessionUser
   }
 }
 
+// Resolve the signed session cookie to a user, or null. Shared by the SPA probe
+// and the trip write-gate so cookie/secret handling lives in one place.
+export async function sessionUser(c: Context<{ Bindings: Env }>): Promise<SessionUser | null> {
+  const secret = c.env.GITHUB_OAUTH_CLIENT_SECRET;
+  const token = getCookie(c, SESSION_COOKIE);
+  return secret && token ? await verifySession(token, secret) : null;
+}
+
 const auth = new Hono<{ Bindings: Env }>();
 
 // Public origin the browser actually uses. Behind Portless/Vite the worker sees
@@ -189,9 +197,7 @@ auth.get("/callback/github", async (c) => {
 
 // 3. Session probe for the SPA: returns the current user or 401.
 auth.get("/me", async (c) => {
-  const secret = c.env.GITHUB_OAUTH_CLIENT_SECRET;
-  const token = getCookie(c, SESSION_COOKIE);
-  const user = secret && token ? await verifySession(token, secret) : null;
+  const user = await sessionUser(c);
   if (!user) return c.json({ user: null }, 401);
   return c.json({ user });
 });

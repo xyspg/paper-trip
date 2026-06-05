@@ -36,31 +36,6 @@ export type Stop = {
   plans: Plan[];
 };
 
-export type SuggestionStatus = "pending" | "adopted" | "ignored";
-
-type SuggestionBase = {
-  id: string;
-  author: string;
-  stopId: string;
-  when: string;
-};
-
-export type CommentSuggestionSeed = SuggestionBase & {
-  type: "comment";
-  body: string;
-};
-
-export type RewriteSuggestionSeed = SuggestionBase & {
-  type: "rewrite";
-  planId: string;
-  from: string;
-  to: string;
-  reason: string;
-};
-
-export type SuggestionSeed = CommentSuggestionSeed | RewriteSuggestionSeed;
-export type Suggestion = SuggestionSeed & { status: SuggestionStatus };
-
 export type Expense = {
   id: string;
   cat: StopCat;
@@ -234,67 +209,6 @@ export const STOPS_SEED: Stop[] = [
   },
 ];
 
-// ---- Pending suggestions queue (target the stop/plan ids above) ----
-export const SUGGESTIONS_SEED: SuggestionSeed[] = [
-  {
-    id: "g1",
-    type: "comment",
-    author: "mia",
-    stopId: "s2",
-    when: "2 小时前",
-    body: "这家周六中午基本停不到车，建议把绕圈时间砍到一圈以内，超时直接走 LACC 那边。",
-  },
-  {
-    id: "g2",
-    type: "rewrite",
-    author: "kai",
-    stopId: "s3",
-    planId: "p3a",
-    when: "昨天",
-    from: "LACC West Hall Garage。",
-    to: "LACC West Hall Garage，开门即满，建议 8:30 前到或先在 app 上预订车位。",
-    reason: "去年这个点八点半之后就排到马路上了，预订能省 20 分钟。",
-  },
-  {
-    id: "g3",
-    type: "comment",
-    author: "jay",
-    stopId: "s1",
-    when: "昨天",
-    body: "备降还是直接 Hertz shuttle 稳，LAX-it rideshare 高峰排队也很久。",
-  },
-  {
-    id: "g4",
-    type: "rewrite",
-    author: "mia",
-    stopId: "s5",
-    planId: "p5b",
-    when: "2 天前",
-    from: "Union Station / Little Tokyo parking + Metro A/E line 进场。",
-    to: "Union Station / Little Tokyo parking + Metro A/E line 进场；先查周末发车时间，别在 Little Tokyo 站干等。",
-    reason: "Metro A 线周末班次拉得很长，提前查能少等二十分钟。",
-  },
-  {
-    id: "g5",
-    type: "comment",
-    author: "kai",
-    stopId: "s4",
-    when: "3 天前",
-    body: "Holiday Inn 可以先用 app 在线 check-in，到店直接拿房卡，省得前台排队。",
-  },
-  {
-    id: "g6",
-    type: "rewrite",
-    author: "jay",
-    stopId: "s6",
-    planId: "p6a",
-    when: "3 天前",
-    from: "装车时停酒店地面停车场。",
-    to: "装车时停酒店地面停车场；返车前在 Diamond Bar 这侧先加满油，免租车行高价补油。",
-    reason: "机场附近油价比 Diamond Bar 贵不少。",
-  },
-];
-
 // ---- Expenses ledger ----
 export const EXPENSES_SEED: Expense[] = [
   {
@@ -322,14 +236,14 @@ export const EXPENSES_SEED: Expense[] = [
     sub: "2 × 4-Day General Attendee",
     amount: 382.84,
     credit: 0,
-    payer: "jay",
+    payer: "you",
   },
   {
     id: "car",
     cat: "misc",
     name: "租车 · Hertz",
     sub: "3 天 · Kia K5 或同级",
-    amount: 293.11,
+    amount: 332.24,
     credit: 0,
     payer: "you",
   },

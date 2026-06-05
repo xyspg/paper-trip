@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../styles/admin.css";
-import { EXPENSES_SEED, STOPS_SEED, SUGGESTIONS_SEED } from "../admin/adminData";
-import type { AdminMember, Expense, Stop, Suggestion } from "../admin/adminData";
+import { EXPENSES_SEED, STOPS_SEED } from "../admin/adminData";
+import type { AdminMember, Expense, Stop } from "../admin/adminData";
+import { useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
@@ -33,20 +34,15 @@ export function AdminPage() {
   });
   const [section, setSection] = useState<SectionKey>("itinerary");
   const [stops, setStops] = useState<Stop[]>(STOPS_SEED);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>(() =>
-    SUGGESTIONS_SEED.map((s): Suggestion => ({ ...s, status: "pending" })),
-  );
   const [expenses, setExpenses] = useState<Expense[]>(() => EXPENSES_SEED.map((e) => ({ ...e })));
   const { toasts, toast } = useAdminToasts();
 
-  const applyRewrite = (stopId: string, planId: string, toText: string) =>
-    setStops((prev) =>
-      prev.map((s) =>
-        s.id === stopId
-          ? { ...s, plans: s.plans.map((p) => (p.id === planId ? { ...p, text: toText } : p)) }
-          : s,
-      ),
-    );
+  // Suggestions are the live trip's comments, submitted from the public timeline.
+  useTripLiveSync();
+  const { data: tripSnap } = useTrip();
+  const tripOp = useTripOp();
+  const suggestions = tripSnap?.trip.suggestions ?? [];
+  const tripItems = tripSnap?.trip.items ?? [];
 
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
   const counts: Record<SectionKey, number> = {
@@ -98,9 +94,11 @@ export function AdminPage() {
       return (
         <SuggestionsSection
           suggestions={suggestions}
-          setSuggestions={setSuggestions}
-          stops={stops}
-          applyRewrite={applyRewrite}
+          items={tripItems}
+          onSetStatus={(id, status) =>
+            tripOp.mutate({ type: "setSuggestionStatus", suggestionId: id, status })
+          }
+          onDelete={(id) => tripOp.mutate({ type: "deleteSuggestion", suggestionId: id })}
           toast={toast}
         />
       );
