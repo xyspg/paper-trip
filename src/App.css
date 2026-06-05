@@ -1077,6 +1077,56 @@ button.status:active {
   .dh-tag {
     display: none;
   }
+
+  /* card rec (刷卡建议) — relieve horizontal cramping on narrow screens */
+  .pw-bar {
+    gap: 7px;
+    padding: 6px 11px;
+  }
+
+  .pw-hero {
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .cardimg {
+    width: 58px;
+    height: 37px;
+  }
+
+  .pw-hero-name {
+    font-size: 13.5px;
+  }
+
+  .pw-hero-rate .rnum {
+    font-size: 22px;
+  }
+
+  .pw-alts {
+    gap: 8px;
+    padding: 9px 11px;
+  }
+
+  .pw-alt {
+    gap: 8px;
+  }
+
+  .alt-n {
+    font-size: 12px;
+  }
+
+  .alt-c {
+    letter-spacing: 0.04em;
+  }
+
+  .alt-r {
+    min-width: 38px;
+  }
+
+  .pw-note {
+    gap: 7px;
+    padding: 9px 11px;
+  }
 }
 
 /* ============================================================
