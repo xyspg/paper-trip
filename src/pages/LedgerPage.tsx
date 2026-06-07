@@ -1,17 +1,22 @@
-import { Plane, Hotel, Ticket, Car, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTrip } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
 import { appliedCredit, expenseTotals, netExpense } from "../trip/expenses";
 
+const logo = (src: string, alt: string) => (
+  <img className="tag-logo" src={src} alt={alt} />
+);
+
 // The public ledger keeps its own icon + accent per line; only the figures come
 // from the synced trip now. Keyed by expense id (the seed set is fixed; unknown
-// ids fall back to a neutral wallet).
+// ids fall back to a neutral wallet). Branded lines show the real vendor logo;
+// generic ones keep a lucide glyph on a colored tag.
 const PRESENTATION: Record<string, { color: string; icon: ReactNode }> = {
-  flight: { color: "var(--cyan)", icon: <Plane size={20} strokeWidth={2} /> },
-  hotel: { color: "var(--violet)", icon: <Hotel size={20} strokeWidth={2} /> },
-  tickets: { color: "var(--magenta)", icon: <Ticket size={20} strokeWidth={2} /> },
-  car: { color: "var(--yellow)", icon: <Car size={20} strokeWidth={2} /> },
+  flight: { color: "#fff", icon: logo("/jetblue-logo.png", "JetBlue") },
+  hotel: { color: "#fff", icon: logo("/ihg-logo.png", "IHG") },
+  tickets: { color: "#fff", icon: logo("/anime-expo-logo.jpg", "Anime Expo") },
+  car: { color: "#fff", icon: logo("/hertz-logo.png", "Hertz") },
 };
 const FALLBACK = { color: "var(--green)", icon: <Wallet size={20} strokeWidth={2} /> };
 const present = (id: string) => PRESENTATION[id] ?? FALLBACK;

@@ -1,5 +1,9 @@
-import { Plane, Hotel, MapPin, Gem } from "lucide-react";
+import { MapPin, Gem } from "lucide-react";
 import { AddressLink } from "../components/AddressLink";
+
+const sectionLogo = (src: string, alt: string) => (
+  <img className="st-logo" src={src} alt={alt} />
+);
 
 type Endpoint = {
   time: string;
@@ -80,8 +84,9 @@ export function BookingsPage() {
       </header>
 
       <SectionTitle
-        icon={<Plane size={22} strokeWidth={2.2} />}
+        icon={sectionLogo("/jetblue-logo.png", "JetBlue")}
         accent="var(--cyan)"
+        iconBg="#fff"
         title="JetBlue 往返"
         count="2 段航程"
       />
@@ -91,9 +96,9 @@ export function BookingsPage() {
       ))}
 
       <SectionTitle
-        icon={<Hotel size={22} strokeWidth={2.2} color="#fff" />}
+        icon={sectionLogo("/ihg-logo.png", "IHG")}
         accent="var(--violet)"
-        iconBg="var(--violet)"
+        iconBg="#fff"
         title="酒店"
         count="2 晚 · IHG"
       />
@@ -209,8 +214,7 @@ function BoardingPass({ flight }: { flight: Flight }) {
           <span className={`leg ${flight.legClass ?? ""}`}>{flight.legLabel}</span>
           <span className="date">{flight.date}</span>
           <span className="airline">
-            <span className="b6dot" />
-            JetBlue Airways
+            <img className="airline-logo" src="/jetblue-logo.png" alt="JetBlue Airways" />
           </span>
         </div>
         <div className="pass-route">

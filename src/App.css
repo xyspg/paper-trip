@@ -1467,10 +1467,18 @@ button.status:active {
   width: 40px;
   height: 40px;
   place-items: center;
+  overflow: hidden;
   background: var(--accent, var(--cyan));
   border: 3px solid var(--ink);
   border-radius: 10px;
   box-shadow: var(--shadow-sm);
+}
+
+.sec-title .st-ic .st-logo {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  object-fit: contain;
 }
 
 .sec-title h2 {
@@ -1592,6 +1600,12 @@ button.status:active {
   height: 9px;
   background: var(--jetblue);
   border-radius: 50%;
+}
+
+.pass-top .airline-logo {
+  height: 18px;
+  width: auto;
+  display: block;
 }
 
 .pass-route {
@@ -2104,10 +2118,18 @@ button.status:active {
   width: 38px;
   height: 38px;
   place-items: center;
+  overflow: hidden;
   color: var(--ink);
   background: var(--cat, var(--cyan));
   border: 2px solid var(--ink);
   border-radius: 10px;
+}
+
+.row .tag .tag-logo {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  object-fit: contain;
 }
 
 .row-name {
