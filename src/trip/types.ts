@@ -59,6 +59,21 @@ export type TripSuggestion = {
   createdAt: string;
 };
 
+export type ExpenseCategory = "transit" | "food" | "event" | "stay" | "misc";
+
+// A line item in the shared trip ledger. `payer` is a member id (see adminData
+// MEMBERS). Edited from the admin split view, shown read-only on the public
+// ledger.
+export type Expense = {
+  id: string;
+  cat: ExpenseCategory;
+  name: string;
+  sub: string;
+  amount: number;
+  credit: number;
+  payer: string;
+};
+
 export type Trip = {
   id: string;
   title: string;
@@ -76,5 +91,6 @@ export type Trip = {
   checklists: Checklist[];
   documents: TripDocument[];
   suggestions: TripSuggestion[];
+  expenses: Expense[];
   updatedAt: string;
 };

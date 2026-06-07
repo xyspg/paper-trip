@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../styles/admin.css";
-import { EXPENSES_SEED, STOPS_SEED } from "../admin/adminData";
-import type { AdminMember, Expense, Stop } from "../admin/adminData";
+import { STOPS_SEED } from "../admin/adminData";
+import type { AdminMember, Stop } from "../admin/adminData";
 import { useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
@@ -34,7 +34,6 @@ export function AdminPage() {
   });
   const [section, setSection] = useState<SectionKey>("itinerary");
   const [stops, setStops] = useState<Stop[]>(STOPS_SEED);
-  const [expenses, setExpenses] = useState<Expense[]>(() => EXPENSES_SEED.map((e) => ({ ...e })));
   const { toasts, toast } = useAdminToasts();
 
   // Suggestions are the live trip's comments, submitted from the public timeline.
@@ -43,6 +42,7 @@ export function AdminPage() {
   const tripOp = useTripOp();
   const suggestions = tripSnap?.trip.suggestions ?? [];
   const tripItems = tripSnap?.trip.items ?? [];
+  const expenses = tripSnap?.trip.expenses ?? [];
 
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
   const counts: Record<SectionKey, number> = {
@@ -103,7 +103,26 @@ export function AdminPage() {
         />
       );
     }
-    return <SplitSection expenses={expenses} setExpenses={setExpenses} toast={toast} />;
+    return (
+      <SplitSection
+        expenses={expenses}
+        onSetAmount={(id, amount) =>
+          tripOp.mutate({ type: "setExpenseAmount", expenseId: id, amount })
+        }
+        onSetPayer={(id, payer) =>
+          tripOp.mutate({ type: "setExpensePayer", expenseId: id, payer })
+        }
+        onReset={() =>
+          tripOp.mutate(
+            { type: "resetExpenses" },
+            {
+              onSuccess: () => toast("已恢复原始账目"),
+              onError: () => toast("恢复失败，请重试", "warn"),
+            },
+          )
+        }
+      />
+    );
   };
 
   return (

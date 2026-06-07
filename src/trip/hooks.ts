@@ -39,7 +39,13 @@ export const useTripOp = () => {
     onError: (_err, _op, context) => {
       if (context?.prev) queryClient.setQueryData(tripKey, context.prev);
     },
-    onSuccess: (snapshot) => queryClient.setQueryData(tripKey, snapshot),
+    // Guard against out-of-order responses (e.g. two quick edits whose POSTs
+    // resolve in reverse): never let an older server snapshot overwrite a newer
+    // one already in the cache.
+    onSuccess: (snapshot) =>
+      queryClient.setQueryData<TripSnapshot>(tripKey, (prev) =>
+        prev && prev.rev > snapshot.rev ? prev : snapshot,
+      ),
   });
 };
 

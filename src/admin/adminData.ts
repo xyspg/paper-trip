@@ -36,15 +36,9 @@ export type Stop = {
   plans: Plan[];
 };
 
-export type Expense = {
-  id: string;
-  cat: StopCat;
-  name: string;
-  sub: string;
-  amount: number;
-  credit: number;
-  payer: string;
-};
+// Expenses now live on the synced Trip (single source of truth); re-exported
+// here so admin modules keep importing the type from one place.
+export type { Expense } from "../trip/types";
 
 // ---- People in the planning group ----
 export const MEMBERS: AdminMember[] = [
@@ -206,46 +200,6 @@ export const STOPS_SEED: Stop[] = [
       { id: "p6a", kind: "main", text: "装车时停酒店地面停车场。" },
       { id: "p6b", kind: "alt", text: "如果停车场满，问前台临停位置。" },
     ],
-  },
-];
-
-// ---- Expenses ledger ----
-export const EXPENSES_SEED: Expense[] = [
-  {
-    id: "flight",
-    cat: "transit",
-    name: "机票 · JetBlue 往返",
-    sub: "JFK ⇄ LAX / ONT · 2 人",
-    amount: 993.6,
-    credit: 0,
-    payer: "you",
-  },
-  {
-    id: "hotel",
-    cat: "stay",
-    name: "酒店 · Holiday Inn Diamond Bar",
-    sub: "2 晚 · 2 Queen Standard",
-    amount: 356.62,
-    credit: 250,
-    payer: "you",
-  },
-  {
-    id: "tickets",
-    cat: "event",
-    name: "门票 · Anime Expo 2026",
-    sub: "2 × 4-Day General Attendee",
-    amount: 382.84,
-    credit: 0,
-    payer: "you",
-  },
-  {
-    id: "car",
-    cat: "misc",
-    name: "租车 · Hertz",
-    sub: "3 天 · Kia K5 或同级",
-    amount: 332.24,
-    credit: 0,
-    payer: "you",
   },
 ];
 

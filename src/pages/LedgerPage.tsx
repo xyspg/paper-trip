@@ -1,53 +1,20 @@
-import { Plane, Hotel, Ticket, Car } from "lucide-react";
+import { Plane, Hotel, Ticket, Car, Wallet } from "lucide-react";
+import type { ReactNode } from "react";
+import { useTrip } from "../trip/hooks";
+import { tripData } from "../trip/tripData";
+import { appliedCredit, expenseTotals, netExpense } from "../trip/expenses";
 
-type LedgerDef = {
-  id: string;
-  cat: string;
-  name: string;
-  sub: string;
-  amount: number;
-  credit: number;
-  icon: React.ReactNode;
+// The public ledger keeps its own icon + accent per line; only the figures come
+// from the synced trip now. Keyed by expense id (the seed set is fixed; unknown
+// ids fall back to a neutral wallet).
+const PRESENTATION: Record<string, { color: string; icon: ReactNode }> = {
+  flight: { color: "var(--cyan)", icon: <Plane size={20} strokeWidth={2} /> },
+  hotel: { color: "var(--violet)", icon: <Hotel size={20} strokeWidth={2} /> },
+  tickets: { color: "var(--magenta)", icon: <Ticket size={20} strokeWidth={2} /> },
+  car: { color: "var(--yellow)", icon: <Car size={20} strokeWidth={2} /> },
 };
-
-const ledger: LedgerDef[] = [
-  {
-    id: "flight",
-    cat: "var(--cyan)",
-    name: "机票 · JetBlue 往返",
-    sub: "JFK ⇄ LAX / ONT · 2 人",
-    amount: 993.6,
-    credit: 0,
-    icon: <Plane size={20} strokeWidth={2} />,
-  },
-  {
-    id: "hotel",
-    cat: "var(--violet)",
-    name: "酒店 · Holiday Inn Diamond Bar",
-    sub: "2 晚 · 2 Queen Standard",
-    amount: 356.62,
-    credit: 250,
-    icon: <Hotel size={20} strokeWidth={2} />,
-  },
-  {
-    id: "tickets",
-    cat: "var(--magenta)",
-    name: "门票 · Anime Expo 2026",
-    sub: "2 × 4-Day General Attendee",
-    amount: 382.84,
-    credit: 0,
-    icon: <Ticket size={20} strokeWidth={2} />,
-  },
-  {
-    id: "car",
-    cat: "var(--yellow)",
-    name: "租车 · Hertz",
-    sub: "3 天",
-    amount: 332.24,
-    credit: 0,
-    icon: <Car size={20} strokeWidth={2} />,
-  },
-];
+const FALLBACK = { color: "var(--green)", icon: <Wallet size={20} strokeWidth={2} /> };
+const present = (id: string) => PRESENTATION[id] ?? FALLBACK;
 
 const fmt = (n: number) =>
   "$" +
@@ -57,9 +24,11 @@ const fmt = (n: number) =>
   });
 
 export function LedgerPage() {
-  const subtotal = ledger.reduce((sum, item) => sum + item.amount, 0);
-  const creditTotal = ledger.reduce((sum, item) => sum + item.credit, 0);
-  const grand = ledger.reduce((sum, item) => sum + Math.max(0, item.amount - item.credit), 0);
+  const { data } = useTrip();
+  // Fall back to the seed while the trip loads, matching the timeline page.
+  const ledger = (data?.trip ?? tripData).expenses;
+
+  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const each = grand / 2;
 
   return (
@@ -96,12 +65,13 @@ export function LedgerPage() {
 
         <div>
           {ledger.map((item) => {
-            const net = Math.max(0, item.amount - item.credit);
+            const net = netExpense(item);
+            const pres = present(item.id);
             return (
               <div className="row" key={item.id}>
                 <div className="row-top">
-                  <span className="tag" style={{ ["--cat" as string]: item.cat }}>
-                    {item.icon}
+                  <span className="tag" style={{ ["--cat" as string]: pres.color }}>
+                    {pres.icon}
                   </span>
                   <span className="row-name">
                     <span className="rn">{item.name}</span>
@@ -114,7 +84,7 @@ export function LedgerPage() {
                 {item.credit > 0 && (
                   <div className="credit-line">
                     <span className="cl-tag">Chase IHG credit</span>
-                    <span className="cl-amt">−{fmt(item.credit)}</span>
+                    <span className="cl-amt">−{fmt(appliedCredit(item))}</span>
                   </div>
                 )}
                 <div className="row-bottom">

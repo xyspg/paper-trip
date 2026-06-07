@@ -1,45 +1,37 @@
-import { useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import { CATS, EXPENSES_SEED, fmtMoney, TRAVELERS } from "./adminData";
+import { CATS, fmtMoney, TRAVELERS } from "./adminData";
 import type { Expense } from "./adminData";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
-import type { ToastFn } from "./useAdminToasts";
+import { appliedCredit, expenseTotals, netExpense } from "../trip/expenses";
 
 type Props = {
   expenses: Expense[];
-  setExpenses: Dispatch<SetStateAction<Expense[]>>;
-  toast: ToastFn;
+  onSetAmount: (id: string, amount: number) => void;
+  onSetPayer: (id: string, payer: string) => void;
+  onReset: () => void;
 };
 
-export function SplitSection({ expenses, setExpenses, toast }: Props) {
-  // The amount fields are uncontrolled so native decimal entry works; bump this to
-  // remount them (and pick up fresh defaultValue) when the ledger is reset.
-  const [amtResetKey, setAmtResetKey] = useState(0);
-
-  const setAmount = (id: string, v: string) => {
+export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Props) {
+  // Amount fields are uncontrolled (native decimal entry) and keyed by their synced
+  // value, so a reset / remote change / rollback remounts them with the fresh value.
+  // Commit on blur, not per keystroke, so typing a multi-digit number doesn't fire a
+  // network write + broadcast per character; empty/invalid input is ignored and
+  // negatives clamp to 0.
+  const commitAmount = (e: Expense, v: string) => {
     const n = parseFloat(v);
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, amount: Number.isFinite(n) ? n : 0 } : e)),
-    );
+    if (!Number.isFinite(n)) return;
+    const next = Math.max(0, n);
+    if (next !== (Number(e.amount) || 0)) onSetAmount(e.id, next);
   };
-  const setPayer = (id: string, payer: string) =>
-    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, payer } : e)));
 
-  // A line's credit can only offset up to its own amount, so the displayed totals
-  // always reconcile: subtotal - creditTotal === net total.
-  const appliedCredit = (e: Expense) => Math.min(e.credit || 0, Number(e.amount) || 0);
-  const net = (e: Expense) => Math.max(0, (Number(e.amount) || 0) - (e.credit || 0));
-  const subtotal = expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0);
-  const creditTotal = expenses.reduce((a, e) => a + appliedCredit(e), 0);
-  const total = expenses.reduce((a, e) => a + net(e), 0);
+  const { subtotal, creditTotal, total } = expenseTotals(expenses);
   const share = total / TRAVELERS.length;
 
   const paid: Record<string, number> = Object.fromEntries(TRAVELERS.map((m) => [m.id, 0]));
   for (const e of expenses) {
     const cur = paid[e.payer];
-    if (cur !== undefined) paid[e.payer] = cur + net(e);
+    if (cur !== undefined) paid[e.payer] = cur + netExpense(e);
   }
 
   // settlement between the two travelers
@@ -48,22 +40,16 @@ export function SplitSection({ expenses, setExpenses, toast }: Props) {
   const receiver = balances.find((b) => b.bal > 0.005);
   const settleAmt = ower ? Math.abs(ower.bal) : 0;
 
-  const reset = () => {
-    setExpenses(EXPENSES_SEED.map((e) => ({ ...e })));
-    setAmtResetKey((k) => k + 1);
-    toast("已恢复原始账目");
-  };
-
   return (
     <div>
       <div className="sec-banner" style={cssVars({ "--accent": "var(--yellow)" })}>
         <span className="sb-num">03</span>
         <div className="sb-meta">
           <div className="sb-t">分账金额</div>
-          <div className="sb-d">点金额直接改 · 选「谁付的」· 合计与结算实时刷新</div>
+          <div className="sb-d">点金额改完即保存 · 选「谁付的」· 合计与结算自动刷新</div>
         </div>
         <div className="sb-actions">
-          <button className="pbtn ghost" onClick={reset}>
+          <button className="pbtn ghost" onClick={onReset}>
             <Icons.swap sw={2.2} />
             恢复原始
           </button>
@@ -112,14 +98,17 @@ export function SplitSection({ expenses, setExpenses, toast }: Props) {
                     <span className="amt-input">
                       <span className="cur">$</span>
                       <input
-                        key={`${e.id}-${amtResetKey}`}
+                        key={`${e.id}-${e.amount}`}
                         type="number"
                         inputMode="decimal"
                         step="0.01"
                         min="0"
                         defaultValue={e.amount}
                         aria-label={`${e.name} 金额`}
-                        onChange={(ev) => setAmount(e.id, ev.target.value)}
+                        onBlur={(ev) => commitAmount(e, ev.target.value)}
+                        onKeyDown={(ev) => {
+                          if (ev.key === "Enter") ev.currentTarget.blur();
+                        }}
                       />
                     </span>
                   </span>
@@ -132,7 +121,7 @@ export function SplitSection({ expenses, setExpenses, toast }: Props) {
                         <button
                           key={m.id}
                           className={`payer-chip${e.payer === m.id ? " on" : ""}`}
-                          onClick={() => setPayer(e.id, m.id)}
+                          onClick={() => onSetPayer(e.id, m.id)}
                         >
                           <Avatar m={m} size="xs" />
                           {m.name}
@@ -146,7 +135,7 @@ export function SplitSection({ expenses, setExpenses, toast }: Props) {
                     </span>
                   ) : null}
                   <span className="exp-net">
-                    实付 <b>{fmtMoney(net(e))}</b>
+                    实付 <b>{fmtMoney(netExpense(e))}</b>
                   </span>
                 </div>
               </div>

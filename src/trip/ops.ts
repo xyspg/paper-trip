@@ -16,6 +16,9 @@ export type TripOp =
   | { type: "setSuggestionStatus"; suggestionId: string; status: SuggestionStatus }
   | { type: "deleteSuggestion"; suggestionId: string }
   | { type: "clearSuggestions" }
+  | { type: "setExpenseAmount"; expenseId: string; amount: number }
+  | { type: "setExpensePayer"; expenseId: string; payer: string }
+  | { type: "resetExpenses" }
   | { type: "reset" };
 
 export function applyOp(trip: Trip, op: TripOp): Trip {
@@ -69,6 +72,25 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
 
     case "clearSuggestions":
       return { ...trip, suggestions: [] };
+
+    case "setExpenseAmount":
+      return {
+        ...trip,
+        expenses: (trip.expenses ?? []).map((e) =>
+          e.id === op.expenseId ? { ...e, amount: Number.isFinite(op.amount) ? op.amount : 0 } : e,
+        ),
+      };
+
+    case "setExpensePayer":
+      return {
+        ...trip,
+        expenses: (trip.expenses ?? []).map((e) =>
+          e.id === op.expenseId ? { ...e, payer: op.payer } : e,
+        ),
+      };
+
+    case "resetExpenses":
+      return { ...trip, expenses: structuredClone(tripData.expenses) };
 
     case "reset":
       return structuredClone(tripData);
