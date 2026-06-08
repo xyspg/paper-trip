@@ -33,8 +33,11 @@ export class AX26DurableObject extends DurableObject<Env> {
         this.persist();
       }
       // Backfill state persisted before suggestions/expenses existed so reads never see undefined.
+      const before = JSON.stringify(this.trip);
       this.trip.suggestions ??= [];
       this.trip.expenses ??= structuredClone(tripData.expenses);
+      // Persist the backfill so the SQL row (and dashboard Query panel) reflects it.
+      if (JSON.stringify(this.trip) !== before) this.persist();
     });
   }
 
@@ -67,9 +70,16 @@ export class AX26DurableObject extends DurableObject<Env> {
   }
 
   private broadcast(message: unknown): void {
+    const payload = JSON.stringify(message);
     const websockets = this.ctx.getWebSockets();
     for (const ws of websockets) {
-      ws.send(JSON.stringify(message));
+      // A socket that closed without us hearing about it throws on send; don't
+      // let one dead peer abort the broadcast to everyone else.
+      try {
+        ws.send(payload);
+      } catch {
+        // ignore
+      }
     }
   }
 }
