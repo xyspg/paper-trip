@@ -133,7 +133,7 @@ export function AdminPage() {
             AX
           </span>
           <div className="tb-titles">
-            <div className="tb-t1">行程作战表 · 后台</div>
+            <div className="tb-t1">后台</div>
             <div className="tb-t2">Anime Expo 2026 Admin</div>
           </div>
         </div>
