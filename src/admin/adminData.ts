@@ -60,7 +60,7 @@ export const MEMBERS: AdminMember[] = [
     color: "var(--cyan)",
     traveler: true,
     initials: "SR",
-    avatarUrl: "https://github.com/sapphirerapids.png",
+    avatarUrl: "https://github.com/sapphire-rapids.png",
   },
   {
     id: "mia",
