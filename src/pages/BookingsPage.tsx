@@ -141,7 +141,7 @@ export function BookingsPage() {
           </span>
           <span className="rewards">
             <Gem size={15} strokeWidth={2} />
-            可累积 IHG One Rewards · 入住时报会员号
+            入住时报IHG会员号
           </span>
         </div>
       </article>

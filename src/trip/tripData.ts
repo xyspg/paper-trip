@@ -69,11 +69,6 @@ export const tripData: Trip = {
       priority: "medium",
       costEstimate: 18,
       notes: ["拍飞机。"],
-      parking: {
-        primary: "餐厅停车场",
-        backup: "如果停车场堵死就跳过",
-        warning: "不要把行李露在车里",
-      },
       links: [
         {
           label: "Google Maps",
