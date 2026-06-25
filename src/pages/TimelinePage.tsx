@@ -170,8 +170,7 @@ export function TimelinePage() {
           <LegendItem swatch="sw-green" label="杂项" />
         </div>
         <p className="legend-note">
-          回报率 = 积分倍数 × 估值（cpp）。例：加油 <b>Citi AA 2× × 2.0¢ = 4%</b>；餐饮{" "}
-          <b>CSP 3× × ~1.65¢ ≈ 4.96%</b>。停车 / 酒店多按 <b>Travel</b> 类入账。
+          回报率 = 积分倍数 × 估值（cpp)
         </p>
       </section>
 

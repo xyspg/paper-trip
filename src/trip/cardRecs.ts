@@ -78,7 +78,7 @@ const carRental: CardRec = {
   alts: travelAlts,
   note: {
     kind: "CDW",
-    text: "用 **CSP 全额付租车** 并拒绝租车行 CDW，即享 **主要碰撞损害险（primary CDW）**，无需先走自己车险。",
+    text: "用 **CSP 全额付租车** 并拒绝租车行 CDW",
   },
 }
 
@@ -98,75 +98,70 @@ const dining: CardRec = {
   ],
   note: {
     kind: "提示",
-    text: "快餐（In-N-Out）一般按 **Restaurants** 入账，CSP 3× 有效。",
+    text: "CSP 3×",
   },
 }
 
 const parking: CardRec = {
   category: "Parking · 停车",
   best: {
-    name: "Sapphire Preferred",
-    last4: "···1981",
-    why: "车库多按 Travel 入账 · 2× 积分",
-    rate: "3.36",
-    cardName: card.csp.cardName,
+    name: "Freedom Flex",
+    last4: "···9652",
+    why: "Q3 公共交通 8% ",
+    rate: "8",
+    cardName: card.freedomFlex.cardName,
   },
-  alts: travelAlts,
+  alts: [
+    alt("csp", "Sapphire Preferred ···1981", "Travel", "3.36%"),
+    alt("citiAA", "Citi AA Plat ···2181", "Other", "2%"),
+    alt("alaska", "Alaska Atmos", "Other", "1.8%"),
+  ],
   note: {
     kind: "提示",
-    text: "**Badge 已线上购**，不在此计；停车库多按 Travel/Parking 入账 → CSP 2×。",
+    text: "Q3 Freedom Flex 公共交通 5× 含停车场/车库",
   },
 }
 
 const parkingDining: CardRec = {
   category: "Parking + Dining · 停车 / 场内餐饮",
   best: {
-    name: "Sapphire Preferred",
-    last4: "···1981",
-    why: "停车 Travel 2× · 场内餐饮 3×",
-    rate: "3.36",
-    cardName: card.csp.cardName,
+    name: "Freedom Flex",
+    last4: "···9652",
+    why: "停车 Q3 公共交通 5×· 场内餐饮换 CSP 3×",
+    rate: "8",
+    cardName: card.freedomFlex.cardName,
   },
-  alts: travelAlts,
+  alts: [
+    alt("csp", "Sapphire Preferred ···1981", "Dining 3×", "4.96%"),
+    alt("citiAA", "Citi AA Plat ···2181", "Other", "2%"),
+    alt("alaska", "Alaska Atmos", "Other", "1.8%"),
+  ],
   note: {
     kind: "提示",
-    text: "停车同 Day 1；**场内餐饮**记得换 Dining 卡 → CSP **4.96%** 最优。",
+    text: "停车走 Freedom Flex",
   },
 }
 
-const hotel: CardRec = {
-  category: "Hotel · 酒店",
-  best: {
-    name: "Sapphire Preferred",
-    last4: "···1981",
-    why: "酒店按 Travel 入账 · 2× + 旅行保障",
-    rate: "3.36",
-    cardName: card.csp.cardName,
-  },
-  alts: travelAlts,
-  note: {
-    kind: "注意",
-    text: "Holiday Inn = **IHG**，Bonvoy 无加成（仅 1.4%）；酒店按 Travel 计，CSP/CSR 另含 **行程延误 / 行李险**。",
-  },
-}
 
+// Q3 2026 Freedom Flex 另一个 5× 类目即「加油站 + EV 充电」。返车前自行加满
+// 走 Freedom Flex：5× UR × 1.6¢ = 8%，高于 Citi AA 的 4%。
 const gas: CardRec = {
   category: "Gas · 加油（返车前）",
   best: {
-    name: "Citi AA Platinum",
-    last4: "···2181",
-    why: "加油 2× AA · 估值 2.0¢ = 4%",
-    rate: "4",
-    cardName: card.citiAA.cardName,
+    name: "Freedom Flex",
+    last4: "···9652",
+    why: "Q3 加油 + EV 5× × 1.6¢ = 8%",
+    rate: "8",
+    cardName: card.freedomFlex.cardName,
   },
   alts: [
+    alt("citiAA", "Citi AA Plat ···2181", "Gas 2× AA", "4%"),
     alt("alaska", "Alaska Atmos", "Gas + EV", "3.6%"),
     alt("inkCash", "Ink Business Cash", "Gas", "3.2%"),
-    alt("amexBce", "Amex Blue Cash Everyday", "Gas", "3%"),
   ],
   note: {
     kind: "CDW",
-    text: "返车前**自行加满**（免租车行高价补油）；**租车尾款仍走 CSP** 保留主险。",
+    text: "返车前**自行加满**走 **Freedom Flex**；**租车尾款仍走 CSP** 保留主险。"
   },
 }
 
@@ -179,6 +174,5 @@ export const cardRecs: Record<string, CardRec> = {
   "dinner-sat": dining,
   "anime-expo-day-1": parking,
   "ax-day-2": parkingDining,
-  "hotel-checkin": hotel,
   "return-airport": gas,
 }
