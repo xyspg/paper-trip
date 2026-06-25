@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "trip-ops",
+  "name": "ax26",
   "main": "worker/index.ts",
   "compatibility_date": "2026-06-02",
   "assets": {
