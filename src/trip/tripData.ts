@@ -48,11 +48,11 @@ export const tripData: Trip = {
       status: "planned",
       priority: "high",
       confirmation: "Hertz reservation",
-      notes: ["离开停车场前检查轮胎、保险杠、挡风玻璃和油量。", "上路前连接手机并开启导航。"],
+      notes: ["检查轮胎、保险杠、挡风玻璃和油量"],
       links: [
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Hertz+LAX",
+          url: "https://maps.apple.com/?q=Hertz+LAX",
         },
       ],
     },
@@ -68,16 +68,16 @@ export const tripData: Trip = {
       status: "planned",
       priority: "medium",
       costEstimate: 18,
-      notes: ["排队长就跳过，当交通缓冲。", "只有排队短的时候才停下来拍飞机。"],
+      notes: ["拍飞机。"],
       parking: {
         primary: "餐厅停车场",
         backup: "如果停车场堵死就跳过",
-        warning: "不要把行李露在车里。",
+        warning: "不要把行李露在车里",
       },
       links: [
         {
           label: "Google Maps",
-          url: "https://www.google.com/maps/search/?api=1&query=9149+S+Sepulveda+Blvd+Los+Angeles",
+          url: "https://maps.apple.com/?q=9149+S+Sepulveda+Blvd+Los+Angeles",
         },
       ],
     },
@@ -95,11 +95,6 @@ export const tripData: Trip = {
       costEstimate: 45,
       leaveBy: "18:00",
       notes: ["入场前带 badge", "带充电宝"],
-      parking: {
-        primary: "LACC West Hall Garage",
-        backup: "LA Live 停车后步行过去",
-        warning: "到停车区域前先把包藏进后备箱。",
-      },
       links: [
         {
           label: "会场",
@@ -107,7 +102,7 @@ export const tripData: Trip = {
         },
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Los+Angeles+Convention+Center",
+          url: "https://maps.apple.com/?q=Los+Angeles+Convention+Center",
         },
       ],
     },
@@ -144,7 +139,7 @@ export const tripData: Trip = {
       links: [
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Holiday+Inn+Diamond+Bar+Pomona",
+          url: "https://maps.apple.com/?q=Holiday+Inn+Diamond+Bar+Pomona",
         },
       ],
     },
@@ -160,15 +155,11 @@ export const tripData: Trip = {
       status: "planned",
       priority: "medium",
       leaveBy: "08:30",
-      notes: [
-        "8:30 前出发，开车约 55 分钟到 LACC。",
-        "带酒店房卡、badge。",
-        "出发前查看实时交通。",
-      ],
+      notes: ["8:30 前出发，开车约 55 分钟到 LACC。", "带酒店房卡、badge"],
       links: [
         {
           label: "路线",
-          url: "https://www.google.com/maps/dir/?api=1&origin=Holiday+Inn+Diamond+Bar+Pomona&destination=Los+Angeles+Convention+Center",
+          url: "https://maps.apple.com/?saddr=Holiday+Inn+Diamond+Bar+Pomona&daddr=Los+Angeles+Convention+Center",
         },
       ],
     },
@@ -185,14 +176,14 @@ export const tripData: Trip = {
       priority: "high",
       costEstimate: 55,
       leaveBy: "18:00",
-      notes: ["早点吃午饭，避开餐饮高峰。"],
+      notes: [],
       parking: {
-        primary: "找车位喵",
+        primary: "没定",
       },
       links: [
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Los+Angeles+Convention+Center",
+          url: "https://maps.apple.com/?q=Los+Angeles+Convention+Center",
         },
       ],
     },
@@ -242,7 +233,7 @@ export const tripData: Trip = {
       links: [
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Holiday+Inn+Diamond+Bar+Pomona",
+          url: "https://maps.apple.com/?q=Holiday+Inn+Diamond+Bar+Pomona",
         },
       ],
     },
@@ -257,7 +248,7 @@ export const tripData: Trip = {
       durationMinutes: 90,
       status: "planned",
       priority: "high",
-      notes: ["离开前给房间拍照。", "确认没有遗漏充电器、badge。"],
+      notes: ["离开前给房间拍照。", "确认没有遗漏充电器"],
       parking: {
         primary: "酒店停车场",
       },
@@ -274,7 +265,7 @@ export const tripData: Trip = {
       durationMinutes: 240,
       status: "planned",
       priority: "low",
-      notes: ["地点待定", "玩到下午，21:00 前往机场"],
+      notes: ["地点待定", "21:00 前往机场"],
       links: [],
     },
     {
@@ -288,11 +279,11 @@ export const tripData: Trip = {
       durationMinutes: 60,
       status: "planned",
       priority: "high",
-      notes: ["还车前在机场 10 miles 内加满油。"],
+      notes: ["还车前在机场 10 miles 内加满油"],
       links: [
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Ontario+International+Airport",
+          url: "https://maps.apple.com/?q=Ontario+International+Airport",
         },
       ],
     },
@@ -308,11 +299,11 @@ export const tripData: Trip = {
       status: "planned",
       priority: "high",
       confirmation: "Hertz return",
-      notes: ["过安检前保存最终收据截图。"],
+      notes: ["过安检前保存最终收据截图"],
       links: [
         {
           label: "导航",
-          url: "https://www.google.com/maps/search/?api=1&query=Ontario+Airport+Hertz",
+          url: "https://maps.apple.com/?q=Ontario+Airport+Hertz",
         },
       ],
     },
@@ -328,63 +319,22 @@ export const tripData: Trip = {
       status: "locked",
       priority: "high",
       confirmation: "Return flight confirmation",
-      notes: ["提前过安检", "存好登机牌截图"],
+      notes: [],
       links: [],
     },
   ],
   checklists: [
     {
       id: "daily-carry",
-      title: "每日随身",
+      title: "每天带",
       items: [
         { id: "badge", label: "AX badge 和 ID", checked: false },
         { id: "battery", label: "充电宝和数据线", checked: false },
-        { id: "water", label: "水瓶", checked: false },
-        { id: "earbuds", label: "耳机", checked: false },
-      ],
-    },
-    {
-      id: "parking",
-      title: "到达前停车准备",
-      items: [
-        { id: "hide-bags", label: "到目的地前藏好包", checked: false },
-        { id: "screenshot", label: "截图车库 QR 或收据", checked: false },
-        { id: "pin-car", label: "标记准确停车位置", checked: false },
-      ],
-    },
-    {
-      id: "checkout",
-      title: "退房",
-      items: [
-        { id: "chargers", label: "充电器和转接头已打包", checked: false },
-        { id: "bathroom", label: "浴室台面已清空", checked: false },
-        { id: "receipt", label: "Hotel 收据已保存", checked: false },
+        { id: "wallet", label: "钱包", checked: false },
       ],
     },
   ],
-  documents: [
-    {
-      id: "hotel-confirmation",
-      title: "酒店确认单",
-      type: "pdf",
-      location: "docs/hotel.pdf",
-      note: "出发前上传或链接最终确认单。",
-    },
-    {
-      id: "rental-car",
-      title: "租车预订单",
-      type: "pdf",
-      location: "docs/rental-car.pdf",
-      note: "把取车和还车确认信息放在一起。",
-    },
-    {
-      id: "badge-qr",
-      title: "Badge QR 截图",
-      type: "image",
-      location: "Photos / pinned album",
-      note: "入场前离线保存。",
-    },
-  ],
+  documents: [],
   expenses: [
     {
       id: "flight",
@@ -393,7 +343,7 @@ export const tripData: Trip = {
       sub: "JFK ⇄ LAX / ONT · 2 人",
       amount: 993.6,
       credit: 0,
-      payer: "you",
+      payer: "xyspg",
     },
     {
       id: "hotel",
@@ -402,7 +352,7 @@ export const tripData: Trip = {
       sub: "2 晚 · 2 Queen Standard",
       amount: 356.62,
       credit: 250,
-      payer: "you",
+      payer: "xyspg",
     },
     {
       id: "tickets",
@@ -411,16 +361,16 @@ export const tripData: Trip = {
       sub: "2 × 4-Day General Attendee",
       amount: 382.84,
       credit: 0,
-      payer: "you",
+      payer: "xyspg",
     },
     {
       id: "car",
       cat: "misc",
       name: "租车 · Hertz",
       sub: "3 天 · Kia K5 或同级",
-      amount: 332.24,
+      amount: 316.6,
       credit: 0,
-      payer: "you",
+      payer: "xyspg",
     },
   ],
 };
