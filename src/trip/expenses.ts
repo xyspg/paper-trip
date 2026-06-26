@@ -21,3 +21,27 @@ export const expenseTotals = (expenses: Expense[]): ExpenseTotals => {
   }
   return { subtotal, creditTotal, total };
 };
+
+export type ExpenseBalance = {
+  id: string;
+  paid: number;
+  share: number;
+  balance: number;
+};
+
+export const expenseBalances = (expenses: Expense[], memberIds: string[]): ExpenseBalance[] => {
+  const { total } = expenseTotals(expenses);
+  const share = memberIds.length ? total / memberIds.length : 0;
+  const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
+
+  for (const e of expenses) {
+    if (e.payer in paid) paid[e.payer] += netExpense(e);
+  }
+
+  return memberIds.map((id) => ({
+    id,
+    paid: paid[id] || 0,
+    share,
+    balance: (paid[id] || 0) - share,
+  }));
+};

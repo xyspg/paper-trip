@@ -3,7 +3,7 @@ import type { Expense } from "./adminData";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
-import { appliedCredit, expenseTotals, netExpense } from "../trip/expenses";
+import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
 
 type Props = {
   expenses: Expense[];
@@ -26,18 +26,21 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
   };
 
   const { subtotal, creditTotal, total } = expenseTotals(expenses);
-  const share = total / TRAVELERS.length;
-
-  const paid: Record<string, number> = Object.fromEntries(TRAVELERS.map((m) => [m.id, 0]));
-  for (const e of expenses) {
-    const cur = paid[e.payer];
-    if (cur !== undefined) paid[e.payer] = cur + netExpense(e);
-  }
+  const balances = expenseBalances(
+    expenses,
+    TRAVELERS.map((m) => m.id),
+  );
+  const share = balances[0]?.share ?? 0;
 
   // settlement between the two travelers
-  const balances = TRAVELERS.map((m) => ({ m, bal: (paid[m.id] || 0) - share }));
-  const ower = balances.find((b) => b.bal < -0.005);
-  const receiver = balances.find((b) => b.bal > 0.005);
+  const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
+  const travelerBalances = TRAVELERS.map((m) => ({
+    m,
+    paid: balanceById[m.id]?.paid ?? 0,
+    bal: balanceById[m.id]?.balance ?? 0,
+  }));
+  const ower = travelerBalances.find((b) => b.bal < -0.005);
+  const receiver = travelerBalances.find((b) => b.bal > 0.005);
   const settleAmt = ower ? Math.abs(ower.bal) : 0;
 
   return (
@@ -165,9 +168,7 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
 
         <div className="settle">
           <div className="settle-grid">
-            {TRAVELERS.map((m) => {
-              const p = paid[m.id] || 0;
-              const bal = p - share;
+            {travelerBalances.map(({ m, paid: p, bal }) => {
               const owe = bal < -0.005;
               return (
                 <div key={m.id} className="card settle-person">

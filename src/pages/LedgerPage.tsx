@@ -1,8 +1,10 @@
 import { Wallet } from "lucide-react";
 import type { ReactNode } from "react";
+import { Avatar } from "../admin/Avatar";
+import { TRAVELERS } from "../admin/adminData";
 import { useTrip } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
-import { appliedCredit, expenseTotals, netExpense } from "../trip/expenses";
+import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
 
 const logo = (src: string, alt: string) => (
   <img className="tag-logo" src={src} alt={alt} />
@@ -34,7 +36,12 @@ export function LedgerPage() {
   const ledger = (data?.trip ?? tripData).expenses;
 
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
-  const each = grand / 2;
+  const balances = expenseBalances(
+    ledger,
+    TRAVELERS.map((m) => m.id),
+  );
+  const each = balances[0]?.share ?? 0;
+  const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
   return (
     <>
@@ -61,6 +68,38 @@ export function LedgerPage() {
           <div className="sum-k">Per Person</div>
           <div className="sum-v big">{fmt(each)}</div>
         </div>
+      </section>
+
+      <section className="person-ledger" aria-label="两人各自结算金额">
+        {TRAVELERS.map((m) => {
+          const balance = balanceById[m.id];
+          const net = balance?.balance ?? 0;
+          const owe = net < -0.005;
+          const settled = Math.abs(net) < 0.005;
+          return (
+            <div className="person-ledger-row" key={m.id}>
+              <div className="pl-person">
+                <Avatar m={m} size="md" />
+                <div>
+                  <div className="pl-name">{m.name}</div>
+                  <div className="pl-handle">@{m.handle}</div>
+                </div>
+              </div>
+              <div className="pl-breakdown">
+                <span>
+                  已垫付 <b>{fmt(balance?.paid ?? 0)}</b>
+                </span>
+                <span>
+                  应承担 <b>{fmt(balance?.share ?? each)}</b>
+                </span>
+              </div>
+              <div className={`pl-net ${settled ? "" : owe ? "owe" : "get"}`}>
+                <span>{settled ? "已结清" : owe ? "需补付" : "应收回"}</span>
+                <b>{fmt(Math.abs(net))}</b>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       <section className="ledger">
