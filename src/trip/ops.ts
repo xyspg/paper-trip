@@ -1,6 +1,7 @@
 import { tripData } from "./tripData";
 import type {
   ChecklistItem,
+  Expense,
   ItemStatus,
   SuggestionStatus,
   Trip,
@@ -16,6 +17,8 @@ export type TripOp =
   | { type: "setSuggestionStatus"; suggestionId: string; status: SuggestionStatus }
   | { type: "deleteSuggestion"; suggestionId: string }
   | { type: "clearSuggestions" }
+  | { type: "addExpense"; expense: Expense }
+  | { type: "deleteExpense"; expenseId: string }
   | { type: "setExpenseAmount"; expenseId: string; amount: number }
   | { type: "setExpensePayer"; expenseId: string; payer: string }
   | { type: "resetExpenses" }
@@ -72,6 +75,16 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
 
     case "clearSuggestions":
       return { ...trip, suggestions: [] };
+
+    case "addExpense":
+      // Newest last so the ledger keeps its curated order and added rows append.
+      return { ...trip, expenses: [...(trip.expenses ?? []), op.expense] };
+
+    case "deleteExpense":
+      return {
+        ...trip,
+        expenses: (trip.expenses ?? []).filter((e) => e.id !== op.expenseId),
+      };
 
     case "setExpenseAmount":
       return {

@@ -1,0 +1,197 @@
+import { useState } from "react"
+import { Modal, ROLE } from "baseui/modal"
+import { CATS, TRAVELERS } from "./adminData"
+import type { Expense, StopCat } from "./adminData"
+import { Avatar } from "./Avatar"
+import { Icons } from "./AdminIcons"
+import { cssVars } from "./style"
+
+export type NewExpenseInput = {
+  name: string
+  sub: string
+  amount: number
+  cat: StopCat
+  payer: string
+}
+
+type Props = {
+  isOpen: boolean
+  onClose: () => void
+  onCreate: (input: NewExpenseInput) => void
+}
+
+const CAT_KEYS = Object.keys(CATS) as StopCat[]
+
+// Reset the form whenever the modal (re)opens by keying the parent on `isOpen`;
+// this inner component always starts from fresh defaults.
+function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
+  const [name, setName] = useState("")
+  const [sub, setSub] = useState("")
+  const [amount, setAmount] = useState("")
+  const [cat, setCat] = useState<StopCat>("event")
+  const [payer, setPayer] = useState(TRAVELERS[0]?.id ?? "")
+
+  const parsed = Math.max(0, parseFloat(amount) || 0)
+  const canSubmit = name.trim().length > 0
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!canSubmit) return
+    onCreate({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer })
+  }
+
+  return (
+    <form className="add-modal" onSubmit={submit}>
+      <div className="am-head">
+        <span className="am-kicker">
+          <Icons.plus sw={2.8} />
+          新增花销条目
+        </span>
+        <button type="button" className="am-close" title="关闭" onClick={onClose}>
+          <Icons.x sw={2.6} />
+        </button>
+      </div>
+
+      <div className="am-body">
+        <label className="am-field am-field-wide">
+          <span className="am-label">名称</span>
+          <input
+            className="am-input"
+            value={name}
+            autoFocus
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            placeholder="例如 门票 · Anime Expo 3-day"
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+
+        <label className="am-field am-field-wide">
+          <span className="am-label">明细（可选）</span>
+          <input
+            className="am-input"
+            value={sub}
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            placeholder="例如 2 人 / 3 天"
+            onChange={(e) => setSub(e.target.value)}
+          />
+        </label>
+
+        <label className="am-field">
+          <span className="am-label">金额 (USD)</span>
+          <input
+            className="am-input"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            value={amount}
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            placeholder="0.00"
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </label>
+
+        <div className="am-field">
+          <span className="am-label">谁付的</span>
+          <div className="am-chips">
+            {TRAVELERS.map((m) => (
+              <button
+                type="button"
+                key={m.id}
+                className={`payer-chip${payer === m.id ? " on" : ""}`}
+                onClick={() => setPayer(m.id)}
+              >
+                <Avatar m={m} size="xs" />
+                {m.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="am-field am-field-wide">
+          <span className="am-label">类别</span>
+          <div className="am-chips">
+            {CAT_KEYS.map((k) => (
+              <button
+                type="button"
+                key={k}
+                className={`am-chip${cat === k ? " on" : ""}`}
+                style={cssVars({ "--chip": CATS[k].color })}
+                onClick={() => setCat(k)}
+              >
+                <span className="am-dot" />
+                {CATS[k].label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="am-foot">
+        <button type="button" className="pbtn dark" onClick={onClose}>
+          取消
+        </button>
+        <span className="sf-spacer" />
+        <button type="submit" className="pbtn solid" disabled={!canSubmit}>
+          <Icons.plus sw={2.6} />
+          添加条目
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export function AddExpenseModal({ isOpen, onClose, onCreate }: Props) {
+  // Mount inside `.admin-app` so the dialog inherits the admin CSS tokens /
+  // neo-brutalist styling instead of Base Web's default body portal.
+  const mountNode =
+    typeof document === "undefined"
+      ? undefined
+      : (document.querySelector(".admin-app") as HTMLElement | null) ?? undefined
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      role={ROLE.dialog}
+      animate
+      autoFocus
+      mountNode={mountNode}
+      overrides={{
+        Root: { style: { zIndex: 90 } },
+        Dialog: {
+          style: {
+            width: "min(480px, 92vw)",
+            backgroundColor: "var(--paper-2)",
+            border: "3px solid var(--ink)",
+            borderRadius: "var(--radius)",
+            boxShadow: "var(--shadow)",
+            padding: "0",
+            overflow: "hidden",
+          },
+        },
+        Close: { style: { display: "none" } },
+      }}
+    >
+      <Form key={String(isOpen)} onClose={onClose} onCreate={onCreate} />
+    </Modal>
+  )
+}
+
+export function buildExpense(input: NewExpenseInput, id: string): Expense {
+  return {
+    id,
+    cat: input.cat,
+    name: input.name,
+    sub: input.sub,
+    amount: input.amount,
+    credit: 0,
+    payer: input.payer,
+  }
+}

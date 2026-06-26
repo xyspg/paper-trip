@@ -53,7 +53,7 @@ export const MEMBERS: AdminMember[] = [
     avatarUrl: "https://github.com/xyspg.png",
   },
   {
-    id: "jay",
+    id: "spr",
     name: "Sapphire Rapids",
     handle: "sapphirerapids",
     role: "同行",

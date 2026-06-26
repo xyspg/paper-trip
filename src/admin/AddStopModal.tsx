@@ -83,6 +83,9 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
             className="am-input"
             value={title}
             autoFocus
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
             placeholder="新停靠点"
             onChange={(e) => setTitle(e.target.value)}
           />

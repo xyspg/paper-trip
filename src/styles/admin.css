@@ -1701,6 +1701,33 @@
   margin-top: 12px;
 }
 
+.admin-app .exp-del {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: background 0.12s, color 0.12s, transform 0.12s;
+}
+
+.admin-app .exp-del:hover {
+  background: var(--magenta);
+  color: var(--ink);
+  transform: translate(-1px, -1px);
+}
+
+.admin-app .exp-del svg {
+  width: 16px;
+  height: 16px;
+}
+
 .admin-app .payer-pick {
   display: inline-flex;
   align-items: center;

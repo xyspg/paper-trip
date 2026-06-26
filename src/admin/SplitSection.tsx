@@ -1,5 +1,8 @@
-import { CATS, fmtMoney, TRAVELERS } from "./adminData";
+import { useState } from "react";
+import { CATS, fmtMoney, TRAVELERS, uid } from "./adminData";
 import type { Expense } from "./adminData";
+import { AddExpenseModal, buildExpense } from "./AddExpenseModal";
+import type { NewExpenseInput } from "./AddExpenseModal";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
@@ -9,10 +12,19 @@ type Props = {
   expenses: Expense[];
   onSetAmount: (id: string, amount: number) => void;
   onSetPayer: (id: string, payer: string) => void;
+  onAdd: (expense: Expense) => void;
+  onDelete: (id: string) => void;
   onReset: () => void;
 };
 
-export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Props) {
+export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelete, onReset }: Props) {
+  const [addOpen, setAddOpen] = useState(false);
+
+  const handleCreate = (input: NewExpenseInput) => {
+    onAdd(buildExpense(input, uid("exp")));
+    setAddOpen(false);
+  };
+
   // Amount fields are uncontrolled (native decimal entry) and keyed by their synced
   // value, so a reset / remote change / rollback remounts them with the fresh value.
   // Commit on blur, not per keystroke, so typing a multi-digit number doesn't fire a
@@ -52,6 +64,10 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
           <div className="sb-d">点金额改完即保存 · 选「谁付的」· 合计与结算自动刷新</div>
         </div>
         <div className="sb-actions">
+          <button className="pbtn solid" onClick={() => setAddOpen(true)}>
+            <Icons.plus sw={2.4} />
+            新增条目
+          </button>
           <button className="pbtn ghost" onClick={onReset}>
             <Icons.swap sw={2.2} />
             恢复原始
@@ -64,11 +80,6 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
           <div className="mk">实付合计</div>
           <div className="mv mono">{fmtMoney(total)}</div>
           <div className="ms">已抵扣 credit {fmtMoney(creditTotal)}</div>
-        </div>
-        <div className="metric">
-          <div className="mk">每人均摊 ÷{TRAVELERS.length}</div>
-          <div className="mv mono c-magenta">{fmtMoney(share)}</div>
-          <div className="ms">两人各承担一半</div>
         </div>
         <div className="metric">
           <div className="mk">条目</div>
@@ -107,6 +118,9 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
                         step="0.01"
                         min="0"
                         defaultValue={e.amount}
+                        autoComplete="off"
+                        data-1p-ignore
+                        data-lpignore="true"
                         aria-label={`${e.name} 金额`}
                         onBlur={(ev) => commitAmount(e, ev.target.value)}
                         onKeyDown={(ev) => {
@@ -140,6 +154,14 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
                   <span className="exp-net">
                     实付 <b>{fmtMoney(netExpense(e))}</b>
                   </span>
+                  <button
+                    className="exp-del"
+                    title="删除条目"
+                    aria-label={`删除 ${e.name}`}
+                    onClick={() => onDelete(e.id)}
+                  >
+                    <Icons.trash sw={2.2} />
+                  </button>
                 </div>
               </div>
             );
@@ -219,6 +241,8 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onReset }: Pro
           </div>
         </div>
       </div>
+
+      <AddExpenseModal isOpen={addOpen} onClose={() => setAddOpen(false)} onCreate={handleCreate} />
     </div>
   );
 }

@@ -112,6 +112,24 @@ export function AdminPage() {
         onSetPayer={(id, payer) =>
           tripOp.mutate({ type: "setExpensePayer", expenseId: id, payer })
         }
+        onAdd={(expense) =>
+          tripOp.mutate(
+            { type: "addExpense", expense },
+            {
+              onSuccess: () => toast("已添加花销条目"),
+              onError: () => toast("添加失败，请重试", "warn"),
+            },
+          )
+        }
+        onDelete={(id) =>
+          tripOp.mutate(
+            { type: "deleteExpense", expenseId: id },
+            {
+              onSuccess: () => toast("已删除条目"),
+              onError: () => toast("删除失败，请重试", "warn"),
+            },
+          )
+        }
         onReset={() =>
           tripOp.mutate(
             { type: "resetExpenses" },
@@ -178,11 +196,6 @@ export function AdminPage() {
               </button>
             );
           })}
-          <div className="sidebar-foot">
-            v1.0 · 纯前端演示
-            <br />
-            数据不会真正保存
-          </div>
         </aside>
 
         <main className="main">{renderSection()}</main>
