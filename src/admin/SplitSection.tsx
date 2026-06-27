@@ -6,6 +6,7 @@ import type { NewExpenseInput } from "./AddExpenseModal";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
+import { useConfirm } from "./useConfirm";
 import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
 
 type Props = {
@@ -19,10 +20,25 @@ type Props = {
 
 export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelete, onReset }: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  const { confirm, confirmModal } = useConfirm();
 
   const handleCreate = (input: NewExpenseInput) => {
     onAdd(buildExpense(input, uid("exp")));
     setAddOpen(false);
+  };
+
+  const handleDelete = async (e: Expense) => {
+    const ok = await confirm({
+      title: "删除条目",
+      message: (
+        <>
+          确定删除花销条目<b>「{e.name}」</b>吗？删除后无法恢复。
+        </>
+      ),
+      confirmLabel: "删除条目",
+    });
+    if (!ok) return;
+    onDelete(e.id);
   };
 
   // Amount fields are uncontrolled (native decimal entry) and keyed by their synced
@@ -158,7 +174,7 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelet
                     className="exp-del"
                     title="删除条目"
                     aria-label={`删除 ${e.name}`}
-                    onClick={() => onDelete(e.id)}
+                    onClick={() => handleDelete(e)}
                   >
                     <Icons.trash sw={2.2} />
                   </button>
@@ -243,6 +259,8 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelet
       </div>
 
       <AddExpenseModal isOpen={addOpen} onClose={() => setAddOpen(false)} onCreate={handleCreate} />
+
+      {confirmModal}
     </div>
   );
 }

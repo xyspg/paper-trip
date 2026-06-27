@@ -2278,3 +2278,63 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Delete confirmation modal (reuses am-foot / am-close) ---- */
+.admin-app .confirm-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-app .cm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  background: var(--magenta);
+  color: var(--ink);
+  border-bottom: 3px solid var(--ink);
+}
+
+.admin-app .cm-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.admin-app .cm-kicker svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-app .cm-head .am-close {
+  color: var(--ink);
+  border-color: rgba(20, 18, 16, 0.3);
+}
+
+.admin-app .cm-head .am-close:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.admin-app .cm-body {
+  padding: 20px 18px;
+  font-family: var(--cjk);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.admin-app .cm-body b {
+  font-weight: 900;
+}
+
+.admin-app .cm-spacer {
+  margin-left: auto;
+}
