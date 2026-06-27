@@ -4,6 +4,7 @@ import { timeAgo } from "../trip/relativeTime";
 import type { SuggestionStatus, TripItem, TripSuggestion } from "../trip/types";
 import { Icons } from "./AdminIcons";
 import { cssVars } from "./style";
+import { useConfirm } from "./useConfirm";
 import type { ToastFn } from "./useAdminToasts";
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
 export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, toast }: Props) {
   const [showDone, setShowDone] = useState(false);
   const [sel, setSel] = useState<Set<string>>(() => new Set());
+  const { confirm, confirmModal } = useConfirm();
 
   const pending = suggestions.filter((s) => s.status === "pending");
   const itemById = (id: string) => items.find((i) => i.id === id);
@@ -45,7 +47,13 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
     onSetStatus(s.id, "pending");
     toast("已恢复到待审");
   };
-  const remove = (s: TripSuggestion) => {
+  const remove = async (s: TripSuggestion) => {
+    const ok = await confirm({
+      title: "删除建议",
+      message: "确定删除这条建议吗？删除后无法恢复。",
+      confirmLabel: "删除建议",
+    });
+    if (!ok) return;
     onDelete(s.id);
     toast("已删除建议", "warn");
     clearSel(s.id);
@@ -252,6 +260,8 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
           </div>
         )}
       </div>
+
+      {confirmModal}
     </div>
   );
 }

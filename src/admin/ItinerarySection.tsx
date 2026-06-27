@@ -7,6 +7,7 @@ import type { NewStopInput } from "./AddStopModal";
 import { Icons } from "./AdminIcons";
 import { Editable } from "./Editable";
 import { cssVars } from "./style";
+import { useConfirm } from "./useConfirm";
 import type { ToastFn } from "./useAdminToasts";
 
 type Props = {
@@ -24,6 +25,8 @@ const ACCENTS: Record<number, string> = {
 };
 
 export function ItinerarySection({ stops, setStops, toast }: Props) {
+  const { confirm, confirmModal } = useConfirm();
+
   const patch = (id: string, p: Partial<Stop>) =>
     setStops(stops.map((s) => (s.id === id ? { ...s, ...p } : s)));
 
@@ -48,10 +51,17 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
       ),
     );
 
-  const deletePlan = (sid: string, pid: string) =>
+  const deletePlan = async (sid: string, pid: string) => {
+    const ok = await confirm({
+      title: "删除方案",
+      message: "确定删除这条方案吗？删除后无法恢复。",
+      confirmLabel: "删除方案",
+    });
+    if (!ok) return;
     setStops(
       stops.map((s) => (s.id === sid ? { ...s, plans: s.plans.filter((p) => p.id !== pid) } : s)),
     );
+  };
 
   const addPlan = (sid: string) =>
     setStops(
@@ -77,7 +87,20 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
   const cycleCat = (id: string, cur: StopCat) =>
     patch(id, { cat: CAT_CYCLE[(CAT_CYCLE.indexOf(cur) + 1) % CAT_CYCLE.length] });
 
-  const deleteStop = (id: string) => {
+  const deleteStop = async (id: string) => {
+    const stop = stops.find((s) => s.id === id);
+    const ok = await confirm({
+      title: "删除停靠点",
+      message: (
+        <>
+          确定删除停靠点
+          {stop ? <b>「{stop.title}」</b> : null}
+          吗？该停靠点下的所有方案也会一并删除，且无法恢复。
+        </>
+      ),
+      confirmLabel: "删除停靠点",
+    });
+    if (!ok) return;
     setStops(stops.filter((s) => s.id !== id));
     toast("已删除停靠点", "warn");
   };
@@ -297,6 +320,8 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
         onClose={() => setAddDay(null)}
         onCreate={createStop}
       />
+
+      {confirmModal}
     </div>
   );
 }
