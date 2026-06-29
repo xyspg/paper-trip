@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import "../styles/admin.css";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
@@ -32,7 +33,10 @@ export function AdminPage() {
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
-  const [section, setSection] = useState<SectionKey>("itinerary");
+  // Active tab is driven by the URL search param so a refresh keeps the section.
+  const { tab: section } = useSearch({ from: "/admin" });
+  const navigate = useNavigate({ from: "/admin" });
+  const setSection = (key: SectionKey) => navigate({ search: { tab: key } });
   const [stops, setStops] = useState<Stop[]>(STOPS_SEED);
   const { toasts, toast } = useAdminToasts();
 
@@ -109,8 +113,8 @@ export function AdminPage() {
         onSetAmount={(id, amount) =>
           tripOp.mutate({ type: "setExpenseAmount", expenseId: id, amount })
         }
-        onSetPayer={(id, payer) =>
-          tripOp.mutate({ type: "setExpensePayer", expenseId: id, payer })
+        onSetSplit={(id, payer, split) =>
+          tripOp.mutate({ type: "setExpenseSplit", expenseId: id, payer, split })
         }
         onAdd={(expense) =>
           tripOp.mutate(
@@ -146,7 +150,7 @@ export function AdminPage() {
   return (
     <div className="admin-app">
       <header className="topbar">
-        <div className="tb-brand">
+        <Link to="/" className="tb-brand" title="返回主页" aria-label="返回主页">
           <span className="tb-logo" style={{ background: "var(--magenta)" }}>
             AX
           </span>
@@ -154,7 +158,7 @@ export function AdminPage() {
             <div className="tb-t1">后台</div>
             <div className="tb-t2">Anime Expo 2026 Admin</div>
           </div>
-        </div>
+        </Link>
         <span className="tb-repo">
           <Icons.repo sw={2} />
           aki-zero/anime-expo-2026

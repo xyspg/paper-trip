@@ -22,6 +22,28 @@ export const expenseTotals = (expenses: Expense[]): ExpenseTotals => {
   return { subtotal, creditTotal, total };
 };
 
+// Resolve how much each member actually fronted toward an expense's *net* cost.
+// The returned map is keyed by `memberIds` and always sums to netExpense(e), so
+// balances stay reconciled in any mode. With a `split` the net is divided in
+// proportion to each member's weight (percent or amount — both normalize the
+// same way); without one the single `payer` covers the whole net (the default
+// 100% case). A split whose weights sum to zero falls back to the payer.
+export const expensePaidBy = (e: Expense, memberIds: string[]): Record<string, number> => {
+  const net = netExpense(e);
+  const out: Record<string, number> = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const shares = e.split?.shares;
+  if (shares) {
+    let sum = 0;
+    for (const id of memberIds) sum += Math.max(0, Number(shares[id]) || 0);
+    if (sum > 0) {
+      for (const id of memberIds) out[id] = (net * Math.max(0, Number(shares[id]) || 0)) / sum;
+      return out;
+    }
+  }
+  if (e.payer in out) out[e.payer] = net;
+  return out;
+};
+
 export type ExpenseBalance = {
   id: string;
   paid: number;
@@ -35,7 +57,8 @@ export const expenseBalances = (expenses: Expense[], memberIds: string[]): Expen
   const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
   for (const e of expenses) {
-    if (e.payer in paid) paid[e.payer] += netExpense(e);
+    const by = expensePaidBy(e, memberIds);
+    for (const id of memberIds) paid[id] += by[id];
   }
 
   return memberIds.map((id) => ({

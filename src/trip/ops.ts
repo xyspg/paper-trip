@@ -2,6 +2,7 @@ import { tripData } from "./tripData";
 import type {
   ChecklistItem,
   Expense,
+  ExpenseSplit,
   ItemStatus,
   SuggestionStatus,
   Trip,
@@ -21,6 +22,7 @@ export type TripOp =
   | { type: "deleteExpense"; expenseId: string }
   | { type: "setExpenseAmount"; expenseId: string; amount: number }
   | { type: "setExpensePayer"; expenseId: string; payer: string }
+  | { type: "setExpenseSplit"; expenseId: string; payer: string; split?: ExpenseSplit }
   | { type: "resetExpenses" }
   | { type: "reset" };
 
@@ -95,10 +97,19 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
       };
 
     case "setExpensePayer":
+      // Picking a single payer means they front 100%, so any prior split clears.
       return {
         ...trip,
         expenses: (trip.expenses ?? []).map((e) =>
-          e.id === op.expenseId ? { ...e, payer: op.payer } : e,
+          e.id === op.expenseId ? { ...e, payer: op.payer, split: undefined } : e,
+        ),
+      };
+
+    case "setExpenseSplit":
+      return {
+        ...trip,
+        expenses: (trip.expenses ?? []).map((e) =>
+          e.id === op.expenseId ? { ...e, payer: op.payer, split: op.split } : e,
         ),
       };
 
