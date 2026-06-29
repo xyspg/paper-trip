@@ -14,6 +14,10 @@ import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminSuggestionsRouteImport } from './routes/admin.suggestions'
+import { Route as AdminSplitRouteImport } from './routes/admin.split'
+import { Route as AdminItineraryRouteImport } from './routes/admin.itinerary'
 
 const TimelineRoute = TimelineRouteImport.update({
   id: '/timeline',
@@ -40,40 +44,98 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSuggestionsRoute = AdminSuggestionsRouteImport.update({
+  id: '/suggestions',
+  path: '/suggestions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSplitRoute = AdminSplitRouteImport.update({
+  id: '/split',
+  path: '/split',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminItineraryRoute = AdminItineraryRouteImport.update({
+  id: '/itinerary',
+  path: '/itinerary',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
+  '/admin/itinerary': typeof AdminItineraryRoute
+  '/admin/split': typeof AdminSplitRoute
+  '/admin/suggestions': typeof AdminSuggestionsRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
+  '/admin/itinerary': typeof AdminItineraryRoute
+  '/admin/split': typeof AdminSplitRoute
+  '/admin/suggestions': typeof AdminSuggestionsRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
+  '/admin/itinerary': typeof AdminItineraryRoute
+  '/admin/split': typeof AdminSplitRoute
+  '/admin/suggestions': typeof AdminSuggestionsRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/bookings' | '/ledger' | '/timeline'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/bookings'
+    | '/ledger'
+    | '/timeline'
+    | '/admin/itinerary'
+    | '/admin/split'
+    | '/admin/suggestions'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/bookings' | '/ledger' | '/timeline'
-  id: '__root__' | '/' | '/admin' | '/bookings' | '/ledger' | '/timeline'
+  to:
+    | '/'
+    | '/bookings'
+    | '/ledger'
+    | '/timeline'
+    | '/admin/itinerary'
+    | '/admin/split'
+    | '/admin/suggestions'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/bookings'
+    | '/ledger'
+    | '/timeline'
+    | '/admin/itinerary'
+    | '/admin/split'
+    | '/admin/suggestions'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   BookingsRoute: typeof BookingsRoute
   LedgerRoute: typeof LedgerRoute
   TimelineRoute: typeof TimelineRoute
@@ -116,12 +178,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/suggestions': {
+      id: '/admin/suggestions'
+      path: '/suggestions'
+      fullPath: '/admin/suggestions'
+      preLoaderRoute: typeof AdminSuggestionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/split': {
+      id: '/admin/split'
+      path: '/split'
+      fullPath: '/admin/split'
+      preLoaderRoute: typeof AdminSplitRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/itinerary': {
+      id: '/admin/itinerary'
+      path: '/itinerary'
+      fullPath: '/admin/itinerary'
+      preLoaderRoute: typeof AdminItineraryRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminItineraryRoute: typeof AdminItineraryRoute
+  AdminSplitRoute: typeof AdminSplitRoute
+  AdminSuggestionsRoute: typeof AdminSuggestionsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminItineraryRoute: AdminItineraryRoute,
+  AdminSplitRoute: AdminSplitRoute,
+  AdminSuggestionsRoute: AdminSuggestionsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   BookingsRoute: BookingsRoute,
   LedgerRoute: LedgerRoute,
   TimelineRoute: TimelineRoute,

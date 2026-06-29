@@ -65,6 +65,7 @@ export const Icons = {
       d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7"
     />
   ),
+  pencil: (p: IconProps) => <Svg {...p} d="M4 20l4.5-1L19 8.5a2 2 0 0 0-3-3L5.5 16 4 20ZM14.5 7l3 3" />,
   swap: (p: IconProps) => <Svg {...p} d="M7 4 3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8" />,
   logout: (p: IconProps) => (
     <Svg {...p} d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3m6-4 4-4-4-4m4 4H9" />

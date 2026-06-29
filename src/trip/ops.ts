@@ -19,6 +19,7 @@ export type TripOp =
   | { type: "deleteSuggestion"; suggestionId: string }
   | { type: "clearSuggestions" }
   | { type: "addExpense"; expense: Expense }
+  | { type: "updateExpense"; expense: Expense }
   | { type: "deleteExpense"; expenseId: string }
   | { type: "setExpenseAmount"; expenseId: string; amount: number }
   | { type: "setExpensePayer"; expenseId: string; payer: string }
@@ -81,6 +82,14 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
     case "addExpense":
       // Newest last so the ledger keeps its curated order and added rows append.
       return { ...trip, expenses: [...(trip.expenses ?? []), op.expense] };
+
+    case "updateExpense":
+      // Replace the whole line item by id; callers preserve fields they don't edit
+      // (e.g. `credit`) so an edit never silently drops them.
+      return {
+        ...trip,
+        expenses: (trip.expenses ?? []).map((e) => (e.id === op.expense.id ? op.expense : e)),
+      };
 
     case "deleteExpense":
       return {

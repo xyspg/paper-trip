@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CATS, fmtMoney, TRAVELERS, uid } from "./adminData";
 import type { Expense } from "./adminData";
-import { AddExpenseModal, buildExpense } from "./AddExpenseModal";
+import { ExpenseModal, buildExpense } from "./AddExpenseModal";
 import type { NewExpenseInput } from "./AddExpenseModal";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
@@ -17,17 +17,44 @@ type Props = {
   onSetAmount: (id: string, amount: number) => void;
   onSetSplit: (id: string, payer: string, split?: ExpenseSplit) => void;
   onAdd: (expense: Expense) => void;
+  onUpdate: (expense: Expense) => void;
   onDelete: (id: string) => void;
   onReset: () => void;
 };
 
-export function SplitSection({ expenses, onSetAmount, onSetSplit, onAdd, onDelete, onReset }: Props) {
+export function SplitSection({
+  expenses,
+  onSetAmount,
+  onSetSplit,
+  onAdd,
+  onUpdate,
+  onDelete,
+  onReset,
+}: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  // The expense currently being edited (null = the modal is in add mode / closed).
+  const [editing, setEditing] = useState<Expense | null>(null);
   const { confirm, confirmModal } = useConfirm();
 
   const handleCreate = (input: NewExpenseInput) => {
     onAdd(buildExpense(input, uid("exp")));
     setAddOpen(false);
+  };
+
+  const handleEdit = (input: NewExpenseInput) => {
+    if (!editing) return;
+    // Carry over fields the modal doesn't touch (id, credit) so editing the
+    // name/amount/split never drops the IHG credit on a row.
+    onUpdate({
+      ...editing,
+      cat: input.cat,
+      name: input.name,
+      sub: input.sub,
+      amount: input.amount,
+      payer: input.payer,
+      split: input.split,
+    });
+    setEditing(null);
   };
 
   const handleDelete = async (e: Expense) => {
@@ -172,6 +199,14 @@ export function SplitSection({ expenses, onSetAmount, onSetSplit, onAdd, onDelet
                     实付 <b>{fmtMoney(netExpense(e))}</b>
                   </span>
                   <button
+                    className="exp-edit"
+                    title="编辑条目"
+                    aria-label={`编辑 ${e.name}`}
+                    onClick={() => setEditing(e)}
+                  >
+                    <Icons.pencil sw={2.2} />
+                  </button>
+                  <button
                     className="exp-del"
                     title="删除条目"
                     aria-label={`删除 ${e.name}`}
@@ -259,7 +294,14 @@ export function SplitSection({ expenses, onSetAmount, onSetSplit, onAdd, onDelet
         </div>
       </div>
 
-      <AddExpenseModal isOpen={addOpen} onClose={() => setAddOpen(false)} onCreate={handleCreate} />
+      <ExpenseModal isOpen={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleCreate} />
+
+      <ExpenseModal
+        isOpen={editing !== null}
+        initial={editing}
+        onClose={() => setEditing(null)}
+        onSubmit={handleEdit}
+      />
 
       {confirmModal}
     </div>

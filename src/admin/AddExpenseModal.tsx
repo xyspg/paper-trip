@@ -5,7 +5,7 @@ import type { Expense, StopCat } from "./adminData"
 import type { ExpenseSplit } from "../trip/types"
 import { Icons } from "./AdminIcons"
 import { cssVars } from "./style"
-import { PaymentSplit, defaultSplit, splitToExpense } from "./PaymentSplit"
+import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
 import type { SplitValue } from "./PaymentSplit"
 
 export type NewExpenseInput = {
@@ -20,19 +20,22 @@ export type NewExpenseInput = {
 type Props = {
   isOpen: boolean
   onClose: () => void
-  onCreate: (input: NewExpenseInput) => void
+  onSubmit: (input: NewExpenseInput) => void
+  // When set the modal opens in edit mode, pre-filled from the expense.
+  initial?: Expense | null
 }
 
 const CAT_KEYS = Object.keys(CATS) as StopCat[]
 
-// Reset the form whenever the modal (re)opens by keying the parent on `isOpen`;
-// this inner component always starts from fresh defaults.
-function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
-  const [name, setName] = useState("")
-  const [sub, setSub] = useState("")
-  const [amount, setAmount] = useState("")
-  const [cat, setCat] = useState<StopCat>("event")
-  const [split, setSplit] = useState<SplitValue>(defaultSplit)
+// Reset the form whenever the modal (re)opens or targets a different expense by
+// keying the parent; this inner component always starts from fresh defaults.
+function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
+  const editing = Boolean(initial)
+  const [name, setName] = useState(initial?.name ?? "")
+  const [sub, setSub] = useState(initial?.sub ?? "")
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : "")
+  const [cat, setCat] = useState<StopCat>(initial?.cat ?? "event")
+  const [split, setSplit] = useState<SplitValue>(initial ? splitFromExpense(initial) : defaultSplit)
 
   const parsed = Math.max(0, parseFloat(amount) || 0)
   const canSubmit = name.trim().length > 0
@@ -41,15 +44,15 @@ function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
     e.preventDefault()
     if (!canSubmit) return
     const { payer, split: splitField } = splitToExpense(split)
-    onCreate({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer, split: splitField })
+    onSubmit({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer, split: splitField })
   }
 
   return (
     <form className="add-modal" onSubmit={submit}>
       <div className="am-head">
         <span className="am-kicker">
-          <Icons.plus sw={2.8} />
-          新增花销条目
+          {editing ? <Icons.pencil sw={2.8} /> : <Icons.plus sw={2.8} />}
+          {editing ? "编辑花销条目" : "新增花销条目"}
         </span>
         <button type="button" className="am-close" title="关闭" onClick={onClose}>
           <Icons.x sw={2.6} />
@@ -131,15 +134,15 @@ function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
         </button>
         <span className="sf-spacer" />
         <button type="submit" className="pbtn solid" disabled={!canSubmit}>
-          <Icons.plus sw={2.6} />
-          添加条目
+          {editing ? <Icons.check sw={2.6} /> : <Icons.plus sw={2.6} />}
+          {editing ? "保存修改" : "添加条目"}
         </button>
       </div>
     </form>
   )
 }
 
-export function AddExpenseModal({ isOpen, onClose, onCreate }: Props) {
+export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
   // Mount inside `.admin-app` so the dialog inherits the admin CSS tokens /
   // neo-brutalist styling instead of Base Web's default body portal.
   const mountNode =
@@ -171,7 +174,12 @@ export function AddExpenseModal({ isOpen, onClose, onCreate }: Props) {
         Close: { style: { display: "none" } },
       }}
     >
-      <Form key={String(isOpen)} onClose={onClose} onCreate={onCreate} />
+      <Form
+        key={`${initial?.id ?? "new"}-${String(isOpen)}`}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        initial={initial}
+      />
     </Modal>
   )
 }

@@ -468,6 +468,7 @@
   font-weight: 700;
   font-size: 14px;
   color: var(--ink);
+  text-decoration: none;
   transition: transform 0.08s ease;
 }
 
@@ -1715,8 +1716,8 @@
   margin-top: 12px;
 }
 
+.admin-app .exp-edit,
 .admin-app .exp-del {
-  margin-left: auto;
   flex-shrink: 0;
   width: 32px;
   height: 32px;
@@ -1731,12 +1732,28 @@
   transition: background 0.12s, color 0.12s, transform 0.12s;
 }
 
+/* The edit button leads the action pair; `auto` pushes both to the row's end. */
+.admin-app .exp-edit {
+  margin-left: auto;
+}
+
+.admin-app .exp-del {
+  margin-left: 8px;
+}
+
+.admin-app .exp-edit:hover {
+  background: var(--yellow);
+  color: var(--ink);
+  transform: translate(-1px, -1px);
+}
+
 .admin-app .exp-del:hover {
   background: var(--magenta);
   color: var(--ink);
   transform: translate(-1px, -1px);
 }
 
+.admin-app .exp-edit svg,
 .admin-app .exp-del svg {
   width: 16px;
   height: 16px;

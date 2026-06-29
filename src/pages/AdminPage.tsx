@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import "../styles/admin.css";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
@@ -10,19 +10,26 @@ import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
 import { AdminLogin } from "../admin/AdminLogin";
 import { ADMIN_SESSION_KEY, adminLogout, fetchAdminUser } from "../admin/auth";
-import { ItinerarySection } from "../admin/ItinerarySection";
-import { SplitSection } from "../admin/SplitSection";
-import { SuggestionsSection } from "../admin/SuggestionsSection";
+import { AdminProvider } from "../admin/AdminContext";
 import { cssVars } from "../admin/style";
 import { useAdminToasts } from "../admin/useAdminToasts";
 
 type SectionKey = "itinerary" | "suggestions" | "split";
-type NavEntry = { key: SectionKey; label: string; icon: IconName; accent: string; badge?: boolean };
+type NavEntry = {
+  key: SectionKey;
+  to: string;
+  label: string;
+  icon: IconName;
+  accent: string;
+  badge?: boolean;
+};
 
+// Each section now lives at its own route (`/admin/itinerary` …) so a refresh or
+// shared link lands on the right tab without a `?tab=` search param.
 const NAV: NavEntry[] = [
-  { key: "itinerary", label: "行程停靠点", icon: "route", accent: "var(--magenta)" },
-  { key: "suggestions", label: "待审建议", icon: "chat", accent: "var(--violet)", badge: true },
-  { key: "split", label: "分账金额", icon: "wallet", accent: "var(--yellow)" },
+  { key: "itinerary", to: "/admin/itinerary", label: "行程停靠点", icon: "route", accent: "var(--magenta)" },
+  { key: "suggestions", to: "/admin/suggestions", label: "待审建议", icon: "chat", accent: "var(--violet)", badge: true },
+  { key: "split", to: "/admin/split", label: "分账金额", icon: "wallet", accent: "var(--yellow)" },
 ];
 
 export function AdminPage() {
@@ -33,10 +40,9 @@ export function AdminPage() {
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
-  // Active tab is driven by the URL search param so a refresh keeps the section.
-  const { tab: section } = useSearch({ from: "/admin" });
-  const navigate = useNavigate({ from: "/admin" });
-  const setSection = (key: SectionKey) => navigate({ search: { tab: key } });
+  // Active tab is derived from the current path so the sidebar highlights the
+  // section the router is actually showing.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [stops, setStops] = useState<Stop[]>(STOPS_SEED);
   const { toasts, toast } = useAdminToasts();
 
@@ -91,128 +97,78 @@ export function AdminPage() {
     toast("已退出登录", "warn");
   };
 
-  const renderSection = () => {
-    if (section === "itinerary")
-      return <ItinerarySection stops={stops} setStops={setStops} toast={toast} />;
-    if (section === "suggestions") {
-      return (
-        <SuggestionsSection
-          suggestions={suggestions}
-          items={tripItems}
-          onSetStatus={(id, status) =>
-            tripOp.mutate({ type: "setSuggestionStatus", suggestionId: id, status })
-          }
-          onDelete={(id) => tripOp.mutate({ type: "deleteSuggestion", suggestionId: id })}
-          toast={toast}
-        />
-      );
-    }
-    return (
-      <SplitSection
-        expenses={expenses}
-        onSetAmount={(id, amount) =>
-          tripOp.mutate({ type: "setExpenseAmount", expenseId: id, amount })
-        }
-        onSetSplit={(id, payer, split) =>
-          tripOp.mutate({ type: "setExpenseSplit", expenseId: id, payer, split })
-        }
-        onAdd={(expense) =>
-          tripOp.mutate(
-            { type: "addExpense", expense },
-            {
-              onSuccess: () => toast("已添加花销条目"),
-              onError: () => toast("添加失败，请重试", "warn"),
-            },
-          )
-        }
-        onDelete={(id) =>
-          tripOp.mutate(
-            { type: "deleteExpense", expenseId: id },
-            {
-              onSuccess: () => toast("已删除条目"),
-              onError: () => toast("删除失败，请重试", "warn"),
-            },
-          )
-        }
-        onReset={() =>
-          tripOp.mutate(
-            { type: "resetExpenses" },
-            {
-              onSuccess: () => toast("已恢复原始账目"),
-              onError: () => toast("恢复失败，请重试", "warn"),
-            },
-          )
-        }
-      />
-    );
-  };
-
   return (
-    <div className="admin-app">
-      <header className="topbar">
-        <Link to="/" className="tb-brand" title="返回主页" aria-label="返回主页">
-          <span className="tb-logo" style={{ background: "var(--magenta)" }}>
-            AX
-          </span>
-          <div className="tb-titles">
-            <div className="tb-t1">后台</div>
-            <div className="tb-t2">Anime Expo 2026 Admin</div>
-          </div>
-        </Link>
-        <span className="tb-repo">
-          <Icons.repo sw={2} />
-          aki-zero/anime-expo-2026
-        </span>
-        <span className="tb-spacer" />
-        <div className="tb-user">
-          <div className="meta">
-            <div className="nm">
-              {me.name} · {me.role}
+    <AdminProvider
+      value={{ toast, stops, setStops, suggestions, items: tripItems, expenses, tripOp }}
+    >
+      <div className="admin-app">
+        <header className="topbar">
+          <Link to="/" className="tb-brand" title="返回主页" aria-label="返回主页">
+            <span className="tb-logo" style={{ background: "var(--magenta)" }}>
+              AX
+            </span>
+            <div className="tb-titles">
+              <div className="tb-t1">后台</div>
+              <div className="tb-t2">Anime Expo 2026 Admin</div>
             </div>
-            <div className="hd">@{me.handle}</div>
+          </Link>
+          <span className="tb-repo">
+            <Icons.repo sw={2} />
+            aki-zero/anime-expo-2026
+          </span>
+          <span className="tb-spacer" />
+          <div className="tb-user">
+            <div className="meta">
+              <div className="nm">
+                {me.name} · {me.role}
+              </div>
+              <div className="hd">@{me.handle}</div>
+            </div>
+            <Avatar m={me} size="sm" />
           </div>
-          <Avatar m={me} size="sm" />
+          <button className="tb-logout" title="退出登录" onClick={logout}>
+            <Icons.logout sw={2.2} />
+          </button>
+        </header>
+
+        <div className="shell">
+          <aside className="sidebar">
+            <div className="nav-label">管理区</div>
+            {NAV.map((n) => {
+              const active = pathname.startsWith(n.to);
+              const badge = Boolean(n.badge) && counts[n.key] > 0;
+              const Ico = Icons[n.icon];
+              return (
+                <Link
+                  key={n.key}
+                  to={n.to}
+                  className={`nav-item${active ? " on" : ""}${badge ? " has-badge" : ""}`}
+                  style={cssVars({ "--accent": n.accent })}
+                >
+                  <span className="ni-ico">
+                    <Ico sw={2.2} />
+                  </span>
+                  {n.label}
+                  <span className="ni-count">{counts[n.key]}</span>
+                </Link>
+              );
+            })}
+          </aside>
+
+          <main className="main">
+            <Outlet />
+          </main>
         </div>
-        <button className="tb-logout" title="退出登录" onClick={logout}>
-          <Icons.logout sw={2.2} />
-        </button>
-      </header>
 
-      <div className="shell">
-        <aside className="sidebar">
-          <div className="nav-label">管理区</div>
-          {NAV.map((n) => {
-            const active = section === n.key;
-            const badge = Boolean(n.badge) && counts[n.key] > 0;
-            const Ico = Icons[n.icon];
-            return (
-              <button
-                key={n.key}
-                className={`nav-item${active ? " on" : ""}${badge ? " has-badge" : ""}`}
-                style={cssVars({ "--accent": n.accent })}
-                onClick={() => setSection(n.key)}
-              >
-                <span className="ni-ico">
-                  <Ico sw={2.2} />
-                </span>
-                {n.label}
-                <span className="ni-count">{counts[n.key]}</span>
-              </button>
-            );
-          })}
-        </aside>
-
-        <main className="main">{renderSection()}</main>
+        <div className="toast-wrap">
+          {toasts.map((t) => (
+            <div key={t.id} className={`toast${t.kind === "warn" ? " warn" : ""}`}>
+              <span className="tk">{t.kind === "warn" ? "!" : <Icons.check sw={3} />}</span>
+              {t.msg}
+            </div>
+          ))}
+        </div>
       </div>
-
-      <div className="toast-wrap">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast${t.kind === "warn" ? " warn" : ""}`}>
-            <span className="tk">{t.kind === "warn" ? "!" : <Icons.check sw={3} />}</span>
-            {t.msg}
-          </div>
-        ))}
-      </div>
-    </div>
+    </AdminProvider>
   );
 }
