@@ -7,18 +7,21 @@ import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
 import { useConfirm } from "./useConfirm";
+import { PaymentSplit, splitFromExpense, splitToExpense } from "./PaymentSplit";
+import type { SplitValue } from "./PaymentSplit";
 import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
+import type { ExpenseSplit } from "../trip/types";
 
 type Props = {
   expenses: Expense[];
   onSetAmount: (id: string, amount: number) => void;
-  onSetPayer: (id: string, payer: string) => void;
+  onSetSplit: (id: string, payer: string, split?: ExpenseSplit) => void;
   onAdd: (expense: Expense) => void;
   onDelete: (id: string) => void;
   onReset: () => void;
 };
 
-export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelete, onReset }: Props) {
+export function SplitSection({ expenses, onSetAmount, onSetSplit, onAdd, onDelete, onReset }: Props) {
   const [addOpen, setAddOpen] = useState(false);
   const { confirm, confirmModal } = useConfirm();
 
@@ -51,6 +54,11 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelet
     if (!Number.isFinite(n)) return;
     const next = Math.max(0, n);
     if (next !== (Number(e.amount) || 0)) onSetAmount(e.id, next);
+  };
+
+  const commitSplit = (e: Expense, v: SplitValue) => {
+    const { payer, split } = splitToExpense(v);
+    onSetSplit(e.id, payer, split);
   };
 
   const { subtotal, creditTotal, total } = expenseTotals(expenses);
@@ -149,18 +157,11 @@ export function SplitSection({ expenses, onSetAmount, onSetPayer, onAdd, onDelet
                 <div className="exp-bottom">
                   <span className="payer-pick">
                     <span className="pp-lbl">谁付的</span>
-                    <span className="payer-chips">
-                      {TRAVELERS.map((m) => (
-                        <button
-                          key={m.id}
-                          className={`payer-chip${e.payer === m.id ? " on" : ""}`}
-                          onClick={() => onSetPayer(e.id, m.id)}
-                        >
-                          <Avatar m={m} size="xs" />
-                          {m.name}
-                        </button>
-                      ))}
-                    </span>
+                    <PaymentSplit
+                      value={splitFromExpense(e)}
+                      onChange={(v) => commitSplit(e, v)}
+                      amount={netExpense(e)}
+                    />
                   </span>
                   {e.credit ? (
                     <span className="credit-line">

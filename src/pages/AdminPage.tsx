@@ -109,8 +109,8 @@ export function AdminPage() {
         onSetAmount={(id, amount) =>
           tripOp.mutate({ type: "setExpenseAmount", expenseId: id, amount })
         }
-        onSetPayer={(id, payer) =>
-          tripOp.mutate({ type: "setExpensePayer", expenseId: id, payer })
+        onSetSplit={(id, payer, split) =>
+          tripOp.mutate({ type: "setExpenseSplit", expenseId: id, payer, split })
         }
         onAdd={(expense) =>
           tripOp.mutate(

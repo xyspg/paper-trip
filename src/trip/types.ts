@@ -61,9 +61,24 @@ export type TripSuggestion = {
 
 export type ExpenseCategory = "transit" | "food" | "event" | "stay" | "misc";
 
+// How a multi-payer contribution is entered: `percent` (e.g. 80 / 20) or
+// `amount` (e.g. 300 / 10). Both are normalized against their own sum, so the
+// numbers only need to be proportional — they don't have to add up to 100 or to
+// the expense amount.
+export type ExpensePayMode = "percent" | "amount";
+
+// Optional override for who fronted an expense. When absent, the single `payer`
+// covers 100%. `shares` maps a member id to its weight in the chosen mode;
+// missing/zero members contributed nothing.
+export type ExpenseSplit = {
+  mode: ExpensePayMode;
+  shares: Record<string, number>;
+};
+
 // A line item in the shared trip ledger. `payer` is a member id (see adminData
-// MEMBERS). Edited from the admin split view, shown read-only on the public
-// ledger.
+// MEMBERS) who covers the whole amount by default; `split` overrides that with a
+// proportional multi-payer breakdown. Edited from the admin split view, shown
+// read-only on the public ledger.
 export type Expense = {
   id: string;
   cat: ExpenseCategory;
@@ -72,6 +87,7 @@ export type Expense = {
   amount: number;
   credit: number;
   payer: string;
+  split?: ExpenseSplit;
 };
 
 export type Trip = {

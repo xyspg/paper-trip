@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { Modal, ROLE } from "baseui/modal"
-import { CATS, TRAVELERS } from "./adminData"
+import { CATS } from "./adminData"
 import type { Expense, StopCat } from "./adminData"
-import { Avatar } from "./Avatar"
+import type { ExpenseSplit } from "../trip/types"
 import { Icons } from "./AdminIcons"
 import { cssVars } from "./style"
+import { PaymentSplit, defaultSplit, splitToExpense } from "./PaymentSplit"
+import type { SplitValue } from "./PaymentSplit"
 
 export type NewExpenseInput = {
   name: string
@@ -12,6 +14,7 @@ export type NewExpenseInput = {
   amount: number
   cat: StopCat
   payer: string
+  split?: ExpenseSplit
 }
 
 type Props = {
@@ -29,7 +32,7 @@ function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
   const [sub, setSub] = useState("")
   const [amount, setAmount] = useState("")
   const [cat, setCat] = useState<StopCat>("event")
-  const [payer, setPayer] = useState(TRAVELERS[0]?.id ?? "")
+  const [split, setSplit] = useState<SplitValue>(defaultSplit)
 
   const parsed = Math.max(0, parseFloat(amount) || 0)
   const canSubmit = name.trim().length > 0
@@ -37,7 +40,8 @@ function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!canSubmit) return
-    onCreate({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer })
+    const { payer, split: splitField } = splitToExpense(split)
+    onCreate({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer, split: splitField })
   }
 
   return (
@@ -97,21 +101,9 @@ function Form({ onClose, onCreate }: Omit<Props, "isOpen">) {
           />
         </label>
 
-        <div className="am-field">
-          <span className="am-label">谁付的</span>
-          <div className="am-chips">
-            {TRAVELERS.map((m) => (
-              <button
-                type="button"
-                key={m.id}
-                className={`payer-chip${payer === m.id ? " on" : ""}`}
-                onClick={() => setPayer(m.id)}
-              >
-                <Avatar m={m} size="xs" />
-                {m.name}
-              </button>
-            ))}
-          </div>
+        <div className="am-field am-field-wide">
+          <span className="am-label">谁付的 · 分摊</span>
+          <PaymentSplit value={split} onChange={setSplit} amount={parsed} />
         </div>
 
         <div className="am-field am-field-wide">
@@ -193,5 +185,6 @@ export function buildExpense(input: NewExpenseInput, id: string): Expense {
     amount: input.amount,
     credit: 0,
     payer: input.payer,
+    split: input.split,
   }
 }
