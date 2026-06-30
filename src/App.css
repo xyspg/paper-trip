@@ -2472,6 +2472,77 @@ button.status:active {
   font-weight: 700;
 }
 
+/* Read-only scanned-receipt breakdown. Shared component (src/admin/ExpenseItems)
+   used here and inside the admin split view; tokens resolve from App.css :root in
+   both contexts so the two surfaces stay visually consistent. */
+.exp-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 9px 11px;
+  list-style: none;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  border: 1.5px dashed var(--ink);
+  border-radius: 10px;
+}
+
+.exp-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink-soft);
+  font-family: var(--cjk);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.exp-item-label {
+  display: inline-flex;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+  align-items: baseline;
+}
+
+.exp-item-qty {
+  flex-shrink: 0;
+  color: var(--magenta);
+  font-family: var(--mono);
+  font-weight: 900;
+}
+
+.exp-item-name {
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exp-item-who {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.exp-item-who .avatar {
+  width: 18px;
+  height: 18px;
+  margin-left: -5px;
+  border: 1.5px solid var(--paper);
+}
+
+.exp-item-who .avatar:first-child {
+  margin-left: 0;
+}
+
+.exp-item-price {
+  flex-shrink: 0;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
 .totals {
   background: color-mix(in srgb, var(--yellow) 14%, var(--paper-2));
   border-top: 3px solid var(--ink);

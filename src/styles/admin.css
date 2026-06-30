@@ -2630,33 +2630,127 @@
   padding: 10px 12px;
 }
 
-.admin-app .rcpt-item-top {
+/* Editable item row: [qty] × [name .......] [$ price] [trash] */
+.admin-app .rcpt-item-edit {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  gap: 7px;
 }
 
-.admin-app .rcpt-item-name {
-  font-family: var(--cjk);
-  font-weight: 700;
-  font-size: 14px;
+.admin-app .rcpt-qty-input {
+  width: 38px;
+  flex-shrink: 0;
+  padding: 5px 3px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  font-family: var(--grotesk);
+  font-weight: 800;
+  font-size: 13px;
+  text-align: center;
   color: var(--ink);
-  line-height: 1.35;
 }
 
-.admin-app .rcpt-qty {
-  margin-right: 6px;
+.admin-app .rcpt-qty-x {
+  flex-shrink: 0;
+  margin-left: -3px;
   font-weight: 900;
   color: var(--magenta);
 }
 
-.admin-app .rcpt-item-price {
-  font-family: var(--mono, var(--grotesk));
+.admin-app .rcpt-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  font-family: var(--cjk);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.admin-app .rcpt-price-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  width: 92px;
+  padding: 5px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.admin-app .rcpt-price-input .cur {
+  font-family: var(--grotesk);
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.admin-app .rcpt-price-input input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--grotesk);
   font-weight: 800;
   font-size: 14px;
   color: var(--ink);
-  white-space: nowrap;
+  text-align: right;
+}
+
+.admin-app .rcpt-qty-input::-webkit-outer-spin-button,
+.admin-app .rcpt-qty-input::-webkit-inner-spin-button,
+.admin-app .rcpt-price-input input::-webkit-outer-spin-button,
+.admin-app .rcpt-price-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.admin-app .rcpt-qty-input[type="number"],
+.admin-app .rcpt-price-input input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.admin-app .rcpt-item-del {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--red);
+  cursor: pointer;
+}
+
+.admin-app .rcpt-item-del svg {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-app .rcpt-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 7px 12px;
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+  font-family: var(--grotesk);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.admin-app .rcpt-add svg {
+  width: 15px;
+  height: 15px;
 }
 
 .admin-app .rcpt-item-who {

@@ -4,6 +4,7 @@ import type { Expense } from "./adminData";
 import { ExpenseModal, buildExpense } from "./AddExpenseModal";
 import type { NewExpenseInput } from "./AddExpenseModal";
 import { ReceiptScanModal } from "./ReceiptScanModal";
+import { ExpenseItems } from "./ExpenseItems";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
@@ -214,6 +215,7 @@ export function SplitSection({
                     </span>
                   </span>
                 </div>
+                <ExpenseItems items={e.items} />
                 <div className="exp-bottom">
                   <span className="payer-pick">
                     <span className="pp-lbl">谁付的</span>

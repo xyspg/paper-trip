@@ -131,6 +131,7 @@ function statementTable(
 function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
   const ledger = trip.expenses;
   const travelerIds = travelers.map((m) => m.id);
+  const nameById = Object.fromEntries(travelers.map((m) => [m.id, m.name]));
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
@@ -238,6 +239,45 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
           el("div", { fontWeight: "700" }, [item.name]),
           el("div", { fontSize: "11px", color: MUTED, marginTop: "1px" }, [item.sub]),
         ]);
+
+        // Scanned-receipt breakdown, listed beneath the name as ruled sub-lines:
+        // "1× Ramen ............ $12.00 (Alice, Bob)". Split travelers are named in
+        // parentheses; AA dishes omit them.
+        if (item.items && item.items.length > 0) {
+          const itemsWrap = el("div", {
+            marginTop: "5px",
+            paddingLeft: "8px",
+            borderLeft: `2px solid ${RULE}`,
+          });
+          for (const li of item.items) {
+            const qty = li.quantity > 1 ? `${li.quantity}× ` : "";
+            const sharers =
+              li.who && li.who.length > 0
+                ? li.who
+                    .map((id) => nameById[id])
+                    .filter(Boolean)
+                    .join(", ")
+                : "";
+            itemsWrap.append(
+              el(
+                "div",
+                {
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                  fontSize: "10.5px",
+                  color: MUTED,
+                  marginTop: "2px",
+                },
+                [
+                  el("span", {}, [`${qty}${li.name}${sharers ? ` (${sharers})` : ""}`]),
+                  el("span", { whiteSpace: "nowrap" }, [fmt(li.price)]),
+                ],
+              ),
+            );
+          }
+          itemCell.append(itemsWrap);
+        }
 
         const paidByCell = el(
           "div",

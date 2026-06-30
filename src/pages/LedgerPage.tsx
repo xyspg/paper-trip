@@ -1,6 +1,7 @@
 import { ExternalLink, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Avatar } from "../admin/Avatar";
+import { ExpenseItems } from "../admin/ExpenseItems";
 import { TRAVELERS } from "../admin/adminData";
 import {
   appliedCredit,
@@ -148,6 +149,7 @@ export function LedgerPage() {
                     <span className="amt">{fmt(item.amount)}</span>
                   </span>
                 </div>
+                <ExpenseItems items={item.items} />
                 {item.credit > 0 && (
                   <div className="credit-line">
                     <span className="cl-tag">Chase IHG credit</span>

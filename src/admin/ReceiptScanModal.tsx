@@ -1,12 +1,12 @@
 import { useRef, useState } from "react"
 import { Modal, ROLE } from "baseui/modal"
-import { fmtMoney, TRAVELERS } from "./adminData"
+import { fmtMoney, TRAVELERS, uid } from "./adminData"
 import { Avatar } from "./Avatar"
 import { Icons } from "./AdminIcons"
 import { splitToExpense } from "./PaymentSplit"
 import type { NewExpenseInput } from "./AddExpenseModal"
 import { deriveShares, parseReceipt } from "./receipt"
-import type { ReceiptItem } from "./receipt"
+import type { ExpenseItem } from "../trip/types"
 
 type Props = {
   isOpen: boolean
@@ -16,8 +16,14 @@ type Props = {
 
 const TRAVELER_IDS = TRAVELERS.map((m) => m.id)
 
+// One editable line in the review list. `who` is the set of travelers sharing
+// this dish (empty/all = AA). The stable `id` keys the row so editing a name or
+// adding/removing rows never remounts the inputs mid-keystroke. Assignment lives
+// on the row itself (no parallel array), so add/delete stay trivially in sync.
+type Row = { id: string; name: string; quantity: number; price: number; who: string[] }
+
 const round2 = (n: number) => Math.round(n * 100) / 100
-const sumPrices = (items: ReceiptItem[]) => items.reduce((s, it) => s + it.price, 0)
+const sumPrices = (rows: { price: number }[]) => rows.reduce((s, r) => s + r.price, 0)
 
 // "pick" waits for a photo, "loading" is the OCR round-trip, "review" is the
 // editable split, "error" shows a retry. One inner component per open keeps the
@@ -30,12 +36,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const [error, setError] = useState("")
 
   const [merchant, setMerchant] = useState("")
-  const [items, setItems] = useState<ReceiptItem[]>([])
+  const [rows, setRows] = useState<Row[]>([])
   // Tax + tip + any gap between the line items and the printed total, applied on
   // top of the per-dish split and spread proportionally.
   const [extra, setExtra] = useState(0)
-  // Per-dish assignment: which travelers share each row (equal split among them).
-  const [assign, setAssign] = useState<string[][]>([])
   // Manual per-traveler overrides; absent id = use the computed amount.
   const [manual, setManual] = useState<Record<string, number>>({})
   // Bumped on "recompute" so the uncontrolled amount inputs remount fresh.
@@ -53,9 +57,16 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       const r = await parseReceipt(file)
       const gap = typeof r.total === "number" ? r.total - sumPrices(r.items) : (r.tax ?? 0) + (r.tip ?? 0)
       setMerchant(r.merchant || "餐厅收据")
-      setItems(r.items)
+      setRows(
+        r.items.map((it) => ({
+          id: uid("ri"),
+          name: it.name,
+          quantity: it.quantity,
+          price: it.price,
+          who: [...TRAVELER_IDS], // default AA
+        })),
+      )
       setExtra(round2(gap))
-      setAssign(r.items.map(() => [...TRAVELER_IDS])) // default AA
       setManual({})
       setPhase("review")
     } catch (err) {
@@ -64,18 +75,33 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     }
   }
 
-  const toggle = (idx: number, id: string) =>
-    setAssign((prev) =>
-      prev.map((row, i) => {
-        if (i !== idx) return row
-        return row.includes(id) ? row.filter((x) => x !== id) : [...row, id]
+  const toggle = (id: string, who: string) =>
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.id !== id) return row
+        const next = row.who.includes(who)
+          ? row.who.filter((x) => x !== who)
+          : [...row.who, who]
+        return { ...row, who: next }
       }),
     )
 
-  const auto = deriveShares(items, assign, TRAVELER_IDS, extra)
+  const patchRow = (id: string, patch: Partial<Row>) =>
+    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+
+  const removeRow = (id: string) => setRows((prev) => prev.filter((row) => row.id !== id))
+
+  const addRow = () =>
+    setRows((prev) => [
+      ...prev,
+      { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...TRAVELER_IDS] },
+    ])
+
+  const assignments = rows.map((r) => r.who)
+  const auto = deriveShares(rows, assignments, TRAVELER_IDS, extra)
   const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0
   const grandTotal = round2(TRAVELER_IDS.reduce((s, id) => s + finalOf(id), 0))
-  const lineSubtotal = round2(sumPrices(items))
+  const lineSubtotal = round2(sumPrices(rows))
   const hasOverride = Object.keys(manual).length > 0
 
   const setManualAmount = (id: string, raw: string) => {
@@ -93,12 +119,26 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     setRecalc((n) => n + 1)
   }
 
-  const canSubmit = items.length > 0 && grandTotal > 0
+  // Drop blank scratch rows (no name, no price) before persisting / counting.
+  const cleanRows = rows.filter((r) => r.name.trim() !== "" || r.price > 0)
+  const canSubmit = cleanRows.length > 0 && grandTotal > 0
 
   const submit = () => {
     if (!canSubmit) return
     const shares = Object.fromEntries(TRAVELER_IDS.map((id) => [id, finalOf(id)]))
     const { payer, split } = splitToExpense({ mode: "amount", shares })
+    const items: ExpenseItem[] = cleanRows.map((r) => {
+      const who = r.who.filter((id) => TRAVELER_IDS.includes(id))
+      // Everyone (or nobody selected, which falls back to everyone) = AA, stored
+      // as undefined so the renderers don't draw redundant "split" chips.
+      const isAA = who.length === 0 || who.length === TRAVELER_IDS.length
+      return {
+        name: r.name.trim() || "未命名",
+        quantity: r.quantity,
+        price: round2(r.price),
+        who: isAA ? undefined : who,
+      }
+    })
     onSubmit({
       name: merchant.trim() || "餐厅收据",
       sub: `${items.length} 项 · 扫描收据`,
@@ -106,6 +146,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       cat: "food",
       payer,
       split,
+      items,
     })
   }
 
@@ -182,44 +223,97 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </label>
 
             <div className="am-field am-field-wide">
-              <span className="am-label">菜品 · 选择谁分摊（默认 AA 均摊）</span>
+              <span className="am-label">菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）</span>
               <div className="rcpt-items">
-                {items.map((it, i) => {
-                  const picked = assign[i] ?? []
-                  const isAA = picked.length === TRAVELER_IDS.length
+                {rows.map((row) => {
+                  const isAA = row.who.length === TRAVELER_IDS.length
                   return (
-                    <div className="rcpt-item" key={`${it.name}-${i}`}>
-                      <div className="rcpt-item-top">
-                        <span className="rcpt-item-name">
-                          {it.quantity > 1 && <b className="rcpt-qty">{it.quantity}×</b>}
-                          {it.name}
+                    <div className="rcpt-item" key={row.id}>
+                      <div className="rcpt-item-edit">
+                        <input
+                          className="rcpt-qty-input"
+                          type="number"
+                          inputMode="numeric"
+                          min="1"
+                          step="1"
+                          defaultValue={row.quantity}
+                          aria-label="数量"
+                          onBlur={(e) => {
+                            const n = parseInt(e.target.value, 10)
+                            patchRow(row.id, { quantity: Number.isFinite(n) && n > 0 ? n : 1 })
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur()
+                          }}
+                        />
+                        <span className="rcpt-qty-x">×</span>
+                        <input
+                          className="rcpt-name-input"
+                          value={row.name}
+                          autoComplete="off"
+                          data-1p-ignore
+                          data-lpignore="true"
+                          placeholder="菜名"
+                          aria-label="菜名"
+                          onChange={(e) => patchRow(row.id, { name: e.target.value })}
+                        />
+                        <span className="rcpt-price-input">
+                          <span className="cur">$</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0"
+                            defaultValue={row.price || ""}
+                            aria-label="价格"
+                            placeholder="0.00"
+                            onBlur={(e) => {
+                              const n = parseFloat(e.target.value)
+                              patchRow(row.id, { price: Number.isFinite(n) && n >= 0 ? round2(n) : 0 })
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") e.currentTarget.blur()
+                            }}
+                          />
                         </span>
-                        <span className="rcpt-item-price">{fmtMoney(it.price)}</span>
+                        <button
+                          type="button"
+                          className="rcpt-item-del"
+                          title="删除这一项"
+                          aria-label="删除这一项"
+                          onClick={() => removeRow(row.id)}
+                        >
+                          <Icons.trash sw={2.2} />
+                        </button>
                       </div>
                       <div className="rcpt-item-who">
                         {TRAVELERS.map((m) => (
                           <button
                             type="button"
                             key={m.id}
-                            className={`payer-chip${picked.includes(m.id) ? " on" : ""}`}
-                            onClick={() => toggle(i, m.id)}
+                            className={`payer-chip${row.who.includes(m.id) ? " on" : ""}`}
+                            onClick={() => toggle(row.id, m.id)}
                           >
                             <Avatar m={m} size="xs" />
                             {m.name}
                           </button>
                         ))}
                         <span className="rcpt-item-tag">
-                          {picked.length === 0
+                          {row.who.length === 0
                             ? "未选 → 全员"
                             : isAA
                               ? "AA 均摊"
-                              : `${picked.length} 人分`}
+                              : `${row.who.length} 人分`}
                         </span>
                       </div>
                     </div>
                   )
                 })}
               </div>
+              <button type="button" className="rcpt-add" onClick={addRow}>
+                <Icons.plus sw={2.4} />
+                添加一项
+              </button>
             </div>
 
             <div className="rcpt-extra am-field am-field-wide">

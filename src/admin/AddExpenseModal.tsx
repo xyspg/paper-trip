@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Modal, ROLE } from "baseui/modal"
 import { CATS } from "./adminData"
 import type { Expense, StopCat } from "./adminData"
-import type { ExpenseSplit } from "../trip/types"
+import type { ExpenseItem, ExpenseSplit } from "../trip/types"
 import { Icons } from "./AdminIcons"
 import { cssVars } from "./style"
 import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
@@ -15,6 +15,9 @@ export type NewExpenseInput = {
   cat: StopCat
   payer: string
   split?: ExpenseSplit
+  // Scanned-receipt breakdown, set only by the receipt scanner. The manual
+  // add/edit form below never produces items.
+  items?: ExpenseItem[]
 }
 
 type Props = {
@@ -194,5 +197,6 @@ export function buildExpense(input: NewExpenseInput, id: string): Expense {
     credit: 0,
     payer: input.payer,
     split: input.split,
+    items: input.items,
   }
 }

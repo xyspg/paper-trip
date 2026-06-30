@@ -75,10 +75,23 @@ export type ExpenseSplit = {
   shares: Record<string, number>;
 };
 
+// One dish/line from a scanned receipt, persisted on the expense so the itemized
+// breakdown survives past the scan session. `price` is the row's line total (the
+// same figure the split math divides). `who` lists the member ids that share the
+// dish; absent/empty means everyone (AA). Only populated for expenses created via
+// the receipt scanner — manual and seed expenses leave `items` undefined.
+export type ExpenseItem = {
+  name: string;
+  quantity: number;
+  price: number;
+  who?: string[];
+};
+
 // A line item in the shared trip ledger. `payer` is a member id (see adminData
 // MEMBERS) who covers the whole amount by default; `split` overrides that with a
 // proportional multi-payer breakdown. Edited from the admin split view, shown
-// read-only on the public ledger.
+// read-only on the public ledger. `items` is the optional scanned-receipt
+// breakdown, rendered read-only on both the admin and public ledgers (and PDF).
 export type Expense = {
   id: string;
   cat: ExpenseCategory;
@@ -88,6 +101,7 @@ export type Expense = {
   credit: number;
   payer: string;
   split?: ExpenseSplit;
+  items?: ExpenseItem[];
 };
 
 export type Trip = {

@@ -62,24 +62,6 @@ export const MEMBERS: AdminMember[] = [
     initials: "SR",
     avatarUrl: "https://github.com/sapphire-rapids.png",
   },
-  {
-    id: "mia",
-    name: "小满",
-    handle: "mancho",
-    role: "同行参谋",
-    color: "var(--violet)",
-    traveler: false,
-    initials: "MN",
-  },
-  {
-    id: "kai",
-    name: "Kai",
-    handle: "kai-w",
-    role: "同行参谋",
-    color: "var(--green)",
-    traveler: false,
-    initials: "KW",
-  },
 ];
 
 export const memberById = (id: string): AdminMember =>
