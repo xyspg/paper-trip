@@ -138,6 +138,61 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
   const each = balances[0]?.share ?? 0;
   const today = new Date().toISOString().slice(0, 10);
 
+  // Itemized table rows. Each expense is one summary row; its scanned receipt
+  // items (if any) each become their own short full-width row beneath it —
+  // description indented on the left, price aligned under "Net" on the right,
+  // like a bank-statement line. Keeping every item as a separate <tr> (instead
+  // of one tall cell) is what lets the paginator break cleanly between lines
+  // instead of slicing through a row at the page edge.
+  const itemizedRows: (string | Node)[][] = [];
+  for (const item of ledger) {
+    const net = netExpense(item);
+    const paidBy = expensePaidBy(item, travelerIds);
+    const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
+    const isSplit = payers.length > 1;
+
+    const itemCell = el("div", {}, [
+      el("div", { fontWeight: "700" }, [item.name]),
+      el("div", { fontSize: "11px", color: MUTED, marginTop: "1px" }, [item.sub]),
+    ]);
+
+    const paidByCell = el(
+      "div",
+      {},
+      payers.map((m) => {
+        const amt = paidBy[m.id] ?? 0;
+        const pct = net > 0 ? Math.round((amt / net) * 100) : 0;
+        return el("div", {}, [isSplit ? `${m.name} ${pct}% (${fmt(amt)})` : m.name]);
+      }),
+    );
+
+    itemizedRows.push([
+      itemCell,
+      fmt(item.amount),
+      item.credit > 0 ? "-" + fmt(appliedCredit(item)) : "—",
+      payers.length > 0 ? paidByCell : "—",
+      fmt(net),
+    ]);
+
+    if (item.items && item.items.length > 0) {
+      for (const li of item.items) {
+        const qty = li.quantity > 1 ? `${li.quantity}× ` : "";
+        const sharers =
+          li.who && li.who.length > 0
+            ? li.who
+                .map((id) => nameById[id])
+                .filter(Boolean)
+                .join(", ")
+            : "";
+        const liCell = el("div", { paddingLeft: "16px", fontSize: "11px", color: INK }, [
+          `${qty}${li.name}${sharers ? `  (${sharers})` : ""}`,
+        ]);
+        const priceCell = el("div", { fontSize: "11px", color: INK }, [fmt(li.price)]);
+        itemizedRows.push([liCell, "", "", "", priceCell]);
+      }
+    }
+  }
+
   // Kept off-screen by the zero-size wrapper in exportLedgerPdf, not here —
   // this node must carry no hiding styles (position/visibility/opacity) of
   // its own, since html2canvas renders it as laid out.
@@ -229,74 +284,7 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
     ),
     statementTable(
       ["Item", "Amount", "Credit", "Paid by", "Net"],
-      ledger.map((item) => {
-        const net = netExpense(item);
-        const paidBy = expensePaidBy(item, travelerIds);
-        const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
-        const isSplit = payers.length > 1;
-
-        const itemCell = el("div", {}, [
-          el("div", { fontWeight: "700" }, [item.name]),
-          el("div", { fontSize: "11px", color: MUTED, marginTop: "1px" }, [item.sub]),
-        ]);
-
-        // Scanned-receipt breakdown, listed beneath the name as ruled sub-lines:
-        // "1× Ramen ............ $12.00 (Alice, Bob)". Split travelers are named in
-        // parentheses; AA dishes omit them.
-        if (item.items && item.items.length > 0) {
-          const itemsWrap = el("div", {
-            marginTop: "5px",
-            paddingLeft: "8px",
-            borderLeft: `2px solid ${RULE}`,
-          });
-          for (const li of item.items) {
-            const qty = li.quantity > 1 ? `${li.quantity}× ` : "";
-            const sharers =
-              li.who && li.who.length > 0
-                ? li.who
-                    .map((id) => nameById[id])
-                    .filter(Boolean)
-                    .join(", ")
-                : "";
-            itemsWrap.append(
-              el(
-                "div",
-                {
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  fontSize: "10.5px",
-                  color: MUTED,
-                  marginTop: "2px",
-                },
-                [
-                  el("span", {}, [`${qty}${li.name}${sharers ? ` (${sharers})` : ""}`]),
-                  el("span", { whiteSpace: "nowrap" }, [fmt(li.price)]),
-                ],
-              ),
-            );
-          }
-          itemCell.append(itemsWrap);
-        }
-
-        const paidByCell = el(
-          "div",
-          {},
-          payers.map((m) => {
-            const amt = paidBy[m.id] ?? 0;
-            const pct = net > 0 ? Math.round((amt / net) * 100) : 0;
-            return el("div", {}, [isSplit ? `${m.name} ${pct}% (${fmt(amt)})` : m.name]);
-          }),
-        );
-
-        return [
-          itemCell,
-          fmt(item.amount),
-          item.credit > 0 ? "-" + fmt(appliedCredit(item)) : "—",
-          payers.length > 0 ? paidByCell : "—",
-          fmt(net),
-        ];
-      }),
+      itemizedRows,
       ["left", "right", "right", "left", "right"],
       ["", "", "", "Net total", fmt(grand)],
     ),
@@ -329,10 +317,24 @@ export async function exportLedgerPdf(
   wrapper.append(container);
   document.body.append(wrapper);
 
+  // Canvas px per CSS px. Used both for the raster render and for converting the
+  // measured DOM row positions below into the same coordinate space.
+  const SCALE = 2;
+
+  // Safe page-break boundaries (canvas px): the top edge of every table row.
+  // The paginator only ever cuts a page at one of these, so a row is never
+  // sliced in half across the page edge. Measured while the node is laid out
+  // in the DOM (before html2canvas tears its clone down).
+  const containerTop = container.getBoundingClientRect().top;
+  const breakOffsets = Array.from(container.querySelectorAll("tr"))
+    .map((tr) => Math.round((tr.getBoundingClientRect().top - containerTop) * SCALE))
+    .filter((y) => y > 0)
+    .sort((a, b) => a - b);
+
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(container, {
-      scale: 2,
+      scale: SCALE,
       backgroundColor: "#ffffff",
       windowWidth: 800,
     });
@@ -354,7 +356,23 @@ export async function exportLedgerPdf(
   let renderedPx = 0;
   let pageIndex = 0;
   while (renderedPx < canvas.height) {
-    const sliceHeightPx = Math.min(pageSliceHeightPx, canvas.height - renderedPx);
+    const maxEnd = renderedPx + pageSliceHeightPx;
+    // If the rest of the statement fits on one page, take it all. Otherwise cut
+    // at the lowest row boundary that still fits, so no line is split. A single
+    // row taller than a whole page (shouldn't happen with these short rows)
+    // falls back to a hard cut so the loop still makes progress.
+    let end: number;
+    if (canvas.height <= maxEnd) {
+      end = canvas.height;
+    } else {
+      end = -1;
+      for (const b of breakOffsets) {
+        if (b > renderedPx + 1 && b <= maxEnd) end = b;
+      }
+      if (end < 0) end = maxEnd;
+    }
+
+    const sliceHeightPx = end - renderedPx;
     const slice = document.createElement("canvas");
     slice.width = canvas.width;
     slice.height = sliceHeightPx;
@@ -382,7 +400,7 @@ export async function exportLedgerPdf(
       sliceHeightPx * ptPerPx,
     );
 
-    renderedPx += sliceHeightPx;
+    renderedPx = end;
     pageIndex++;
   }
 
