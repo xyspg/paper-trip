@@ -180,7 +180,12 @@ auth.get("/callback/github", async (c) => {
   // Only a verified email counts; never trust an unverified address for the gate.
   const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
   const email = (primary?.email ?? "").toLowerCase();
-  if (email !== ADMIN_EMAIL) return fail(c, "forbidden");
+  if (email !== ADMIN_EMAIL) {
+    // Name the rejected account so the login screen can tell the user *which*
+    // GitHub identity was refused, instead of a dead end with no context.
+    const who = encodeURIComponent(profile.login);
+    return c.redirect(`/admin?error=forbidden&login=${who}`, 302);
+  }
 
   const user: SessionUser = {
     login: profile.login,

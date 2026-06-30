@@ -14,7 +14,20 @@ const ERRORS: Record<string, string> = {
 // the OAuth round-trip and redirects back to /admin.
 export function AdminLogin() {
   const [busy, setBusy] = useState(false);
-  const error = new URLSearchParams(window.location.search).get("error");
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get("error");
+  const login = params.get("login");
+
+  // A rejected account is a dead end on GitHub's side: GitHub auto-reuses the
+  // already-authorized session, so clicking "登录" again just loops back here.
+  // Offer a way out by sending the user to GitHub's sign-out first.
+  const forbidden = error === "forbidden";
+  const errMsg =
+    forbidden && login
+      ? `GitHub 账号 @${login} 无权进入后台。`
+      : error
+        ? (ERRORS[error] ?? "登录失败，请重试。")
+        : null;
 
   const signIn = () => {
     setBusy(true);
@@ -35,7 +48,7 @@ export function AdminLogin() {
         </div>
 
         <div className="login-body">
-          {error && <p className="login-err">{ERRORS[error] ?? "登录失败，请重试。"}</p>}
+          {errMsg && <p className="login-err">{errMsg}</p>}
 
           <button className={`gh-btn${busy ? " busy" : ""}`} onClick={signIn} disabled={busy}>
             {busy ? (
@@ -46,10 +59,16 @@ export function AdminLogin() {
             ) : (
               <>
                 <Icons.github />
-                <span>用 GitHub 登录</span>
+                <span>{forbidden ? "换管理员账号重试" : "用 GitHub 登录"}</span>
               </>
             )}
           </button>
+
+          {forbidden && (
+            <a className="login-switch" href="https://github.com/logout" target="_blank" rel="noreferrer">
+              登录了错误的账号？先退出 GitHub →
+            </a>
+          )}
         </div>
       </div>
     </div>
