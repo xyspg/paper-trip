@@ -4,7 +4,13 @@ import { Avatar } from "../admin/Avatar";
 import { TRAVELERS } from "../admin/adminData";
 import { useTrip } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
-import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
+import {
+  appliedCredit,
+  expenseBalances,
+  expensePaidBy,
+  expenseTotals,
+  netExpense,
+} from "../trip/expenses";
 
 const logo = (src: string, alt: string) => (
   <img className="tag-logo" src={src} alt={alt} />
@@ -35,11 +41,9 @@ export function LedgerPage() {
   // Fall back to the seed while the trip loads, matching the timeline page.
   const ledger = (data?.trip ?? tripData).expenses;
 
+  const travelerIds = TRAVELERS.map((m) => m.id);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
-  const balances = expenseBalances(
-    ledger,
-    TRAVELERS.map((m) => m.id),
-  );
+  const balances = expenseBalances(ledger, travelerIds);
   const each = balances[0]?.share ?? 0;
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
@@ -111,6 +115,12 @@ export function LedgerPage() {
           {ledger.map((item) => {
             const net = netExpense(item);
             const pres = present(item.id);
+            // Who actually fronted this line, mirrored read-only from the admin
+            // split. Reuses the same normalization the balances use, so the
+            // per-person figures here always reconcile with the net.
+            const paidBy = expensePaidBy(item, travelerIds);
+            const payers = TRAVELERS.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
+            const isSplit = payers.length > 1;
             return (
               <div className="row" key={item.id}>
                 <div className="row-top">
@@ -129,6 +139,25 @@ export function LedgerPage() {
                   <div className="credit-line">
                     <span className="cl-tag">Chase IHG credit</span>
                     <span className="cl-amt">−{fmt(appliedCredit(item))}</span>
+                  </div>
+                )}
+                {payers.length > 0 && (
+                  <div className={`paid-by${isSplit ? " split" : ""}`}>
+                    <span className="pb-lbl">{isSplit ? "分摊垫付 Split" : "垫付 Paid by"}</span>
+                    <span className="pb-chips">
+                      {payers.map((m) => {
+                        const amt = paidBy[m.id] ?? 0;
+                        const pct = net > 0 ? Math.round((amt / net) * 100) : 0;
+                        return (
+                          <span className="pb-chip" key={m.id}>
+                            <Avatar m={m} size="xs" />
+                            <span className="pb-name">{m.name}</span>
+                            {isSplit && <span className="pb-pct">{pct}%</span>}
+                            <b className="pb-amt">{fmt(amt)}</b>
+                          </span>
+                        );
+                      })}
+                    </span>
                   </div>
                 )}
                 <div className="row-bottom">

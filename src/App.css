@@ -2366,6 +2366,88 @@ button.status:active {
   font-weight: 700;
 }
 
+/* Read-only "who fronted this line" mirror of the admin split. */
+.paid-by {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.paid-by .pb-lbl {
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--grotesk);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pb-chip {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 4px 9px 4px 4px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.pb-chip .avatar {
+  display: grid;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--magenta);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--grotesk);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.pb-chip .avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pb-name {
+  font-family: var(--cjk);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pb-pct {
+  padding: 1px 6px;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--yellow) 22%, var(--paper));
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.pb-amt {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
 .totals {
   background: color-mix(in srgb, var(--yellow) 14%, var(--paper-2));
   border-top: 3px solid var(--ink);
@@ -2511,6 +2593,10 @@ button.status:active {
 
   .credit-line {
     justify-content: flex-start;
+    padding-left: 50px;
+  }
+
+  .paid-by {
     padding-left: 50px;
   }
 

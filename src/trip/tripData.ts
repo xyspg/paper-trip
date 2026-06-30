@@ -338,7 +338,7 @@ export const tripData: Trip = {
       sub: "JFK ⇄ LAX / ONT · 2 人",
       amount: 993.6,
       credit: 0,
-      payer: "xyspg",
+      payer: "you",
     },
     {
       id: "hotel",
@@ -347,7 +347,7 @@ export const tripData: Trip = {
       sub: "2 晚 · 2 Queen Standard",
       amount: 356.62,
       credit: 250,
-      payer: "xyspg",
+      payer: "you",
     },
     {
       id: "tickets",
@@ -356,7 +356,7 @@ export const tripData: Trip = {
       sub: "2 × 4-Day General Attendee",
       amount: 382.84,
       credit: 0,
-      payer: "xyspg",
+      payer: "you",
     },
     {
       id: "car",
@@ -365,7 +365,7 @@ export const tripData: Trip = {
       sub: "3 天 · Kia K5 或同级",
       amount: 316.6,
       credit: 0,
-      payer: "xyspg",
+      payer: "you",
     },
   ],
 };
