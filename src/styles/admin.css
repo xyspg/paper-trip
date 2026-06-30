@@ -2268,6 +2268,12 @@
 }
 
 /* ---- New-stop modal (Base Web Modal shell, neo-brutalist content) ---- */
+.admin-app.admin-modal-scope {
+  min-height: 0;
+  background: transparent;
+  background-image: none;
+}
+
 .admin-app .add-modal {
   display: flex;
   flex-direction: column;

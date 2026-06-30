@@ -141,14 +141,6 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
 }
 
 export function AddStopModal({ isOpen, days, initialDay, onClose, onCreate }: Props) {
-  // Base Web portals the dialog to document.body by default, which would escape
-  // the `.admin-app` scope our styles (and CSS tokens like --shadow-xs) live under.
-  // Mounting inside `.admin-app` keeps the neo-brutalist styling intact.
-  const mountNode =
-    typeof document === "undefined"
-      ? undefined
-      : (document.querySelector(".admin-app") as HTMLElement | null) ?? undefined
-
   return (
     <Modal
       isOpen={isOpen}
@@ -156,7 +148,6 @@ export function AddStopModal({ isOpen, days, initialDay, onClose, onCreate }: Pr
       role={ROLE.dialog}
       animate
       autoFocus
-      mountNode={mountNode}
       overrides={{
         Root: { style: { zIndex: 90 } },
         Dialog: {
@@ -173,13 +164,15 @@ export function AddStopModal({ isOpen, days, initialDay, onClose, onCreate }: Pr
         Close: { style: { display: "none" } },
       }}
     >
-      <Form
-        key={`${initialDay}-${isOpen}`}
-        days={days}
-        initialDay={initialDay}
-        onClose={onClose}
-        onCreate={onCreate}
-      />
+      <div className="admin-app admin-modal-scope">
+        <Form
+          key={`${initialDay}-${isOpen}`}
+          days={days}
+          initialDay={initialDay}
+          onClose={onClose}
+          onCreate={onCreate}
+        />
+      </div>
     </Modal>
   )
 }

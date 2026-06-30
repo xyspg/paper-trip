@@ -417,11 +417,6 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 }
 
 export function ReceiptScanModal({ isOpen, onClose, onSubmit }: Props) {
-  const mountNode =
-    typeof document === "undefined"
-      ? undefined
-      : (document.querySelector(".admin-app") as HTMLElement | null) ?? undefined
-
   return (
     <Modal
       isOpen={isOpen}
@@ -429,7 +424,6 @@ export function ReceiptScanModal({ isOpen, onClose, onSubmit }: Props) {
       role={ROLE.dialog}
       animate
       autoFocus={false}
-      mountNode={mountNode}
       overrides={{
         Root: { style: { zIndex: 90 } },
         Dialog: {
@@ -446,7 +440,9 @@ export function ReceiptScanModal({ isOpen, onClose, onSubmit }: Props) {
         Close: { style: { display: "none" } },
       }}
     >
-      <Scanner key={String(isOpen)} onClose={onClose} onSubmit={onSubmit} />
+      <div className="admin-app admin-modal-scope">
+        <Scanner key={String(isOpen)} onClose={onClose} onSubmit={onSubmit} />
+      </div>
     </Modal>
   )
 }

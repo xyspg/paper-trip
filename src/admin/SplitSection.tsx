@@ -33,13 +33,6 @@ export function SplitSection({
   onDelete,
   onReset,
 }: Props) {
-  // React Compiler miscompiles this component once it owns three independent
-  // modal-open states (add / scan / edit): after a setState the baseui Modal
-  // instance receives isOpen=true but its subtree is served from a stale memo
-  // slot, so the dialog never mounts and every button looks dead. Opt this one
-  // component out of the compiler so its local useState re-renders normally.
-  // The rest of the app stays compiled. See the receipt-scanner change history.
-  "use no memo";
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   // The expense currently being edited (null = the modal is in add mode / closed).

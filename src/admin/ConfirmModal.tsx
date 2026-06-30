@@ -33,10 +33,6 @@ export function ConfirmModal({
   const [typed, setTyped] = useState("")
   // Trailing/leading whitespace is forgiving; the phrase itself must match exactly.
   const phraseOk = !requirePhrase || typed.trim() === requirePhrase
-  const mountNode =
-    typeof document === "undefined"
-      ? undefined
-      : (document.querySelector(".admin-app") as HTMLElement | null) ?? undefined
 
   return (
     <Modal
@@ -45,7 +41,6 @@ export function ConfirmModal({
       role={ROLE.alertdialog}
       animate
       autoFocus
-      mountNode={mountNode}
       overrides={{
         Root: { style: { zIndex: 95 } },
         Dialog: {
@@ -62,53 +57,55 @@ export function ConfirmModal({
         Close: { style: { display: "none" } },
       }}
     >
-      <div className="confirm-modal">
-        <div className="cm-head">
-          <span className="cm-kicker">
-            <Icons.trash sw={2.6} />
-            {title}
-          </span>
-          <button type="button" className="am-close" title="关闭" onClick={onClose}>
-            <Icons.x sw={2.6} />
-          </button>
-        </div>
+      <div className="admin-app admin-modal-scope">
+        <div className="confirm-modal">
+          <div className="cm-head">
+            <span className="cm-kicker">
+              <Icons.trash sw={2.6} />
+              {title}
+            </span>
+            <button type="button" className="am-close" title="关闭" onClick={onClose}>
+              <Icons.x sw={2.6} />
+            </button>
+          </div>
 
-        <div className="cm-body">
-          {message}
-          {requirePhrase && (
-            <label className="cm-phrase">
-              <span className="cm-phrase-hint">
-                输入 <code>{requirePhrase}</code> 以确认
-              </span>
-              <input
-                className="am-input"
-                type="text"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                placeholder={requirePhrase}
-                autoComplete="off"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-              />
-            </label>
-          )}
-        </div>
+          <div className="cm-body">
+            {message}
+            {requirePhrase && (
+              <label className="cm-phrase">
+                <span className="cm-phrase-hint">
+                  输入 <code>{requirePhrase}</code> 以确认
+                </span>
+                <input
+                  className="am-input"
+                  type="text"
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  placeholder={requirePhrase}
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </label>
+            )}
+          </div>
 
-        <div className="am-foot">
-          <button type="button" className="pbtn dark" autoFocus onClick={onClose}>
-            {cancelLabel}
-          </button>
-          <span className="cm-spacer" />
-          <button
-            type="button"
-            className="pbtn danger"
-            disabled={!phraseOk}
-            onClick={onConfirm}
-          >
-            <Icons.trash sw={2.4} />
-            {confirmLabel}
-          </button>
+          <div className="am-foot">
+            <button type="button" className="pbtn dark" autoFocus onClick={onClose}>
+              {cancelLabel}
+            </button>
+            <span className="cm-spacer" />
+            <button
+              type="button"
+              className="pbtn danger"
+              disabled={!phraseOk}
+              onClick={onConfirm}
+            >
+              <Icons.trash sw={2.4} />
+              {confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
     </Modal>

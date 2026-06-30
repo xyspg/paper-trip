@@ -146,13 +146,6 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 }
 
 export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
-  // Mount inside `.admin-app` so the dialog inherits the admin CSS tokens /
-  // neo-brutalist styling instead of Base Web's default body portal.
-  const mountNode =
-    typeof document === "undefined"
-      ? undefined
-      : (document.querySelector(".admin-app") as HTMLElement | null) ?? undefined
-
   return (
     <Modal
       isOpen={isOpen}
@@ -160,7 +153,6 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
       role={ROLE.dialog}
       animate
       autoFocus
-      mountNode={mountNode}
       overrides={{
         Root: { style: { zIndex: 90 } },
         Dialog: {
@@ -177,12 +169,14 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
         Close: { style: { display: "none" } },
       }}
     >
-      <Form
-        key={`${initial?.id ?? "new"}-${String(isOpen)}`}
-        onClose={onClose}
-        onSubmit={onSubmit}
-        initial={initial}
-      />
+      <div className="admin-app admin-modal-scope">
+        <Form
+          key={`${initial?.id ?? "new"}-${String(isOpen)}`}
+          onClose={onClose}
+          onSubmit={onSubmit}
+          initial={initial}
+        />
+      </div>
     </Modal>
   )
 }
