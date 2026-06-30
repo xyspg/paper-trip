@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 
 import auth, { sessionUser } from "./auth";
+import receipt from "./receipt";
 import type { Env } from "./env";
 import type { TripOp } from "../src/trip/ops";
 
@@ -19,6 +20,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.get("/api", (c) => c.text("ok"));
 
 app.route("/api/auth", auth);
+app.route("/api/receipt", receipt);
 
 app.all("/api/trip", forwardTrip);
 app.all("/api/trip/*", forwardTrip);

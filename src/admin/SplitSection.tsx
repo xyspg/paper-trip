@@ -3,6 +3,7 @@ import { CATS, fmtMoney, TRAVELERS, uid } from "./adminData";
 import type { Expense } from "./adminData";
 import { ExpenseModal, buildExpense } from "./AddExpenseModal";
 import type { NewExpenseInput } from "./AddExpenseModal";
+import { ReceiptScanModal } from "./ReceiptScanModal";
 import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { cssVars } from "./style";
@@ -32,6 +33,7 @@ export function SplitSection({
   onReset,
 }: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   // The expense currently being edited (null = the modal is in add mode / closed).
   const [editing, setEditing] = useState<Expense | null>(null);
   const { confirm, confirmModal } = useConfirm();
@@ -39,6 +41,11 @@ export function SplitSection({
   const handleCreate = (input: NewExpenseInput) => {
     onAdd(buildExpense(input, uid("exp")));
     setAddOpen(false);
+  };
+
+  const handleScan = (input: NewExpenseInput) => {
+    onAdd(buildExpense(input, uid("exp")));
+    setScanOpen(false);
   };
 
   const handleEdit = (input: NewExpenseInput) => {
@@ -115,6 +122,10 @@ export function SplitSection({
           <div className="sb-d">点金额改完即保存 · 选「谁付的」· 合计与结算自动刷新</div>
         </div>
         <div className="sb-actions">
+          <button className="pbtn ink" onClick={() => setScanOpen(true)}>
+            <Icons.camera sw={2.2} />
+            扫描收据
+          </button>
           <button className="pbtn solid" onClick={() => setAddOpen(true)}>
             <Icons.plus sw={2.4} />
             新增条目
@@ -293,6 +304,12 @@ export function SplitSection({
           </div>
         </div>
       </div>
+
+      <ReceiptScanModal
+        isOpen={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onSubmit={handleScan}
+      />
 
       <ExpenseModal isOpen={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleCreate} />
 

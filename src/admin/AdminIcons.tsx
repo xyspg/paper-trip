@@ -58,6 +58,15 @@ export const Icons = {
   ),
   plus: (p: IconProps) => <Svg {...p} d="M12 5v14M5 12h14" />,
   check: (p: IconProps) => <Svg {...p} d="M4 12.5 9 17.5 20 6" />,
+  camera: (p: IconProps) => (
+    <Svg {...p}>
+      <path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      <circle cx="12" cy="12.5" r="3.2" />
+    </Svg>
+  ),
+  sparkle: (p: IconProps) => (
+    <Svg {...p} d="M12 3l1.8 4.9L18.5 9.5l-4.7 1.6L12 16l-1.8-4.9L5.5 9.5l4.7-1.6ZM18.5 15l.8 2.1 2.2.7-2.2.7-.8 2.1-.8-2.1-2.2-.7 2.2-.7Z" />
+  ),
   x: (p: IconProps) => <Svg {...p} d="M6 6l12 12M18 6 6 18" />,
   trash: (p: IconProps) => (
     <Svg

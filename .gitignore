@@ -31,3 +31,4 @@ worker-configuration.d.ts
 
 # Playwright MCP session artifacts (screenshots, snapshots, console logs)
 .playwright-mcp/
+.claude/*
