@@ -71,6 +71,21 @@ export function SplitSection({
     setEditing(null);
   };
 
+  const handleReset = async () => {
+    const ok = await confirm({
+      title: "恢复原始账目",
+      message: (
+        <>
+          这会丢弃<b>所有</b>改动，把分账明细恢复成初始数据，且<b>无法撤销</b>。
+        </>
+      ),
+      confirmLabel: "恢复原始",
+      requirePhrase: "restore to original",
+    })
+    if (!ok) return
+    onReset()
+  }
+
   const handleDelete = async (e: Expense) => {
     const ok = await confirm({
       title: "删除条目",
@@ -137,7 +152,7 @@ export function SplitSection({
             <Icons.plus sw={2.4} />
             新增条目
           </button>
-          <button className="pbtn ghost" onClick={onReset}>
+          <button className="pbtn ghost" onClick={handleReset}>
             <Icons.swap sw={2.2} />
             恢复原始
           </button>
