@@ -73,6 +73,36 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
   const mode = value.mode
   const shares = mode === "single" ? {} : value.shares
 
+  // Switching between percent and amount must re-express the same proportions in
+  // the target unit, not copy the raw numbers across (a $138.25 share is not a
+  // 138.25% share). Falls back to an even seed when the source has no weight.
+  const reshare = (from: Record<string, number>, next: "percent" | "amount"): Record<string, number> => {
+    const total = TRAVELER_IDS.reduce((s, id) => s + Math.max(0, Number(from[id]) || 0), 0)
+    if (total <= 0) return next === "percent" ? evenPercent() : evenAmount(amount)
+    if (next === "amount") {
+      // Distribute the net amount by the source proportions.
+      return Object.fromEntries(
+        TRAVELER_IDS.map((id) => [
+          id,
+          Math.round((Math.max(0, Number(from[id]) || 0) / total) * amount * 100) / 100,
+        ]),
+      )
+    }
+    // Percent: normalize to 100, dropping any rounding remainder on the last traveler.
+    const out: Record<string, number> = {}
+    let acc = 0
+    TRAVELER_IDS.forEach((id, i) => {
+      if (i === TRAVELER_IDS.length - 1) {
+        out[id] = Math.max(0, 100 - acc)
+      } else {
+        const p = Math.round((Math.max(0, Number(from[id]) || 0) / total) * 100)
+        out[id] = p
+        acc += p
+      }
+    })
+    return out
+  }
+
   const setMode = (next: SplitValue["mode"]) => {
     if (next === mode) return
     if (next === "single") {
@@ -85,7 +115,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
         ? next === "percent"
           ? evenPercent()
           : evenAmount(amount)
-        : { ...value.shares }
+        : reshare(value.shares, next)
     onChange({ mode: next, shares: seed })
   }
 

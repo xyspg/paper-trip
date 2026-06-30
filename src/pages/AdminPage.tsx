@@ -4,7 +4,7 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import "../styles/admin.css";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
-import { useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
+import { useAudit, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
@@ -14,7 +14,7 @@ import { AdminProvider } from "../admin/AdminContext";
 import { cssVars } from "../admin/style";
 import { useAdminToasts } from "../admin/useAdminToasts";
 
-type SectionKey = "itinerary" | "suggestions" | "split";
+type SectionKey = "itinerary" | "suggestions" | "split" | "audit";
 type NavEntry = {
   key: SectionKey;
   to: string;
@@ -30,6 +30,7 @@ const NAV: NavEntry[] = [
   { key: "itinerary", to: "/admin/itinerary", label: "行程停靠点", icon: "route", accent: "var(--magenta)" },
   { key: "suggestions", to: "/admin/suggestions", label: "待审建议", icon: "chat", accent: "var(--violet)", badge: true },
   { key: "split", to: "/admin/split", label: "分账金额", icon: "wallet", accent: "var(--yellow)" },
+  { key: "audit", to: "/admin/audit", label: "操作记录", icon: "repo", accent: "var(--cyan)" },
 ];
 
 export function AdminPage() {
@@ -49,6 +50,7 @@ export function AdminPage() {
   // Suggestions are the live trip's comments, submitted from the public timeline.
   useTripLiveSync();
   const { data: tripSnap } = useTrip();
+  const { data: auditEntries } = useAudit();
   const tripOp = useTripOp();
   const suggestions = tripSnap?.trip.suggestions ?? [];
   const tripItems = tripSnap?.trip.items ?? [];
@@ -59,6 +61,7 @@ export function AdminPage() {
     itinerary: stops.length,
     suggestions: pendingCount,
     split: expenses.length,
+    audit: auditEntries?.length ?? 0,
   };
 
   if (isLoading) {

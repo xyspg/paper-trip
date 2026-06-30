@@ -26,6 +26,7 @@ type AuthError = "config" | "oauth" | "token" | "user" | "forbidden";
 const fail = (c: Context, code: AuthError) => c.redirect(`/admin?error=${code}`, 302);
 
 export type SessionUser = {
+  id: number;
   login: string;
   name: string | null;
   email: string;
@@ -80,7 +81,13 @@ async function verifySession(token: string, secret: string): Promise<SessionUser
   try {
     const p = JSON.parse(b64urlToStr(body)) as SessionUser & { exp?: number };
     if (typeof p.exp !== "number" || p.exp < Date.now() / 1000) return null;
-    return { login: p.login, name: p.name ?? null, email: p.email, avatarUrl: p.avatarUrl };
+    return {
+      id: p.id,
+      login: p.login,
+      name: p.name ?? null,
+      email: p.email,
+      avatarUrl: p.avatarUrl,
+    };
   } catch {
     return null;
   }
@@ -193,6 +200,7 @@ auth.get("/callback/github", async (c) => {
   const email = (primary?.email ?? "").toLowerCase();
 
   const user: SessionUser = {
+    id: profile.id,
     login: profile.login,
     name: profile.name,
     email,

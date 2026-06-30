@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMountEffect } from "../useMountEffect";
-import { fetchCreditCards, fetchTrip, sendOp, tripWsUrl, type TripSnapshot } from "./api";
+import { fetchAudit, fetchCreditCards, fetchTrip, sendOp, tripWsUrl, type TripSnapshot } from "./api";
 import { applyOp, type TripOp } from "./ops";
 import type { Trip } from "./types";
 
 const tripKey = ["trip"] as const;
 
 export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip });
+
+// Admin-only audit trail. Kept brief-lived so reopening the tab reflects writes
+// made elsewhere; the endpoint 403s for non-admins so this never runs public.
+export const useAudit = () => useQuery({ queryKey: ["audit"], queryFn: fetchAudit });
 
 // Resolve a card's art by its catalog name. The card list rarely changes, so it
 // is cached indefinitely; cards missing from the catalog (or before the fetch

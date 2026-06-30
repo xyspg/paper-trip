@@ -19,6 +19,28 @@ export const sendOp = async (op: TripOp): Promise<TripSnapshot> => {
   return (await res.json()) as TripSnapshot;
 };
 
+// One row of the append-only audit trail (mirrors the DO `audit` table). Admin
+// only; `detail` is the JSON-stringified TripOp that produced the change.
+export type AuditEntry = {
+  seq: number;
+  at: string;
+  rev: number;
+  op: string;
+  target: string | null;
+  actorId: number | null;
+  actorLogin: string;
+  actorEmail: string | null;
+  ip: string | null;
+  detail: string;
+};
+
+export const fetchAudit = async (): Promise<AuditEntry[]> => {
+  const res = await fetch("/api/trip/audit");
+  if (!res.ok) throw new Error(`GET /api/trip/audit failed: ${res.status}`);
+  const { entries } = (await res.json()) as { entries: AuditEntry[] };
+  return entries;
+};
+
 export const tripWsUrl = (): string => {
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${location.host}/api/trip`;

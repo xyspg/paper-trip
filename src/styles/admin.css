@@ -2825,3 +2825,116 @@
 .admin-app .rcpt-trow.grand .tv {
   font-weight: 900;
 }
+
+/* Audit log — one collapsible row per recorded write. */
+.admin-app .aud-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-app .aud-row {
+  background: var(--paper-2);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.admin-app .aud-summary {
+  display: grid;
+  grid-template-columns: 132px minmax(140px, 1fr) 120px minmax(0, 1.2fr) 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+}
+
+.admin-app .aud-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-app .aud-time {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.admin-app .aud-actor {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-app .aud-dot {
+  grid-row: 1 / 3;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+}
+
+.admin-app .aud-actor-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-app .aud-actor-sub {
+  grid-column: 2;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-app .aud-op {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-app .aud-target {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-app .aud-rev {
+  justify-self: end;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.admin-app .aud-detail {
+  margin: 0;
+  padding: 12px 14px;
+  border-top: 2px dashed var(--ink);
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .admin-app .aud-summary {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 6px;
+  }
+  .admin-app .aud-rev {
+    justify-self: start;
+  }
+}
