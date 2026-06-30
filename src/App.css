@@ -27,7 +27,9 @@
 .ax-page {
   min-height: 100svh;
   padding: clamp(14px, 3vw, 40px);
-  overflow-x: hidden;
+  /* clip (not hidden) prevents horizontal overflow without creating a scroll
+     container, so the sticky .day-head can pin against the viewport on scroll. */
+  overflow-x: clip;
   background-color: var(--paper);
   background-image: radial-gradient(var(--ink) 1.1px, transparent 1.2px);
   background-position: -8px -8px;
