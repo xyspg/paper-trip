@@ -1,9 +1,7 @@
-import { Wallet } from "lucide-react";
+import { ExternalLink, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Avatar } from "../admin/Avatar";
 import { TRAVELERS } from "../admin/adminData";
-import { useTrip } from "../trip/hooks";
-import { tripData } from "../trip/tripData";
 import {
   appliedCredit,
   expenseBalances,
@@ -11,10 +9,10 @@ import {
   expenseTotals,
   netExpense,
 } from "../trip/expenses";
+import { useTrip } from "../trip/hooks";
+import { tripData } from "../trip/tripData";
 
-const logo = (src: string, alt: string) => (
-  <img className="tag-logo" src={src} alt={alt} />
-);
+const logo = (src: string, alt: string) => <img className="tag-logo" src={src} alt={alt} />;
 
 // The public ledger keeps its own icon + accent per line; only the figures come
 // from the synced trip now. Keyed by expense id (the seed set is fixed; unknown
@@ -39,7 +37,8 @@ const fmt = (n: number) =>
 export function LedgerPage() {
   const { data } = useTrip();
   // Fall back to the seed while the trip loads, matching the timeline page.
-  const ledger = (data?.trip ?? tripData).expenses;
+  const trip = data?.trip ?? tripData;
+  const ledger = trip.expenses;
 
   const travelerIds = TRAVELERS.map((m) => m.id);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
@@ -109,6 +108,20 @@ export function LedgerPage() {
       <section className="ledger">
         <div className="ledger-head">
           <span className="lh-t">花销明细</span>
+          <button
+            type="button"
+            className="export-pdf-btn"
+            onClick={async () => {
+              // Opened synchronously on click so it isn't blocked as a
+              // popup once the async PDF render below finishes.
+              const previewWindow = window.open("", "_blank");
+              const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
+              await exportLedgerPdf(trip, TRAVELERS, previewWindow);
+            }}
+          >
+            <ExternalLink size={14} strokeWidth={2.4} />
+            导出 PDF
+          </button>
         </div>
 
         <div>

@@ -2236,6 +2236,28 @@ button.status:active {
   font-weight: 800;
 }
 
+.export-pdf-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  background: transparent;
+  border: 2px solid var(--paper);
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.export-pdf-btn:hover {
+  color: var(--ink);
+  background: var(--paper);
+}
+
 .row {
   padding: 16px 18px;
   border-bottom: 2px dashed #e4ddcd;
