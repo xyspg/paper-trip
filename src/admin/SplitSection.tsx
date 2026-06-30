@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, fmtMoney, TRAVELERS, uid } from "./adminData";
+import { CATS, fmtMoney, TRAVELER_IDS, TRAVELERS, uid } from "./adminData";
 import type { Expense } from "./adminData";
 import { ExpenseModal, buildExpense } from "./AddExpenseModal";
 import type { NewExpenseInput } from "./AddExpenseModal";
@@ -39,20 +39,16 @@ export function SplitSection({
   const [editing, setEditing] = useState<Expense | null>(null);
   const { confirm, confirmModal } = useConfirm();
 
-  const handleCreate = (input: NewExpenseInput) => {
-    onAdd(buildExpense(input, uid("exp")));
-    setAddOpen(false);
-  };
-
-  const handleScan = (input: NewExpenseInput) => {
-    onAdd(buildExpense(input, uid("exp")));
-    setScanOpen(false);
-  };
+  const addExpense = (input: NewExpenseInput) => onAdd(buildExpense(input, uid("exp")));
 
   const handleEdit = (input: NewExpenseInput) => {
     if (!editing) return;
     // Carry over fields the modal doesn't touch (id, credit) so editing the
-    // name/amount/split never drops the IHG credit on a row.
+    // name/amount/split never drops the IHG credit on a row. The scanned-receipt
+    // `items` breakdown is kept only when the amount is unchanged: the manual
+    // form has no items UI, so once the total is edited the per-dish prices no
+    // longer sum to it, and a stale breakdown that contradicts the total (shown
+    // read-only on the ledger and PDF) is worse than none.
     onUpdate({
       ...editing,
       cat: input.cat,
@@ -61,6 +57,7 @@ export function SplitSection({
       amount: input.amount,
       payer: input.payer,
       split: input.split,
+      items: input.amount === editing.amount ? editing.items : undefined,
     });
     setEditing(null);
   };
@@ -112,11 +109,7 @@ export function SplitSection({
   };
 
   const { subtotal, creditTotal, total } = expenseTotals(expenses);
-  const balances = expenseBalances(
-    expenses,
-    TRAVELERS.map((m) => m.id),
-  );
-  const share = balances[0]?.share ?? 0;
+  const balances = expenseBalances(expenses, TRAVELER_IDS);
 
   // settlement between the two travelers
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
@@ -124,6 +117,7 @@ export function SplitSection({
     m,
     paid: balanceById[m.id]?.paid ?? 0,
     bal: balanceById[m.id]?.balance ?? 0,
+    share: balanceById[m.id]?.share ?? 0,
   }));
   const ower = travelerBalances.find((b) => b.bal < -0.005);
   const receiver = travelerBalances.find((b) => b.bal > 0.005);
@@ -270,7 +264,7 @@ export function SplitSection({
 
         <div className="settle">
           <div className="settle-grid">
-            {travelerBalances.map(({ m, paid: p, bal }) => {
+            {travelerBalances.map(({ m, paid: p, bal, share: sh }) => {
               const owe = bal < -0.005;
               return (
                 <div key={m.id} className="card settle-person">
@@ -288,7 +282,7 @@ export function SplitSection({
                     </div>
                     <div className="sp-line">
                       <span>应承担</span>
-                      <span className="v">{fmtMoney(share)}</span>
+                      <span className="v">{fmtMoney(sh)}</span>
                     </div>
                   </div>
                   <div className={`sp-balance ${Math.abs(bal) < 0.005 ? "" : owe ? "owe" : "get"}`}>
@@ -325,10 +319,20 @@ export function SplitSection({
       <ReceiptScanModal
         isOpen={scanOpen}
         onClose={() => setScanOpen(false)}
-        onSubmit={handleScan}
+        onSubmit={(input) => {
+          addExpense(input);
+          setScanOpen(false);
+        }}
       />
 
-      <ExpenseModal isOpen={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleCreate} />
+      <ExpenseModal
+        isOpen={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSubmit={(input) => {
+          addExpense(input);
+          setAddOpen(false);
+        }}
+      />
 
       <ExpenseModal
         isOpen={editing !== null}

@@ -50,7 +50,7 @@ export function AdminPage() {
   // Suggestions are the live trip's comments, submitted from the public timeline.
   useTripLiveSync();
   const { data: tripSnap } = useTrip();
-  const { data: auditEntries } = useAudit();
+  const { data: auditEntries } = useAudit(Boolean(user));
   const tripOp = useTripOp();
   const suggestions = tripSnap?.trip.suggestions ?? [];
   const tripItems = tripSnap?.trip.items ?? [];

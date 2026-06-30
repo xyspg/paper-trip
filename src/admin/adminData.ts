@@ -68,6 +68,10 @@ export const memberById = (id: string): AdminMember =>
   MEMBERS.find((m) => m.id === id) ?? MEMBERS[0];
 export const TRAVELERS: AdminMember[] = MEMBERS.filter((m) => m.traveler);
 
+// The two travelers' ids, derived once. Shared by the split/receipt math instead
+// of being re-derived (`TRAVELERS.map((m) => m.id)`) in each consumer.
+export const TRAVELER_IDS: string[] = TRAVELERS.map((m) => m.id);
+
 // ---- Category palette (shared with itinerary page) ----
 export const CATS: Record<StopCat, { label: string; color: string }> = {
   transit: { label: "交通 · Transit", color: "var(--cyan)" },
@@ -184,6 +188,10 @@ export const STOPS_SEED: Stop[] = [
     ],
   },
 ];
+
+// Round to cents. The one money-rounding helper shared by the split/receipt math
+// (deriveShares, PaymentSplit) so every surface rounds identically.
+export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 export const fmtMoney = (n: number): string =>
   "$" +

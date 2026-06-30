@@ -1,11 +1,13 @@
 import { useAudit } from "../trip/hooks";
 import type { AuditEntry } from "../trip/api";
+import type { TripOp } from "../trip/ops";
 import { Icons } from "./AdminIcons";
 import { cssVars } from "./style";
 
 // Human-readable label per TripOp type, so the log reads as actions rather than
-// raw op identifiers. Keep in sync with TripOp in src/trip/ops.ts.
-const OP_LABEL: Record<string, string> = {
+// raw op identifiers. Typed to the TripOp union so adding an op fails the build
+// here until it is labeled, matching the exhaustive opTarget() switch in the worker.
+const OP_LABEL: Record<TripOp["type"], string> = {
   setItemStatus: "更新停靠点状态",
   updateItem: "编辑停靠点",
   setChecklistItem: "勾选清单项",
@@ -91,7 +93,7 @@ export function AuditSection() {
                 <summary className="aud-summary">
                   <span className="aud-time">{fmtTime(e.at)}</span>
                   <ActorCell e={e} />
-                  <span className="aud-op">{OP_LABEL[e.op] ?? e.op}</span>
+                  <span className="aud-op">{OP_LABEL[e.op as TripOp["type"]] ?? e.op}</span>
                   <span className="aud-target">{e.target ?? "—"}</span>
                   <span className="aud-rev">r{e.rev}</span>
                 </summary>

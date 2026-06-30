@@ -6,6 +6,12 @@ import type { Env } from "./env";
 
 type Snapshot = { rev: number; trip: Trip };
 
+// Cap on retained audit rows. The GET view returns at most 500, so keeping the
+// most recent 2000 leaves ample history while bounding storage (each row can
+// embed a full scanned-receipt payload, so the table would otherwise grow
+// without limit over the trip's life).
+const AUDIT_RETENTION = 2000;
+
 type AuditRow = {
   seq: number;
   at: string;
@@ -63,9 +69,10 @@ export class AX26DurableObject extends DurableObject<Env> {
       this.sql.exec(
         "CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK (id = 1), rev INTEGER NOT NULL, trip TEXT NOT NULL)",
       );
-      // Append-only audit trail: one row per applied write. Separate table from
-      // `state`, so a `reset` op wipes the trip but never the history. Insert-only
-      // — nothing in this class updates or deletes rows.
+      // Audit trail: one row per applied write. Separate table from `state`, so a
+      // `reset` op wipes the trip but never the history. Append-only apart from
+      // the retention prune in recordAudit, which caps the table at AUDIT_RETENTION
+      // rows so storage stays bounded.
       this.sql.exec(
         "CREATE TABLE IF NOT EXISTS audit (seq INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, rev INTEGER NOT NULL, op TEXT NOT NULL, target TEXT, actorId INTEGER, actorLogin TEXT NOT NULL, actorEmail TEXT, ip TEXT, detail TEXT NOT NULL)",
       );
@@ -118,7 +125,7 @@ export class AX26DurableObject extends DurableObject<Env> {
     }
 
     // Admin-only audit read (the worker gates auth before forwarding). Newest
-    // first; capped for the view — the table itself keeps every row.
+    // first; capped for the view (the table is itself pruned to AUDIT_RETENTION).
     if (req.method === "GET" && new URL(req.url).pathname.endsWith("/audit")) {
       const entries = this.sql
         .exec<AuditRow>(
@@ -144,6 +151,12 @@ export class AX26DurableObject extends DurableObject<Env> {
       req.headers.get("x-actor-email") || null,
       req.headers.get("x-actor-ip") || null,
       JSON.stringify(op),
+    );
+    // Drop everything older than the most recent AUDIT_RETENTION rows so the
+    // table stays bounded (seq is a monotonic AUTOINCREMENT id).
+    this.sql.exec(
+      "DELETE FROM audit WHERE seq <= (SELECT MAX(seq) FROM audit) - ?",
+      AUDIT_RETENTION,
     );
   }
 

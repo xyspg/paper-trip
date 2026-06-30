@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
-import { Modal, ROLE } from "baseui/modal"
-import { fmtMoney, TRAVELERS, uid } from "./adminData"
+import { AdminModal } from "./AdminModal"
+import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS, uid } from "./adminData"
 import { Avatar } from "./Avatar"
 import { Icons } from "./AdminIcons"
 import { splitToExpense } from "./PaymentSplit"
@@ -14,16 +14,17 @@ type Props = {
   onSubmit: (input: NewExpenseInput) => void
 }
 
-const TRAVELER_IDS = TRAVELERS.map((m) => m.id)
-
 // One editable line in the review list. `who` is the set of travelers sharing
 // this dish (empty/all = AA). The stable `id` keys the row so editing a name or
 // adding/removing rows never remounts the inputs mid-keystroke. Assignment lives
 // on the row itself (no parallel array), so add/delete stay trivially in sync.
 type Row = { id: string; name: string; quantity: number; price: number; who: string[] }
 
-const round2 = (n: number) => Math.round(n * 100) / 100
 const sumPrices = (rows: { price: number }[]) => rows.reduce((s, r) => s + r.price, 0)
+
+// Everyone selected (or nobody, which falls back to everyone) means an even AA
+// split, stored as `who: undefined` so the renderers skip redundant chips.
+const isAA = (who: string[]) => who.length === 0 || who.length === TRAVELER_IDS.length
 
 // "pick" waits for a photo, "loading" is the OCR round-trip, "review" is the
 // editable split, "error" shows a retry. One inner component per open keeps the
@@ -55,7 +56,12 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     setError("")
     try {
       const r = await parseReceipt(file)
-      const gap = typeof r.total === "number" ? r.total - sumPrices(r.items) : (r.tax ?? 0) + (r.tip ?? 0)
+      // Clamp to >= 0: this row is tax/tip/service fee, never negative. A model
+      // misread where the printed total comes in under the line-item sum would
+      // otherwise yield a negative "tax" and an amount below the dishes shown.
+      const gap = typeof r.total === "number"
+        ? Math.max(0, r.total - sumPrices(r.items))
+        : (r.tax ?? 0) + (r.tip ?? 0)
       setMerchant(r.merchant || "餐厅收据")
       setRows(
         r.items.map((it) => ({
@@ -97,8 +103,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...TRAVELER_IDS] },
     ])
 
-  const assignments = rows.map((r) => r.who)
-  const auto = deriveShares(rows, assignments, TRAVELER_IDS, extra)
+  const auto = deriveShares(rows, TRAVELER_IDS, extra)
   const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0
   const grandTotal = round2(TRAVELER_IDS.reduce((s, id) => s + finalOf(id), 0))
   const lineSubtotal = round2(sumPrices(rows))
@@ -106,12 +111,21 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
   const setManualAmount = (id: string, raw: string) => {
     const n = parseFloat(raw)
-    setManual((prev) => {
-      const next = { ...prev }
-      if (!Number.isFinite(n) || n < 0) delete next[id]
-      else next[id] = round2(n)
-      return next
-    })
+    if (!Number.isFinite(n) || n < 0) {
+      // Blank/invalid/negative: drop any override and bump `recalc` so the
+      // uncontrolled input remounts showing the auto amount. Without the remount
+      // the box stays visually blank while grandTotal and submit still count and
+      // charge the auto value, so the displayed number diverges from the saved one.
+      setManual((prev) => {
+        if (prev[id] == null) return prev
+        const next = { ...prev }
+        delete next[id]
+        return next
+      })
+      setRecalc((k) => k + 1)
+      return
+    }
+    setManual((prev) => ({ ...prev, [id]: round2(n) }))
   }
 
   const clearOverrides = () => {
@@ -129,14 +143,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     const { payer, split } = splitToExpense({ mode: "amount", shares })
     const items: ExpenseItem[] = cleanRows.map((r) => {
       const who = r.who.filter((id) => TRAVELER_IDS.includes(id))
-      // Everyone (or nobody selected, which falls back to everyone) = AA, stored
-      // as undefined so the renderers don't draw redundant "split" chips.
-      const isAA = who.length === 0 || who.length === TRAVELER_IDS.length
       return {
         name: r.name.trim() || "未命名",
         quantity: r.quantity,
         price: round2(r.price),
-        who: isAA ? undefined : who,
+        who: isAA(who) ? undefined : who,
       }
     })
     onSubmit({
@@ -226,7 +237,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               <span className="am-label">菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）</span>
               <div className="rcpt-items">
                 {rows.map((row) => {
-                  const isAA = row.who.length === TRAVELER_IDS.length
+                  const rowIsAA = isAA(row.who)
                   return (
                     <div className="rcpt-item" key={row.id}>
                       <div className="rcpt-item-edit">
@@ -301,7 +312,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         <span className="rcpt-item-tag">
                           {row.who.length === 0
                             ? "未选 → 全员"
-                            : isAA
+                            : rowIsAA
                               ? "AA 均摊"
                               : `${row.who.length} 人分`}
                         </span>
@@ -333,7 +344,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   placeholder="0.00"
                   onBlur={(e) => {
                     const n = parseFloat(e.target.value)
-                    setExtra(Number.isFinite(n) ? round2(n) : 0)
+                    setExtra(Number.isFinite(n) ? Math.max(0, round2(n)) : 0)
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur()
@@ -418,31 +429,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
 export function ReceiptScanModal({ isOpen, onClose, onSubmit }: Props) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      role={ROLE.dialog}
-      animate
-      autoFocus={false}
-      overrides={{
-        Root: { style: { zIndex: 90 } },
-        Dialog: {
-          style: {
-            width: "min(520px, 94vw)",
-            backgroundColor: "var(--paper-2)",
-            border: "3px solid var(--ink)",
-            borderRadius: "var(--radius)",
-            boxShadow: "var(--shadow)",
-            padding: "0",
-            overflow: "hidden",
-          },
-        },
-        Close: { style: { display: "none" } },
-      }}
-    >
-      <div className="admin-app admin-modal-scope">
-        <Scanner key={String(isOpen)} onClose={onClose} onSubmit={onSubmit} />
-      </div>
-    </Modal>
+    <AdminModal isOpen={isOpen} onClose={onClose} width="min(520px, 94vw)" autoFocus={false}>
+      <Scanner key={String(isOpen)} onClose={onClose} onSubmit={onSubmit} />
+    </AdminModal>
   )
 }

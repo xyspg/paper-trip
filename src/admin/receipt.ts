@@ -1,3 +1,5 @@
+import { round2 } from "./adminData"
+
 // Client for the admin receipt scanner. Downscales the photo in-browser (camera
 // shots are multi-MB; Gemini bills by pixels and the upload is faster small),
 // posts it to the admin-gated worker, and exposes the pure split math the modal
@@ -86,25 +88,24 @@ export async function parseReceipt(file: File): Promise<ParsedReceipt> {
 // + any rounding gap to the receipt total) are spread proportionally to each
 // traveler's item subtotal, or evenly when there are no items yet.
 export function deriveShares(
-  items: ReceiptItem[],
-  assignments: string[][],
+  items: { price: number; who: string[] }[],
   travelerIds: string[],
   extra: number,
 ): Record<string, number> {
   const base: Record<string, number> = Object.fromEntries(travelerIds.map((id) => [id, 0]))
-  items.forEach((it, i) => {
-    const picked = assignments[i]?.filter((id) => travelerIds.includes(id)) ?? []
+  for (const it of items) {
+    const picked = it.who.filter((id) => travelerIds.includes(id))
     const who = picked.length ? picked : travelerIds
     const each = it.price / who.length
     for (const id of who) base[id] += each
-  })
+  }
 
   const baseSum = travelerIds.reduce((s, id) => s + base[id], 0)
   const out: Record<string, number> = {}
   for (const id of travelerIds) {
     const extraShare =
       baseSum > 0 ? (extra * base[id]) / baseSum : extra / (travelerIds.length || 1)
-    out[id] = Math.round((base[id] + extraShare) * 100) / 100
+    out[id] = round2(base[id] + extraShare)
   }
   return out
 }

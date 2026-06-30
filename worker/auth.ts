@@ -81,6 +81,12 @@ async function verifySession(token: string, secret: string): Promise<SessionUser
   try {
     const p = JSON.parse(b64urlToStr(body)) as SessionUser & { exp?: number };
     if (typeof p.exp !== "number" || p.exp < Date.now() / 1000) return null;
+    // Re-check the allowlist on every request, not just at login, so removing an
+    // id from ADMIN_IDS revokes any live session immediately instead of waiting
+    // up to SESSION_TTL for the cookie to expire. This also rejects pre-`id`
+    // cookies (id absent): without it `String(user.id)` would stamp "undefined"
+    // and the audit log would record a null actor for an authenticated admin.
+    if (typeof p.id !== "number" || !ADMIN_IDS.has(p.id)) return null;
     return {
       id: p.id,
       login: p.login,

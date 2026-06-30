@@ -1,4 +1,4 @@
-import { fmtMoney, TRAVELERS } from "./adminData"
+import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS } from "./adminData"
 import type { Expense, ExpenseSplit } from "../trip/types"
 import { expensePaidBy } from "../trip/expenses"
 import { Avatar } from "./Avatar"
@@ -11,8 +11,6 @@ export type SplitValue =
   | { mode: "single"; payer: string }
   | { mode: "percent"; shares: Record<string, number> }
   | { mode: "amount"; shares: Record<string, number> }
-
-const TRAVELER_IDS = TRAVELERS.map((m) => m.id)
 
 export const defaultSplit = (): SplitValue => ({ mode: "single", payer: TRAVELERS[0]?.id ?? "" })
 
@@ -55,7 +53,7 @@ const evenPercent = (): Record<string, number> => {
 
 const evenAmount = (amount: number): Record<string, number> => {
   const n = TRAVELER_IDS.length || 1
-  const each = Math.round((amount / n) * 100) / 100
+  const each = round2(amount / n)
   return Object.fromEntries(TRAVELER_IDS.map((id) => [id, each]))
 }
 
@@ -84,7 +82,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
       return Object.fromEntries(
         TRAVELER_IDS.map((id) => [
           id,
-          Math.round((Math.max(0, Number(from[id]) || 0) / total) * amount * 100) / 100,
+          round2((Math.max(0, Number(from[id]) || 0) / total) * amount),
         ]),
       )
     }

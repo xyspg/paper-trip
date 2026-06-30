@@ -8,9 +8,11 @@ const tripKey = ["trip"] as const;
 
 export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip });
 
-// Admin-only audit trail. Kept brief-lived so reopening the tab reflects writes
-// made elsewhere; the endpoint 403s for non-admins so this never runs public.
-export const useAudit = () => useQuery({ queryKey: ["audit"], queryFn: fetchAudit });
+// Admin-only audit trail. Gated by `enabled` so it never fires on a public or
+// unauthenticated /admin load (the endpoint 403s for non-admins); `retry: false`
+// because a 403 is authoritative, not a transient error worth re-issuing.
+export const useAudit = (enabled = true) =>
+  useQuery({ queryKey: ["audit"], queryFn: fetchAudit, enabled, retry: false });
 
 // Resolve a card's art by its catalog name. The card list rarely changes, so it
 // is cached indefinitely; cards missing from the catalog (or before the fetch

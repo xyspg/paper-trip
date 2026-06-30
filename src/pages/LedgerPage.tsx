@@ -2,7 +2,7 @@ import { ExternalLink, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
-import { TRAVELERS } from "../admin/adminData";
+import { TRAVELERS, TRAVELER_IDS, fmtMoney } from "../admin/adminData";
 import {
   appliedCredit,
   expenseBalances,
@@ -28,22 +28,14 @@ const PRESENTATION: Record<string, { color: string; icon: ReactNode }> = {
 const FALLBACK = { color: "var(--green)", icon: <Wallet size={20} strokeWidth={2} /> };
 const present = (id: string) => PRESENTATION[id] ?? FALLBACK;
 
-const fmt = (n: number) =>
-  "$" +
-  (Math.round(n * 100) / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
 export function LedgerPage() {
   const { data } = useTrip();
   // Fall back to the seed while the trip loads, matching the timeline page.
   const trip = data?.trip ?? tripData;
   const ledger = trip.expenses;
 
-  const travelerIds = TRAVELERS.map((m) => m.id);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
-  const balances = expenseBalances(ledger, travelerIds);
+  const balances = expenseBalances(ledger, TRAVELER_IDS);
   const each = balances[0]?.share ?? 0;
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
@@ -62,15 +54,15 @@ export function LedgerPage() {
       <section className="summary">
         <div className="sum-cell">
           <div className="sum-k">实付合计 Total</div>
-          <div className="sum-v">{fmt(grand)}</div>
+          <div className="sum-v">{fmtMoney(grand)}</div>
           <div className="sum-note">
-            已抵扣 Chase IHG credit <span>−{fmt(creditTotal)}</span>
+            已抵扣 Chase IHG credit <span>−{fmtMoney(creditTotal)}</span>
           </div>
         </div>
         <div className="sum-div" />
         <div className="sum-cell accent">
           <div className="sum-k">Per Person</div>
-          <div className="sum-v big">{fmt(each)}</div>
+          <div className="sum-v big">{fmtMoney(each)}</div>
         </div>
       </section>
 
@@ -91,15 +83,15 @@ export function LedgerPage() {
               </div>
               <div className="pl-breakdown">
                 <span>
-                  已垫付 <b>{fmt(balance?.paid ?? 0)}</b>
+                  已垫付 <b>{fmtMoney(balance?.paid ?? 0)}</b>
                 </span>
                 <span>
-                  应承担 <b>{fmt(balance?.share ?? each)}</b>
+                  应承担 <b>{fmtMoney(balance?.share ?? each)}</b>
                 </span>
               </div>
               <div className={`pl-net ${settled ? "" : owe ? "owe" : "get"}`}>
                 <span>{settled ? "已结清" : owe ? "需补付" : "应收回"}</span>
-                <b>{fmt(Math.abs(net))}</b>
+                <b>{fmtMoney(Math.abs(net))}</b>
               </div>
             </div>
           );
@@ -116,8 +108,17 @@ export function LedgerPage() {
               // Opened synchronously on click so it isn't blocked as a
               // popup once the async PDF render below finishes.
               const previewWindow = window.open("", "_blank");
-              const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
-              await exportLedgerPdf(trip, TRAVELERS, previewWindow);
+              try {
+                const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
+                await exportLedgerPdf(trip, TRAVELERS, previewWindow);
+              } catch (err) {
+                // Render failed (canvas/import/runtime error): close the blank
+                // tab we opened up front so it isn't left orphaned, and surface
+                // the failure instead of swallowing the rejection.
+                previewWindow?.close();
+                console.error("导出 PDF 失败", err);
+                alert("导出 PDF 失败，请重试");
+              }
             }}
           >
             <ExternalLink size={14} strokeWidth={2.4} />
@@ -132,7 +133,7 @@ export function LedgerPage() {
             // Who actually fronted this line, mirrored read-only from the admin
             // split. Reuses the same normalization the balances use, so the
             // per-person figures here always reconcile with the net.
-            const paidBy = expensePaidBy(item, travelerIds);
+            const paidBy = expensePaidBy(item, TRAVELER_IDS);
             const payers = TRAVELERS.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
             const isSplit = payers.length > 1;
             return (
@@ -146,14 +147,14 @@ export function LedgerPage() {
                     <span className="rs">{item.sub}</span>
                   </span>
                   <span className="amt-box">
-                    <span className="amt">{fmt(item.amount)}</span>
+                    <span className="amt">{fmtMoney(item.amount)}</span>
                   </span>
                 </div>
                 <ExpenseItems items={item.items} />
                 {item.credit > 0 && (
                   <div className="credit-line">
                     <span className="cl-tag">Chase IHG credit</span>
-                    <span className="cl-amt">−{fmt(appliedCredit(item))}</span>
+                    <span className="cl-amt">−{fmtMoney(appliedCredit(item))}</span>
                   </div>
                 )}
                 {payers.length > 0 && (
@@ -168,7 +169,7 @@ export function LedgerPage() {
                             <Avatar m={m} size="xs" />
                             <span className="pb-name">{m.name}</span>
                             {isSplit && <span className="pb-pct">{pct}%</span>}
-                            <b className="pb-amt">{fmt(amt)}</b>
+                            <b className="pb-amt">{fmtMoney(amt)}</b>
                           </span>
                         );
                       })}
@@ -177,10 +178,10 @@ export function LedgerPage() {
                 )}
                 <div className="row-bottom">
                   <span className="rb-left">
-                    <b>{fmt(net)}</b>
+                    <b>{fmtMoney(net)}</b>
                   </span>
                   <span className="per">
-                    <b>{fmt(net / 2)}</b> per person
+                    <b>{fmtMoney(net / 2)}</b> per person
                   </span>
                 </div>
               </div>
@@ -191,19 +192,19 @@ export function LedgerPage() {
         <div className="totals">
           <div className="trow">
             <span>Subtotal</span>
-            <span className="tv">{fmt(subtotal)}</span>
+            <span className="tv">{fmtMoney(subtotal)}</span>
           </div>
           <div className="trow credit">
             <span>Chase IHG credit</span>
-            <span className="tv">−{fmt(creditTotal)}</span>
+            <span className="tv">−{fmtMoney(creditTotal)}</span>
           </div>
           <div className="trow grand">
             <span>Net Total</span>
-            <span className="tv">{fmt(grand)}</span>
+            <span className="tv">{fmtMoney(grand)}</span>
           </div>
           <div className="trow each">
             <span>Per Person</span>
-            <span className="tv">{fmt(each)}</span>
+            <span className="tv">{fmtMoney(each)}</span>
           </div>
         </div>
       </section>

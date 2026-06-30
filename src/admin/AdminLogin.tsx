@@ -20,7 +20,8 @@ export function AdminLogin() {
 
   // A rejected account is a dead end on GitHub's side: GitHub auto-reuses the
   // already-authorized session, so clicking "登录" again just loops back here.
-  // Offer a way out by sending the user to GitHub's sign-out first.
+  // We tell the user to sign out of GitHub themselves (a link to github.com/logout
+  // does nothing over a plain GET; it needs a POST with a CSRF token).
   const forbidden = error === "forbidden";
   const errMsg =
     forbidden && login
@@ -65,9 +66,9 @@ export function AdminLogin() {
           </button>
 
           {forbidden && (
-            <a className="login-switch" href="https://github.com/logout" target="_blank" rel="noreferrer">
-              登录了错误的账号？先退出 GitHub →
-            </a>
+            <p className="login-switch">
+              登录了错误的账号？请先在 github.com 退出该账号，再回来重试。
+            </p>
           )}
         </div>
       </div>

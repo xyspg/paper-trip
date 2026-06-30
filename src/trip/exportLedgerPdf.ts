@@ -1,6 +1,6 @@
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import type { AdminMember } from "../admin/adminData";
+import { fmtMoney, type AdminMember } from "../admin/adminData";
 import {
   appliedCredit,
   expenseBalances,
@@ -18,13 +18,6 @@ import type { Trip } from "./types";
 // that path replays text with jsPDF's built-in Helvetica font, which has no
 // CJK glyphs and corrupts the Chinese expense names. Rasterizing uses the
 // browser's own font stack, so any script it can render renders correctly.
-
-const fmt = (n: number) =>
-  "$" +
-  (Math.round(n * 100) / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 
 const INK = "#161616";
 const RULE = "#161616";
@@ -162,16 +155,16 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
       payers.map((m) => {
         const amt = paidBy[m.id] ?? 0;
         const pct = net > 0 ? Math.round((amt / net) * 100) : 0;
-        return el("div", {}, [isSplit ? `${m.name} ${pct}% (${fmt(amt)})` : m.name]);
+        return el("div", {}, [isSplit ? `${m.name} ${pct}% (${fmtMoney(amt)})` : m.name]);
       }),
     );
 
     itemizedRows.push([
       itemCell,
-      fmt(item.amount),
-      item.credit > 0 ? "-" + fmt(appliedCredit(item)) : "—",
+      fmtMoney(item.amount),
+      item.credit > 0 ? "-" + fmtMoney(appliedCredit(item)) : "—",
       payers.length > 0 ? paidByCell : "—",
-      fmt(net),
+      fmtMoney(net),
     ]);
 
     if (item.items && item.items.length > 0) {
@@ -187,7 +180,7 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
         const liCell = el("div", { paddingLeft: "16px", fontSize: "11px", color: INK }, [
           `${qty}${li.name}${sharers ? `  (${sharers})` : ""}`,
         ]);
-        const priceCell = el("div", { fontSize: "11px", color: INK }, [fmt(li.price)]);
+        const priceCell = el("div", { fontSize: "11px", color: INK }, [fmtMoney(li.price)]);
         itemizedRows.push([liCell, "", "", "", priceCell]);
       }
     }
@@ -235,10 +228,10 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
     statementTable(
       ["", ""],
       [
-        ["Subtotal", fmt(subtotal)],
-        ["Chase IHG credit applied", "-" + fmt(creditTotal)],
-        ["Net total", fmt(grand)],
-        ["Per person", fmt(each)],
+        ["Subtotal", fmtMoney(subtotal)],
+        ["Chase IHG credit applied", "-" + fmtMoney(creditTotal)],
+        ["Net total", fmtMoney(grand)],
+        ["Per person", fmtMoney(each)],
       ],
       ["left", "right"],
     ),
@@ -263,9 +256,9 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
         const status = settled ? "settled" : net < 0 ? "owes" : "is owed";
         return [
           m.name,
-          fmt(b?.paid ?? 0),
-          fmt(b?.share ?? each),
-          `${fmt(Math.abs(net))} (${status})`,
+          fmtMoney(b?.paid ?? 0),
+          fmtMoney(b?.share ?? each),
+          `${fmtMoney(Math.abs(net))} (${status})`,
         ];
       }),
       ["left", "right", "right", "right"],
@@ -286,7 +279,7 @@ function buildStatement(trip: Trip, travelers: AdminMember[]): HTMLDivElement {
       ["Item", "Amount", "Credit", "Paid by", "Net"],
       itemizedRows,
       ["left", "right", "right", "left", "right"],
-      ["", "", "", "Net total", fmt(grand)],
+      ["", "", "", "Net total", fmtMoney(grand)],
     ),
 
     el("div", { fontSize: "10px", color: MUTED, marginTop: "8px" }, [
@@ -391,9 +384,11 @@ export async function exportLedgerPdf(
     );
 
     if (pageIndex > 0) doc.addPage();
+    // JPEG, not PNG: the statement is black ink on white, so a high-quality JPEG
+    // is a fraction of the lossless-PNG size per page with no visible difference.
     doc.addImage(
-      slice.toDataURL("image/png"),
-      "PNG",
+      slice.toDataURL("image/jpeg", 0.92),
+      "JPEG",
       margin,
       margin,
       usableWidth,

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Modal, ROLE } from "baseui/modal"
+import { AdminModal } from "./AdminModal"
 import { CATS, STATUS } from "./adminData"
 import type { StopCat, StopStatus } from "./adminData"
 import { Icons } from "./AdminIcons"
@@ -142,37 +142,14 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
 
 export function AddStopModal({ isOpen, days, initialDay, onClose, onCreate }: Props) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      role={ROLE.dialog}
-      animate
-      autoFocus
-      overrides={{
-        Root: { style: { zIndex: 90 } },
-        Dialog: {
-          style: {
-            width: "min(480px, 92vw)",
-            backgroundColor: "var(--paper-2)",
-            border: "3px solid var(--ink)",
-            borderRadius: "var(--radius)",
-            boxShadow: "var(--shadow)",
-            padding: "0",
-            overflow: "hidden",
-          },
-        },
-        Close: { style: { display: "none" } },
-      }}
-    >
-      <div className="admin-app admin-modal-scope">
-        <Form
-          key={`${initialDay}-${isOpen}`}
-          days={days}
-          initialDay={initialDay}
-          onClose={onClose}
-          onCreate={onCreate}
-        />
-      </div>
-    </Modal>
+    <AdminModal isOpen={isOpen} onClose={onClose}>
+      <Form
+        key={`${initialDay}-${isOpen}`}
+        days={days}
+        initialDay={initialDay}
+        onClose={onClose}
+        onCreate={onCreate}
+      />
+    </AdminModal>
   )
 }

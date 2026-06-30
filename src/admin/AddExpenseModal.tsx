@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Modal, ROLE } from "baseui/modal"
+import { AdminModal } from "./AdminModal"
 import { CATS } from "./adminData"
 import type { Expense, StopCat } from "./adminData"
 import type { ExpenseItem, ExpenseSplit } from "../trip/types"
@@ -147,37 +147,14 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 
 export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      role={ROLE.dialog}
-      animate
-      autoFocus
-      overrides={{
-        Root: { style: { zIndex: 90 } },
-        Dialog: {
-          style: {
-            width: "min(480px, 92vw)",
-            backgroundColor: "var(--paper-2)",
-            border: "3px solid var(--ink)",
-            borderRadius: "var(--radius)",
-            boxShadow: "var(--shadow)",
-            padding: "0",
-            overflow: "hidden",
-          },
-        },
-        Close: { style: { display: "none" } },
-      }}
-    >
-      <div className="admin-app admin-modal-scope">
-        <Form
-          key={`${initial?.id ?? "new"}-${String(isOpen)}`}
-          onClose={onClose}
-          onSubmit={onSubmit}
-          initial={initial}
-        />
-      </div>
-    </Modal>
+    <AdminModal isOpen={isOpen} onClose={onClose}>
+      <Form
+        key={`${initial?.id ?? "new"}-${String(isOpen)}`}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        initial={initial}
+      />
+    </AdminModal>
   )
 }
 

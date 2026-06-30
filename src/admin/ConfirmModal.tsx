@@ -1,6 +1,7 @@
 import { useState } from "react"
 import type { ReactNode } from "react"
-import { Modal, ROLE } from "baseui/modal"
+import { ROLE } from "baseui/modal"
+import { AdminModal } from "./AdminModal"
 import { Icons } from "./AdminIcons"
 
 export type ConfirmModalProps = {
@@ -35,79 +36,62 @@ export function ConfirmModal({
   const phraseOk = !requirePhrase || typed.trim() === requirePhrase
 
   return (
-    <Modal
+    <AdminModal
       isOpen={isOpen}
       onClose={onClose}
+      width="min(400px, 92vw)"
+      zIndex={95}
       role={ROLE.alertdialog}
-      animate
-      autoFocus
-      overrides={{
-        Root: { style: { zIndex: 95 } },
-        Dialog: {
-          style: {
-            width: "min(400px, 92vw)",
-            backgroundColor: "var(--paper-2)",
-            border: "3px solid var(--ink)",
-            borderRadius: "var(--radius)",
-            boxShadow: "var(--shadow)",
-            padding: "0",
-            overflow: "hidden",
-          },
-        },
-        Close: { style: { display: "none" } },
-      }}
     >
-      <div className="admin-app admin-modal-scope">
-        <div className="confirm-modal">
-          <div className="cm-head">
-            <span className="cm-kicker">
-              <Icons.trash sw={2.6} />
-              {title}
-            </span>
-            <button type="button" className="am-close" title="关闭" onClick={onClose}>
-              <Icons.x sw={2.6} />
-            </button>
-          </div>
+      <div className="confirm-modal">
+        <div className="cm-head">
+          <span className="cm-kicker">
+            <Icons.trash sw={2.6} />
+            {title}
+          </span>
+          <button type="button" className="am-close" title="关闭" onClick={onClose}>
+            <Icons.x sw={2.6} />
+          </button>
+        </div>
 
-          <div className="cm-body">
-            {message}
-            {requirePhrase && (
-              <label className="cm-phrase">
-                <span className="cm-phrase-hint">
-                  输入 <code>{requirePhrase}</code> 以确认
-                </span>
-                <input
-                  className="am-input"
-                  type="text"
-                  value={typed}
-                  onChange={(e) => setTyped(e.target.value)}
-                  placeholder={requirePhrase}
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                />
-              </label>
-            )}
-          </div>
+        <div className="cm-body">
+          {message}
+          {requirePhrase && (
+            <label className="cm-phrase">
+              <span className="cm-phrase-hint">
+                输入 <code>{requirePhrase}</code> 以确认
+              </span>
+              <input
+                className="am-input"
+                type="text"
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                placeholder={requirePhrase}
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </label>
+          )}
+        </div>
 
-          <div className="am-foot">
-            <button type="button" className="pbtn dark" autoFocus onClick={onClose}>
-              {cancelLabel}
-            </button>
-            <span className="cm-spacer" />
-            <button
-              type="button"
-              className="pbtn danger"
-              disabled={!phraseOk}
-              onClick={onConfirm}
-            >
-              <Icons.trash sw={2.4} />
-              {confirmLabel}
-            </button>
-          </div>
+        <div className="am-foot">
+          <button type="button" className="pbtn dark" autoFocus onClick={onClose}>
+            {cancelLabel}
+          </button>
+          <span className="cm-spacer" />
+          <button
+            type="button"
+            className="pbtn danger"
+            disabled={!phraseOk}
+            onClick={onConfirm}
+          >
+            <Icons.trash sw={2.4} />
+            {confirmLabel}
+          </button>
         </div>
       </div>
-    </Modal>
+    </AdminModal>
   )
 }
