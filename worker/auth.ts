@@ -4,8 +4,10 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
 import type { Env } from "./env";
 
-// Single admin, hardcoded. Only this verified GitHub email may enter the console.
-const ADMIN_EMAIL = "kangjm2005@gmail.com";
+// Admins, hardcoded by GitHub numeric user id. Ids are immutable and unique, so
+// a rename or a freed-up username can never impersonate an admin (unlike login
+// or email matching). 42668274 = xyspg, 194129427 = Sapphire-Rapids.
+const ADMIN_IDS = new Set([42668274, 194129427]);
 
 // Fixed callback registered with the GitHub OAuth app. The proxy validates our
 // return origin and forwards GitHub's `code` back to us. See xyspg/oauth-proxy.
@@ -161,6 +163,7 @@ auth.get("/callback/github", async (c) => {
       .then((r) =>
         r.ok
           ? r.json<{
+              id: number;
               login: string;
               name: string | null;
               avatar_url: string;
@@ -177,15 +180,17 @@ auth.get("/callback/github", async (c) => {
   ]);
   if (!profile) return fail(c, "user");
 
-  // Only a verified email counts; never trust an unverified address for the gate.
-  const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
-  const email = (primary?.email ?? "").toLowerCase();
-  if (email !== ADMIN_EMAIL) {
+  // Gate on the immutable numeric id, never on a mutable login/email.
+  if (!ADMIN_IDS.has(profile.id)) {
     // Name the rejected account so the login screen can tell the user *which*
     // GitHub identity was refused, instead of a dead end with no context.
     const who = encodeURIComponent(profile.login);
     return c.redirect(`/admin?error=forbidden&login=${who}`, 302);
   }
+
+  // Display-only: a verified email for the session; never trust unverified.
+  const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
+  const email = (primary?.email ?? "").toLowerCase();
 
   const user: SessionUser = {
     login: profile.login,
