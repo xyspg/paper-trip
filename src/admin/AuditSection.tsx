@@ -7,7 +7,7 @@ import { cssVars } from "./style";
 // Human-readable label per TripOp type, so the log reads as actions rather than
 // raw op identifiers. Typed to the TripOp union so adding an op fails the build
 // here until it is labeled, matching the exhaustive opTarget() switch in the worker.
-const OP_LABEL: Record<TripOp["type"], string> = {
+const OP_LABEL: Record<TripOp["type"] | "createBackup" | "deleteBackup" | "restoreBackup", string> = {
   setItemStatus: "更新停靠点状态",
   updateItem: "编辑停靠点",
   setChecklistItem: "勾选清单项",
@@ -23,6 +23,9 @@ const OP_LABEL: Record<TripOp["type"], string> = {
   setExpenseSplit: "修改分账",
   resetExpenses: "恢复原始账目",
   reset: "重置全部数据",
+  createBackup: "创建备份",
+  deleteBackup: "删除备份",
+  restoreBackup: "恢复备份",
 };
 
 // Absolute local time, plus seconds, so the trail is precise enough to audit.
@@ -93,7 +96,9 @@ export function AuditSection() {
                 <summary className="grid grid-cols-[132px_minmax(140px,1fr)_120px_minmax(0,1.2fr)_44px] items-center gap-3 py-[11px] px-[14px] cursor-pointer list-none text-[13px] [&::-webkit-details-marker]:hidden max-[720px]:grid-cols-[1fr_1fr] max-[720px]:gap-y-[6px]">
                   <span className="font-mono text-[12px] text-ink-soft whitespace-nowrap">{fmtTime(e.at)}</span>
                   <ActorCell e={e} />
-                  <span className="font-bold whitespace-nowrap">{OP_LABEL[e.op as TripOp["type"]] ?? e.op}</span>
+                  <span className="font-bold whitespace-nowrap">
+                    {OP_LABEL[e.op as keyof typeof OP_LABEL] ?? e.op}
+                  </span>
                   <span className="font-mono text-[11.5px] text-ink-soft whitespace-nowrap overflow-hidden text-ellipsis">{e.target ?? "—"}</span>
                   <span className="justify-self-end font-mono text-[11px] text-ink-soft max-[720px]:justify-self-start">r{e.rev}</span>
                 </summary>

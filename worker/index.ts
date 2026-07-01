@@ -29,11 +29,20 @@ app.all("/api/trip/*", forwardTrip);
 // the op from a clone so the original body still reaches the Durable Object.
 async function forwardTrip(c: Context<{ Bindings: Env }>): Promise<Response> {
   const req = c.req.raw;
+  const path = new URL(req.url).pathname;
 
   // The audit trail is admin-only to read; never expose it to public visitors.
-  if (req.method === "GET" && new URL(req.url).pathname === "/api/trip/audit") {
+  if (req.method === "GET" && path === "/api/trip/audit") {
     if (!(await sessionUser(c))) return c.json({ error: "forbidden" }, 403);
     return stub(c.env).fetch(req);
+  }
+
+  // Backups include full trip snapshots and restore/delete actions, so every
+  // backup endpoint is admin-only regardless of HTTP method.
+  if (path === "/api/trip/backups" || path.startsWith("/api/trip/backups/")) {
+    const user = await sessionUser(c);
+    if (!user) return c.json({ error: "forbidden" }, 403);
+    return forwardWithActor(c, req, user);
   }
 
   if (req.method === "POST") {
@@ -48,15 +57,23 @@ async function forwardTrip(c: Context<{ Bindings: Env }>): Promise<Response> {
     // Stamp the verified actor onto the request the DO records in its audit log.
     // We always `set` (never trust an inbound x-actor-* header), so a client
     // cannot forge an operator; unauthenticated public ops record as `public`.
-    const headers = new Headers(req.headers);
-    headers.set("x-actor-id", user ? String(user.id) : "");
-    headers.set("x-actor-login", user?.login ?? "public");
-    headers.set("x-actor-email", user?.email ?? "");
-    headers.set("x-actor-ip", c.req.header("cf-connecting-ip") ?? "");
-    return stub(c.env).fetch(new Request(req, { headers }));
+    return forwardWithActor(c, req, user);
   }
 
   return stub(c.env).fetch(req);
+}
+
+function forwardWithActor(
+  c: Context<{ Bindings: Env }>,
+  req: Request,
+  user: Awaited<ReturnType<typeof sessionUser>>,
+) {
+  const headers = new Headers(req.headers);
+  headers.set("x-actor-id", user ? String(user.id) : "");
+  headers.set("x-actor-login", user?.login ?? "public");
+  headers.set("x-actor-email", user?.email ?? "");
+  headers.set("x-actor-ip", c.req.header("cf-connecting-ip") ?? "");
+  return stub(c.env).fetch(new Request(req, { headers }));
 }
 
 function stub(env: Env) {

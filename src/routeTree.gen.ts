@@ -18,6 +18,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSuggestionsRouteImport } from './routes/admin.suggestions'
 import { Route as AdminSplitRouteImport } from './routes/admin.split'
 import { Route as AdminItineraryRouteImport } from './routes/admin.itinerary'
+import { Route as AdminBackupsRouteImport } from './routes/admin.backups'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 
 const TimelineRoute = TimelineRouteImport.update({
@@ -65,6 +66,11 @@ const AdminItineraryRoute = AdminItineraryRouteImport.update({
   path: '/itinerary',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBackupsRoute = AdminBackupsRouteImport.update({
+  id: '/backups',
+  path: '/backups',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/backups': typeof AdminBackupsRoute
   '/admin/itinerary': typeof AdminItineraryRoute
   '/admin/split': typeof AdminSplitRoute
   '/admin/suggestions': typeof AdminSuggestionsRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/backups': typeof AdminBackupsRoute
   '/admin/itinerary': typeof AdminItineraryRoute
   '/admin/split': typeof AdminSplitRoute
   '/admin/suggestions': typeof AdminSuggestionsRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/backups': typeof AdminBackupsRoute
   '/admin/itinerary': typeof AdminItineraryRoute
   '/admin/split': typeof AdminSplitRoute
   '/admin/suggestions': typeof AdminSuggestionsRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/timeline'
     | '/admin/audit'
+    | '/admin/backups'
     | '/admin/itinerary'
     | '/admin/split'
     | '/admin/suggestions'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/timeline'
     | '/admin/audit'
+    | '/admin/backups'
     | '/admin/itinerary'
     | '/admin/split'
     | '/admin/suggestions'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/timeline'
     | '/admin/audit'
+    | '/admin/backups'
     | '/admin/itinerary'
     | '/admin/split'
     | '/admin/suggestions'
@@ -218,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminItineraryRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/backups': {
+      id: '/admin/backups'
+      path: '/backups'
+      fullPath: '/admin/backups'
+      preLoaderRoute: typeof AdminBackupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/audit': {
       id: '/admin/audit'
       path: '/audit'
@@ -230,6 +249,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminBackupsRoute: typeof AdminBackupsRoute
   AdminItineraryRoute: typeof AdminItineraryRoute
   AdminSplitRoute: typeof AdminSplitRoute
   AdminSuggestionsRoute: typeof AdminSuggestionsRoute
@@ -238,6 +258,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
+  AdminBackupsRoute: AdminBackupsRoute,
   AdminItineraryRoute: AdminItineraryRoute,
   AdminSplitRoute: AdminSplitRoute,
   AdminSuggestionsRoute: AdminSuggestionsRoute,

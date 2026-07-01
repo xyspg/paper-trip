@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
-import { useAudit, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
+import { useAudit, useBackups, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
@@ -12,7 +12,7 @@ import { ADMIN_SESSION_KEY, adminLogout, fetchAdminUser } from "../admin/auth";
 import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 
-type SectionKey = "itinerary" | "suggestions" | "split" | "audit";
+type SectionKey = "itinerary" | "suggestions" | "split" | "backups" | "audit";
 type NavEntry = {
   key: SectionKey;
   to: string;
@@ -27,6 +27,7 @@ const NAV: NavEntry[] = [
   { key: "itinerary", to: "/admin/itinerary", label: "行程停靠点", icon: "route" },
   { key: "suggestions", to: "/admin/suggestions", label: "待审建议", icon: "chat", badge: true },
   { key: "split", to: "/admin/split", label: "分账金额", icon: "wallet" },
+  { key: "backups", to: "/admin/backups", label: "备份恢复", icon: "repo" },
   { key: "audit", to: "/admin/audit", label: "操作记录", icon: "repo" },
 ];
 
@@ -50,6 +51,7 @@ export function AdminPage() {
   useTripLiveSync();
   const { data: tripSnap } = useTrip();
   const { data: auditEntries } = useAudit(Boolean(user));
+  const { data: backups } = useBackups(Boolean(user));
   const tripOp = useTripOp();
   const suggestions = tripSnap?.trip.suggestions ?? [];
   const tripItems = tripSnap?.trip.items ?? [];
@@ -60,6 +62,7 @@ export function AdminPage() {
     itinerary: stops.length,
     suggestions: pendingCount,
     split: expenses.length,
+    backups: backups?.length ?? 0,
     audit: auditEntries?.length ?? 0,
   };
 
