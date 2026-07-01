@@ -4,7 +4,7 @@ import { CATS } from "./adminData"
 import type { Expense, StopCat } from "./adminData"
 import type { ExpenseItem, ExpenseSplit } from "../trip/types"
 import { Icons } from "./AdminIcons"
-import { cssVars } from "./style"
+import { BTN, BTN_GHOST, BTN_INK, FIELD_INPUT, FIELD_LABEL } from "./adminUi"
 import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
 import type { SplitValue } from "./PaymentSplit"
 
@@ -52,21 +52,23 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 
   return (
     <form className="flex flex-col" onSubmit={submit}>
-      <div className="flex items-center gap-3 px-[18px] py-[15px] bg-ink text-paper border-b-[3px] border-ink">
-        <span className="inline-flex items-center gap-[9px] font-display font-black text-[16px] tracking-[0.02em] uppercase [&_svg]:w-4.5 [&_svg]:h-4.5">
-          {editing ? <Icons.pencil sw={2.8} /> : <Icons.plus sw={2.8} />}
+      <div className="flex items-center gap-3 px-[18px] py-4 border-b border-[#ebe9e3]">
+        <span className="shrink-0 w-9 h-9 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] grid place-items-center [&_svg]:size-[17px]">
+          {editing ? <Icons.pencil sw={2.6} /> : <Icons.plus sw={2.6} />}
+        </span>
+        <span className="font-sans font-bold text-[16px] tracking-tight">
           {editing ? "编辑花销条目" : "新增花销条目"}
         </span>
-        <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border-2 border-paper/30 bg-transparent text-paper cursor-pointer hover:bg-magenta hover:text-ink hover:border-paper [&_svg]:w-[15px] [&_svg]:h-[15px]" title="关闭" onClick={onClose}>
+        <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border border-[#ebe9e3] bg-white text-[#76726a] cursor-pointer [&_svg]:size-[15px] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors" title="关闭" onClick={onClose}>
           <Icons.x sw={2.6} />
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">名称</span>
+          <span className={FIELD_LABEL}>名称</span>
           <input
-            className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
+            className={FIELD_INPUT}
             value={name}
             autoFocus
             autoComplete="off"
@@ -78,9 +80,9 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">明细（可选）</span>
+          <span className={FIELD_LABEL}>明细（可选）</span>
           <input
-            className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
+            className={FIELD_INPUT}
             value={sub}
             autoComplete="off"
             data-1p-ignore
@@ -91,9 +93,9 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">金额 (USD)</span>
+          <span className={FIELD_LABEL}>金额 (USD)</span>
           <input
-            className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
+            className={FIELD_INPUT}
             type="number"
             inputMode="decimal"
             step="0.01"
@@ -108,35 +110,41 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </label>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">谁付的 · 分摊</span>
+          <span className={FIELD_LABEL}>谁付的 · 分摊</span>
           <PaymentSplit value={split} onChange={setSplit} amount={parsed} />
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">类别</span>
+          <span className={FIELD_LABEL}>类别</span>
           <div className="flex flex-wrap gap-[7px]">
-            {CAT_KEYS.map((k) => (
-              <button
-                type="button"
-                key={k}
-                className={`inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[11px] tracking-[0.04em] px-3 py-[7px] rounded-full border-2 border-ink text-ink cursor-pointer ${cat === k ? "bg-[var(--chip,var(--color-ink))] shadow-[3px_3px_0_var(--color-ink)] [&>span]:bg-ink" : "bg-paper-2"}`}
-                style={cssVars({ "--chip": CATS[k].color })}
-                onClick={() => setCat(k)}
-              >
-                <span className="w-2.5 h-2.5 rounded-[3px] border-[1.5px] border-ink bg-[var(--chip,var(--color-cyan))]" />
-                {CATS[k].label}
-              </button>
-            ))}
+            {CAT_KEYS.map((k) => {
+              const on = cat === k
+              return (
+                <button
+                  type="button"
+                  key={k}
+                  className={`inline-flex items-center gap-2 font-grotesk font-semibold text-[11px] tracking-[0.03em] px-3 py-[7px] rounded-full border transition-colors ${on ? "text-white" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
+                  style={on ? { background: CATS[k].color, borderColor: CATS[k].color } : undefined}
+                  onClick={() => setCat(k)}
+                >
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ background: on ? "rgba(255,255,255,0.85)" : CATS[k].color }}
+                  />
+                  {CATS[k].label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 px-[18px] py-3.5 border-t-[3px] border-ink bg-paper">
-        <button type="button" className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] px-[15px] py-[9px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap transition-[transform,box-shadow] duration-[0.08s] ease-[ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-paper-2 text-ink shadow-[3px_3px_0_var(--color-ink)] disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_var(--color-ink)]" onClick={onClose}>
+      <div className="flex items-center gap-2.5 px-[18px] py-3.5 border-t border-[#ebe9e3] bg-[#fdfdfb]">
+        <button type="button" className={`${BTN} ${BTN_GHOST}`} onClick={onClose}>
           取消
         </button>
-        <span />
-        <button type="submit" className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] px-[15px] py-[9px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap transition-[transform,box-shadow] duration-[0.08s] ease-[ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-[var(--accent,var(--color-yellow))] text-ink shadow-[3px_3px_0_var(--color-ink)] hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--color-ink)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_var(--color-ink)]" disabled={!canSubmit}>
+        <span className="ml-auto" />
+        <button type="submit" className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`} disabled={!canSubmit}>
           {editing ? <Icons.check sw={2.6} /> : <Icons.plus sw={2.6} />}
           {editing ? "保存修改" : "添加条目"}
         </button>

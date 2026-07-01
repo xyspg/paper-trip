@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { ROLE } from "baseui/modal"
 import { AdminModal } from "./AdminModal"
 import { Icons } from "./AdminIcons"
+import { BTN, BTN_GHOST } from "./adminUi"
 
 export type ConfirmModalProps = {
   isOpen: boolean
@@ -18,9 +19,9 @@ export type ConfirmModalProps = {
   onClose: () => void
 }
 
-// Shared destructive-action confirmation. Mirrors AddStopModal's Base Web Modal
-// shell (mounted inside `.admin-app` so the neo-brutalist tokens apply) but with a
-// danger-accented header so deletes always require a deliberate second tap.
+// Shared destructive-action confirmation. Uses the calm AdminModal shell but with
+// an alert-tinted icon header (explicit #c2553f, since the palette's magenta token
+// now resolves to accent green) so deletes always read as a deliberate second tap.
 export function ConfirmModal({
   isOpen,
   title = "确认删除",
@@ -44,25 +45,25 @@ export function ConfirmModal({
       role={ROLE.alertdialog}
     >
       <div className="flex flex-col">
-        <div className="flex items-center gap-3 py-[15px] px-[18px] bg-magenta text-ink border-b-[3px] border-ink">
-          <span className="inline-flex items-center gap-[9px] font-display font-black text-[16px] tracking-[0.02em] uppercase [&_svg]:size-[18px]">
-            <Icons.trash sw={2.6} />
-            {title}
+        <div className="flex items-center gap-3 py-4 px-[18px] border-b border-[#ebe9e3]">
+          <span className="shrink-0 w-9 h-9 rounded-[10px] bg-[#f7e9e4] text-[#c2553f] grid place-items-center [&_svg]:size-[18px]">
+            <Icons.trash sw={2.4} />
           </span>
-          <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border-2 border-ink/30 bg-transparent text-ink cursor-pointer [&_svg]:size-[15px] hover:bg-ink hover:text-paper hover:border-ink" title="关闭" onClick={onClose}>
+          <span className="font-sans font-bold text-[16px] tracking-tight">{title}</span>
+          <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border border-[#ebe9e3] bg-white text-[#76726a] cursor-pointer [&_svg]:size-[15px] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors" title="关闭" onClick={onClose}>
             <Icons.x sw={2.6} />
           </button>
         </div>
 
-        <div className="py-5 px-[18px] font-cjk font-semibold text-[14px] leading-[1.6] text-ink [&_b]:font-black">
+        <div className="py-5 px-[18px] font-cjk text-[14px] leading-[1.6] text-[#3b3833] [&_b]:font-bold [&_b]:text-[#1c1b19]">
           {message}
           {requirePhrase && (
             <label className="flex flex-col gap-2 mt-4">
-              <span className="font-cjk font-bold text-[13px] text-ink-soft [&_code]:font-mono [&_code]:font-extrabold [&_code]:text-[12px] [&_code]:text-ink [&_code]:bg-paper [&_code]:border-2 [&_code]:border-ink [&_code]:rounded-[6px] [&_code]:py-px [&_code]:px-1.5">
+              <span className="font-cjk font-medium text-[13px] text-[#76726a] [&_code]:font-mono [&_code]:font-bold [&_code]:text-[12px] [&_code]:text-[#1c1b19] [&_code]:bg-[#f3f1ec] [&_code]:border [&_code]:border-[#ebe9e3] [&_code]:rounded-[6px] [&_code]:py-px [&_code]:px-1.5">
                 输入 <code>{requirePhrase}</code> 以确认
               </span>
               <input
-                className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] py-2.5 px-3 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
+                className="font-cjk font-medium text-[14px] text-[#1c1b19] bg-white border border-[#ebe9e3] rounded-[10px] py-2.5 px-3 outline-none w-full transition-colors focus:border-[#1c1b19] placeholder:text-[#9b988f]"
                 type="text"
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
@@ -76,19 +77,14 @@ export function ConfirmModal({
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 py-3.5 px-[18px] border-t-[3px] border-ink bg-paper">
-          <button
-            type="button"
-            className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[9px] px-[15px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] [&_svg]:size-[14px] bg-paper-2 text-ink shadow-[3px_3px_0_var(--color-ink)]"
-            autoFocus
-            onClick={onClose}
-          >
+        <div className="flex items-center gap-2.5 py-3.5 px-[18px] border-t border-[#ebe9e3] bg-[#fdfdfb]">
+          <button type="button" className={`${BTN} ${BTN_GHOST}`} autoFocus onClick={onClose}>
             {cancelLabel}
           </button>
           <span className="ml-auto" />
           <button
             type="button"
-            className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[9px] px-[15px] rounded-full border-2 border-magenta cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] [&_svg]:size-[14px] bg-paper-2 text-magenta hover:bg-magenta hover:text-paper disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_var(--color-ink)]"
+            className={`${BTN} bg-[#c2553f] text-white border border-[#c2553f] hover:brightness-95 [&_svg]:size-3.5`}
             disabled={!phraseOk}
             onClick={onConfirm}
           >

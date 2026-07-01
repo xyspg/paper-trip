@@ -13,6 +13,13 @@ export const BTN_DANGER =
   "bg-white border border-[#ecccc2] text-[#c2553f] hover:bg-[#c2553f] hover:text-white";
 export const BTN_ACCENT = "bg-[#3f6f5b] text-white hover:brightness-95";
 
+// Shared modal form-field recipes (label + text/select/number input), so every
+// admin dialog renders identical calm fields.
+export const FIELD_LABEL =
+  "font-grotesk font-semibold text-[10px] tracking-[0.12em] uppercase text-[#9b988f]";
+export const FIELD_INPUT =
+  "font-cjk font-medium text-[14px] text-[#1c1b19] bg-white border border-[#ebe9e3] rounded-[10px] px-3 py-2.5 outline-none w-full transition-colors focus:border-[#1c1b19] placeholder:text-[#9b988f]";
+
 export function SectionHead({
   kicker,
   title,
