@@ -73,12 +73,14 @@ export const TRAVELERS: AdminMember[] = MEMBERS.filter((m) => m.traveler);
 export const TRAVELER_IDS: string[] = TRAVELERS.map((m) => m.id);
 
 // ---- Category palette (shared with itinerary page) ----
+// Editorial paper hues (slate / ochre / alert / plum / accent). Literal hex so
+// the itinerary can derive translucent tints via `color + '55'` / `+ '12'`.
 export const CATS: Record<StopCat, { label: string; color: string }> = {
-  transit: { label: "交通 · Transit", color: "var(--color-cyan)" },
-  food: { label: "用餐 · Food", color: "var(--color-yellow)" },
-  event: { label: "活动 · Event", color: "var(--color-magenta)" },
-  stay: { label: "酒店 · Stay", color: "var(--color-violet)" },
-  misc: { label: "杂项 · Misc", color: "var(--color-green)" },
+  transit: { label: "交通 · Transit", color: "#5b7a99" },
+  food: { label: "用餐 · Food", color: "#b08648" },
+  event: { label: "活动 · Event", color: "#c2553f" },
+  stay: { label: "酒店 · Stay", color: "#7a5c84" },
+  misc: { label: "杂项 · Misc", color: "#3f6f5b" },
 };
 
 export const STATUS: Record<StopStatus, { label: string; cls: string }> = {
