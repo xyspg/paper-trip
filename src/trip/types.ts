@@ -19,6 +19,18 @@ export type TripItem = {
     primary: string;
     backup?: string;
     warning?: string;
+    provider?: string;
+    passUrl?: string;
+    reservationId?: string;
+    address?: string;
+    validFrom?: string;
+    validTo?: string;
+    price?: number;
+    inOutAllowed?: boolean;
+    walkMinutes?: number;
+    walkDistanceMiles?: number;
+    licensePlateRequired?: boolean;
+    notes?: string[];
   };
   links: {
     label: string;

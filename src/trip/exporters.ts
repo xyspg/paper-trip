@@ -42,8 +42,17 @@ export const toMarkdown = (trip: Trip) => {
           const parking = item.parking
             ? [
                 `    - 停车：${item.parking.primary}`,
+                item.parking.reservationId ? `    - 预订号：${item.parking.reservationId}` : "",
+                item.parking.address ? `    - 停车地址：${item.parking.address}` : "",
+                item.parking.validFrom && item.parking.validTo
+                  ? `    - 有效时间：${item.parking.validFrom} - ${item.parking.validTo}`
+                  : "",
+                typeof item.parking.price === "number" ? `    - 价格：$${item.parking.price.toFixed(2)}` : "",
+                item.parking.inOutAllowed ? "    - In & Out Allowed" : "",
+                item.parking.passUrl ? `    - 停车证：${item.parking.passUrl}` : "",
                 item.parking.backup ? `    - 备用停车：${item.parking.backup}` : "",
                 item.parking.warning ? `    - 提醒：${item.parking.warning}` : "",
+                ...(item.parking.notes ?? []).map((note) => `    - ${note}`),
               ]
                 .filter(Boolean)
                 .join("\n")

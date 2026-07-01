@@ -1,10 +1,11 @@
-import type { CSSProperties } from "react"
+import type { CSSProperties, ReactNode } from "react"
+import { AlertTriangle, Clock, DollarSign, ExternalLink, Hash, MapPin, Repeat2, Route } from "lucide-react"
 import { AddressLink } from "../components/AddressLink"
 import { SuggestBox } from "../components/SuggestBox"
 import { cardRecs } from "../trip/cardRecs"
 import { useCardImage } from "../trip/hooks"
 import type { ItemStatus, Trip, TripItem } from "../trip/types"
-import { dayLabels, formatDayDate, itemPlans, renderRich, type StopPlan } from "./timelineShared"
+import { dayLabels, formatDayDate, hasRichParking, itemPlans, renderRich, type StopPlan } from "./timelineShared"
 
 // Paper theme timeline: a faithful port of the "行程表" Claude Design layout
 // (light masthead + stat strip, next-up row, day sections, vertical ticket
@@ -75,7 +76,7 @@ export function PaperTimeline({
 
         <div className="grid grid-cols-3 mt-6.5 overflow-hidden border border-[#ebe9e3] rounded-[14px] max-[620px]:grid-cols-1">
           <Stat k="Stops" v={trip.items.length.toString()} sub={`停靠点 · 横跨 ${orderedDates.length} 天`} />
-          <Stat k="Plans" v={parkingCount.toString()} sub="主方案 + 备用方案" />
+          <Stat k="Parking" v={parkingCount.toString()} sub="停车方案 · Parking" />
           <Stat k="Window" v={dateRange} sub="周五抵达 · 周日返程" accent />
         </div>
       </header>
@@ -243,6 +244,8 @@ function Ticket({
             {item.address}
           </AddressLink>
 
+          {item.parking && hasRichParking(item) && <ParkingPanel item={item} />}
+
           {plans.length > 0 && (
             <div className="grid gap-2 mt-3.5">
               {plans.map((plan) => (
@@ -279,6 +282,114 @@ function PlanRow({ plan }: { plan: StopPlan }) {
       </span>
       <span className={`font-cjk text-[13px] leading-[1.6] ${alt ? "text-[#76726a]" : "text-[#3b3833]"}`}>
         {renderRich(plan.text, PAPER_BOLD)}
+      </span>
+    </div>
+  )
+}
+
+function ParkingPanel({ item }: { item: TripItem }) {
+  const parking = item.parking
+  if (!parking) return null
+
+  const timeWindow =
+    parking.validFrom && parking.validTo ? `${parking.validFrom} - ${parking.validTo}` : undefined
+  const walk =
+    parking.walkMinutes && parking.walkDistanceMiles
+      ? `${parking.walkMinutes} min / ${parking.walkDistanceMiles} mi`
+      : undefined
+
+  return (
+    <div className="mt-3.5 overflow-hidden border border-[#e6dfd4] rounded-[13px] bg-[#fdfdfb]">
+      <div className="flex flex-wrap gap-2 items-center px-[13px] py-[10px] border-b border-[#ebe9e3] bg-[#f7f0e2]">
+        <span className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.12em] text-white bg-[#1c1b19] rounded-full py-[3px] px-2.5">
+          Parking
+        </span>
+        <span className="font-cjk font-bold text-[13.5px] text-[#1c1b19]">{parking.primary}</span>
+        {parking.provider && (
+          <span className="ml-auto font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] text-[#76726a] border border-[#e0d8cc] bg-white rounded-full py-[3px] px-2 max-[620px]:ml-0">
+            {parking.provider}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-[1.05fr_0.95fr] gap-3 p-[13px] max-[760px]:grid-cols-1">
+        <div className="min-w-0">
+          <div className="grid grid-cols-2 gap-2 max-[500px]:grid-cols-1">
+            {parking.reservationId && (
+              <ParkingFact icon={<Hash size={13} />} label="Rental ID" value={parking.reservationId} />
+            )}
+            {timeWindow && <ParkingFact icon={<Clock size={13} />} label="Window" value={timeWindow} />}
+            {typeof parking.price === "number" && (
+              <ParkingFact icon={<DollarSign size={13} />} label="Total" value={`$${parking.price.toFixed(2)}`} />
+            )}
+            {walk && <ParkingFact icon={<Route size={13} />} label="Walk" value={walk} />}
+            {parking.inOutAllowed && (
+              <ParkingFact icon={<Repeat2 size={13} />} label="Access" value="In & Out Allowed" />
+            )}
+          </div>
+
+          {parking.warning && (
+            <div className="flex gap-[9px] items-start mt-2.5 py-2.5 px-[13px] rounded-[10px] border border-[#ead6a3] bg-[#fff8dc] font-cjk text-[12px] leading-[1.6] text-[#3b3833]">
+              <AlertTriangle className="shrink-0 mt-[2px] text-[#b08648]" size={15} strokeWidth={2.4} />
+              <span>{parking.warning}</span>
+            </div>
+          )}
+
+          {parking.notes && parking.notes.length > 0 && (
+            <div className="grid gap-1.5 mt-2.5">
+              {parking.notes.map((note) => (
+                <div className="font-cjk text-[12px] leading-[1.55] text-[#76726a]" key={note}>
+                  {note}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="grid content-start gap-2">
+          {parking.address && (
+            <AddressLink
+              className="inline-flex items-center gap-2.5 w-full box-border py-2.5 px-[13px] rounded-[10px] border border-[#ebe9e3] bg-white text-[#1c1b19] no-underline font-cjk font-semibold text-[12.5px] hover:border-[#cfc7bb]"
+              query={parking.address}
+              leading={<MapPin className="shrink-0 text-[#3f6f5b]" size={16} strokeWidth={2.4} />}
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.1em] text-[#9b988f]">
+                  Map
+                </span>
+                <span className="block truncate">{parking.address}</span>
+              </span>
+            </AddressLink>
+          )}
+
+          {parking.passUrl && (
+            <a
+              className="inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] hover:bg-[#3f6f5b]"
+              href={parking.passUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              SpotHero Pass
+              <ExternalLink size={14} strokeWidth={2.4} />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ParkingFact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex gap-2 items-start min-w-0 py-2 px-[11px] rounded-[10px] border border-[#ebe9e3] bg-white">
+      <span className="grid shrink-0 place-items-center w-[23px] h-[23px] rounded-[7px] bg-[#eef4f0] text-[#3f6f5b]">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] text-[#9b988f]">
+          {label}
+        </span>
+        <span className="block font-cjk font-bold text-[12.5px] text-[#1c1b19] truncate">{value}</span>
       </span>
     </div>
   )

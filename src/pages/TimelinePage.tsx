@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { AlertTriangle, Clock, DollarSign, ExternalLink, Hash, MapPin, Repeat2, Route } from "lucide-react";
 import { AddressLink } from "../components/AddressLink";
 import { SuggestBox } from "../components/SuggestBox";
 import { useTheme } from "../theme/ThemeProvider";
@@ -8,7 +9,7 @@ import { useCardImage, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks
 import { tripData } from "../trip/tripData";
 import type { ItemStatus, TripItem } from "../trip/types";
 import { PaperTimeline } from "./PaperTimeline";
-import { dayLabels, formatDayDate, itemPlans, renderRich } from "./timelineShared";
+import { dayLabels, formatDayDate, hasRichParking, itemPlans, renderRich } from "./timelineShared";
 
 type DayAccent = "magenta" | "cyan" | "green";
 
@@ -59,9 +60,7 @@ export function TimelinePage() {
 
   const nextItem = trip.items.find((item) => item.status !== "done") ?? trip.items[0];
   const nextPlan = nextItem.parking?.primary ?? nextItem.notes[0] ?? nextItem.location;
-  const parkingCount = trip.items.filter(
-    (item) => item.parking?.primary && item.parking?.backup,
-  ).length;
+  const parkingCount = trip.items.filter((item) => item.parking?.primary).length;
   const dateRange = `${shortDate(trip.dates.start)}–${shortDate(trip.dates.end)}`;
 
   const cycleStatus = (item: TripItem) =>
@@ -105,7 +104,7 @@ export function TimelinePage() {
             label={`停靠点 · 横跨 ${orderedDates.length} 天`}
             tone="c1"
           />
-          <SummaryStat value={parkingCount.toString()} label="主方案 + 备用方案" tone="c2" />
+          <SummaryStat value={parkingCount.toString()} label="停车方案 · Parking" tone="c2" />
           <SummaryStat value={dateRange} label="周五抵达 · 周日返程" tone="c3" />
         </div>
       </header>
@@ -275,6 +274,7 @@ function TicketStop({
           >
             {item.address}
           </AddressLink>
+          {item.parking && hasRichParking(item) && <ParkingPanel item={item} />}
           {plans.length > 0 && (
             <div className="grid gap-2 mt-3.5">
               {plans.map((plan) => (
@@ -289,6 +289,114 @@ function TicketStop({
         </div>
       </div>
     </article>
+  );
+}
+
+function ParkingPanel({ item }: { item: TripItem }) {
+  const parking = item.parking;
+  if (!parking) return null;
+
+  const timeWindow =
+    parking.validFrom && parking.validTo ? `${parking.validFrom} - ${parking.validTo}` : undefined;
+  const walk =
+    parking.walkMinutes && parking.walkDistanceMiles
+      ? `${parking.walkMinutes} min / ${parking.walkDistanceMiles} mi`
+      : undefined;
+
+  return (
+    <div className="mt-3.5 overflow-hidden bg-paper border-2 border-ink rounded-xl shadow-[2px_2px_0_var(--color-ink)]">
+      <div className="flex flex-wrap gap-2.5 items-center py-2.5 px-3 bg-[color-mix(in_srgb,var(--cat,var(--color-cyan))_18%,var(--color-paper))] border-b-2 border-ink">
+        <span className="inline-flex items-center gap-1.5 py-1 px-2.5 text-paper bg-ink rounded-full font-grotesk text-[10px] font-extrabold uppercase tracking-[0.12em]">
+          Parking
+        </span>
+        <span className="font-cjk text-[14px] font-black text-ink">{parking.primary}</span>
+        {parking.provider && (
+          <span className="ml-auto py-1 px-2 border-2 border-ink rounded-full bg-paper-2 font-grotesk text-[10px] font-extrabold uppercase tracking-[0.08em] max-[560px]:ml-0">
+            {parking.provider}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-[1.05fr_0.95fr] gap-3 p-3 max-[720px]:grid-cols-1">
+        <div className="min-w-0">
+          <div className="grid grid-cols-2 gap-2 max-[460px]:grid-cols-1">
+            {parking.reservationId && (
+              <ParkingFact icon={<Hash size={14} />} label="Rental ID" value={parking.reservationId} />
+            )}
+            {timeWindow && <ParkingFact icon={<Clock size={14} />} label="Window" value={timeWindow} />}
+            {typeof parking.price === "number" && (
+              <ParkingFact icon={<DollarSign size={14} />} label="Total" value={`$${parking.price.toFixed(2)}`} />
+            )}
+            {walk && <ParkingFact icon={<Route size={14} />} label="Walk" value={walk} />}
+            {parking.inOutAllowed && (
+              <ParkingFact icon={<Repeat2 size={14} />} label="Access" value="In & Out Allowed" />
+            )}
+          </div>
+
+          {parking.warning && (
+            <div className="flex gap-2.5 items-start mt-2.5 py-2.5 px-3 bg-yellow border-2 border-ink rounded-[10px] font-cjk text-[12.5px] font-bold leading-[1.45]">
+              <AlertTriangle className="shrink-0 mt-0.5" size={16} strokeWidth={2.6} />
+              <span>{parking.warning}</span>
+            </div>
+          )}
+
+          {parking.notes && parking.notes.length > 0 && (
+            <div className="grid gap-1.5 mt-2.5">
+              {parking.notes.map((note) => (
+                <div className="font-cjk text-[12.5px] text-ink-soft font-semibold leading-[1.45]" key={note}>
+                  {note}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="grid content-start gap-2">
+          {parking.address && (
+            <AddressLink
+              className="inline-flex items-center gap-2.5 w-full box-border py-2.5 px-3 text-ink bg-paper-2 border-2 border-ink rounded-[10px] no-underline font-cjk text-[13px] font-extrabold hover:bg-cyan"
+              query={parking.address}
+              leading={<MapPin className="shrink-0" size={17} strokeWidth={2.6} />}
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block uppercase tracking-[0.12em] font-grotesk text-[9.5px] text-ink-soft">
+                  Map
+                </span>
+                <span className="block truncate">{parking.address}</span>
+              </span>
+            </AddressLink>
+          )}
+
+          {parking.passUrl && (
+            <a
+              className="inline-flex items-center justify-center gap-2 py-2.5 px-3 text-paper bg-ink border-2 border-ink rounded-[10px] no-underline font-grotesk text-[12px] font-extrabold uppercase tracking-[0.08em] hover:bg-magenta hover:text-ink"
+              href={parking.passUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              SpotHero Pass
+              <ExternalLink size={15} strokeWidth={2.6} />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ParkingFact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex gap-2 items-start py-2.5 px-3 bg-paper-2 border-2 border-ink rounded-[10px] min-w-0">
+      <span className="grid shrink-0 place-items-center w-6 h-6 text-ink bg-cyan border-2 border-ink rounded-md">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block uppercase tracking-[0.1em] font-grotesk text-[9.5px] font-extrabold text-ink-soft">
+          {label}
+        </span>
+        <span className="block font-cjk text-[13px] font-black text-ink truncate">{value}</span>
+      </span>
+    </div>
   );
 }
 

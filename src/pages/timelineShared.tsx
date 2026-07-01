@@ -8,10 +8,25 @@ import type { TripItem } from "../trip/types"
 
 export type StopPlan = { kind: "main" | "alt"; label: string; text: string }
 
+export const hasRichParking = (item: TripItem): boolean =>
+  Boolean(
+    item.parking &&
+      (item.parking.passUrl ||
+        item.parking.reservationId ||
+        item.parking.address ||
+        item.parking.validFrom ||
+        item.parking.price),
+  )
+
 export const itemPlans = (item: TripItem): StopPlan[] => {
   if (item.parking) {
-    const plans: StopPlan[] = [{ kind: "main", label: "主方案", text: item.parking.primary }]
+    const plans: StopPlan[] = hasRichParking(item)
+      ? []
+      : [{ kind: "main", label: "主方案", text: item.parking.primary }]
     if (item.parking.backup) plans.push({ kind: "alt", label: "备用", text: item.parking.backup })
+    if (item.parking.warning && !hasRichParking(item)) {
+      plans.push({ kind: "alt", label: "提醒", text: item.parking.warning })
+    }
     return plans
   }
   return item.notes.slice(0, 2).map((text, index) => ({
