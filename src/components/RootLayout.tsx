@@ -11,8 +11,8 @@ export function RootLayout() {
   }
 
   return (
-    <main className="ax-page">
-      <div className="wrap">
+    <main className="min-h-svh p-[clamp(14px,3vw,40px)] overflow-x-clip bg-paper paper-grid text-ink font-grotesk leading-normal">
+      <div className="w-[min(1040px,100%)] mx-auto">
         <PageNav />
         <Outlet />
       </div>

@@ -125,66 +125,67 @@ export function SplitSection({
 
   return (
     <div>
-      <div className="sec-banner" style={cssVars({ "--accent": "var(--yellow)" })}>
-        <span className="sb-num">03</span>
-        <div className="sb-meta">
-          <div className="sb-t">分账金额</div>
-          <div className="sb-d">点金额改完即保存 · 选「谁付的」· 合计与结算自动刷新</div>
+      <div className="relative bg-ink text-paper border-[3px] border-ink rounded-card shadow-hard-sm py-[18px] px-[clamp(18px,3vw,26px)] overflow-hidden isolate flex items-center gap-4 flex-wrap before:content-[''] before:absolute before:inset-0 before:z-[-1] before:bg-[repeating-linear-gradient(115deg,transparent_0_24px,rgba(255,255,255,0.04)_24px_26px)]" style={cssVars({ "--accent": "var(--color-yellow)" })}>
+        <span className="shrink-0 font-display font-black text-[24px] leading-none text-ink bg-[var(--accent,var(--color-yellow))] border-2 border-paper rounded-[10px] w-12 h-12 grid place-items-center">03</span>
+        <div className="min-w-0">
+          <div className="font-display font-black text-[clamp(19px,3vw,26px)] uppercase tracking-[0.01em] leading-none">分账金额</div>
+          <div className="font-cjk font-medium text-[13px] text-paper/72 mt-[7px]">点金额改完即保存 · 选「谁付的」· 合计与结算自动刷新</div>
         </div>
-        <div className="sb-actions">
-          <button className="pbtn ink" onClick={() => setScanOpen(true)}>
+        <div className="ml-auto flex gap-[9px] flex-wrap">
+          <button className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[9px] px-[15px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-ink text-paper shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:-translate-x-px hover:-translate-y-px hover:shadow-hard-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none" onClick={() => setScanOpen(true)}>
             <Icons.camera sw={2.2} />
             扫描收据
           </button>
-          <button className="pbtn solid" onClick={() => setAddOpen(true)}>
+          <button className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[9px] px-[15px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-[var(--accent,var(--color-yellow))] text-ink shadow-[3px_3px_0_var(--color-ink)] hover:-translate-x-px hover:-translate-y-px hover:shadow-hard-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none" onClick={() => setAddOpen(true)}>
             <Icons.plus sw={2.4} />
             新增条目
           </button>
-          <button className="pbtn ghost" onClick={handleReset}>
+          <button className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[9px] px-[15px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-paper-2 text-ink shadow-[3px_3px_0_var(--color-ink)] hover:-translate-x-px hover:-translate-y-px hover:shadow-hard-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none" onClick={handleReset}>
             <Icons.swap sw={2.2} />
             恢复原始
           </button>
         </div>
       </div>
 
-      <div className="metrics">
-        <div className="metric">
-          <div className="mk">实付合计</div>
-          <div className="mv mono">{fmtMoney(total)}</div>
-          <div className="ms">已抵扣 credit {fmtMoney(creditTotal)}</div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-0 mt-4 bg-paper-2 border-[3px] border-ink rounded-card shadow-hard-sm overflow-hidden">
+        <div className="py-4 px-[18px] border-r-2 border-r-ink last:border-r-0 max-[560px]:border-r-0 max-[560px]:border-b-2 max-[560px]:border-b-ink max-[560px]:last:border-b-0">
+          <div className="font-grotesk font-extrabold text-[10.5px] tracking-[0.12em] uppercase text-ink-soft">实付合计</div>
+          <div className="font-mono font-black text-[clamp(24px,4vw,32px)] leading-none mt-[9px] tracking-[-0.02em]">{fmtMoney(total)}</div>
+          <div className="font-cjk font-medium text-[11.5px] text-ink-soft mt-1.5">已抵扣 credit {fmtMoney(creditTotal)}</div>
         </div>
-        <div className="metric">
-          <div className="mk">条目</div>
-          <div className="mv">{expenses.length}</div>
-          <div className="ms">Line items</div>
+        <div className="py-4 px-[18px] border-r-2 border-r-ink last:border-r-0 max-[560px]:border-r-0 max-[560px]:border-b-2 max-[560px]:border-b-ink max-[560px]:last:border-b-0">
+          <div className="font-grotesk font-extrabold text-[10.5px] tracking-[0.12em] uppercase text-ink-soft">条目</div>
+          <div className="font-display font-black text-[clamp(24px,4vw,32px)] leading-none mt-[9px]">{expenses.length}</div>
+          <div className="font-cjk font-medium text-[11.5px] text-ink-soft mt-1.5">Line items</div>
         </div>
       </div>
 
-      <div className="block">
-        <div className="card ledger-card">
-          <div className="ledger-head">
-            <span className="lh-t">花销明细 · Ledger</span>
-            <span className="lh-hint">点金额可改 · 点头像换付款人</span>
+      <div className="mt-[clamp(20px,4vw,30px)]">
+        <div className="bg-paper-2 border-[3px] border-ink rounded-card shadow-hard overflow-hidden">
+          <div className="flex items-center gap-2.5 py-[13px] px-[17px] bg-ink text-paper">
+            <span className="font-display font-extrabold text-[13px] tracking-[0.14em] uppercase">花销明细 · Ledger</span>
+            <span className="ml-auto font-grotesk font-bold text-[10.5px] tracking-[0.06em] uppercase text-paper/60">点金额可改 · 点头像换付款人</span>
           </div>
 
           {expenses.map((e) => {
             const cat = CATS[e.cat];
             const IconCmp = Icons[EXP_ICON[e.id] ?? "wallet"];
             return (
-              <div key={e.id} className="exp-row">
-                <div className="exp-top">
-                  <span className="exp-tag" style={{ background: cat.color }}>
+              <div key={e.id} className="py-[15px] px-[17px] border-b-2 border-dashed border-b-[#e4ddcd] last-of-type:border-b-0">
+                <div className="flex items-start gap-3">
+                  <span className="shrink-0 w-[38px] h-[38px] rounded-[10px] border-2 border-ink grid place-items-center [&_svg]:w-5 [&_svg]:h-5" style={{ background: cat.color }}>
                     <IconCmp />
                   </span>
-                  <span className="exp-name">
-                    <span className="en">{e.name}</span>
-                    <span className="es">{e.sub}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="font-cjk font-black text-[15.5px] leading-[1.25]">{e.name}</span>
+                    <span className="font-cjk font-medium text-[12px] text-ink-soft mt-[3px] ml-[5px]">{e.sub}</span>
                   </span>
-                  <span className="amt-box">
-                    <span className="amt-input">
-                      <span className="cur">$</span>
+                  <span className="shrink-0 w-auto pl-0 mt-0">
+                    <span className="inline-flex items-center border-2 border-ink rounded-[10px] bg-paper py-1 pr-2.5 pl-[9px] shadow-[3px_3px_0_var(--color-ink)] focus-within:shadow-hard-sm">
+                      <span className="font-mono font-bold text-[15px] text-ink-soft">$</span>
                       <input
                         key={`${e.id}-${e.amount}`}
+                        className="w-[84px] border-none outline-none bg-transparent font-mono font-bold text-[16px] text-right text-ink [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
                         type="number"
                         inputMode="decimal"
                         step="0.01"
@@ -203,9 +204,9 @@ export function SplitSection({
                   </span>
                 </div>
                 <ExpenseItems items={e.items} />
-                <div className="exp-bottom">
-                  <span className="payer-pick">
-                    <span className="pp-lbl">谁付的</span>
+                <div className="flex items-center gap-y-2.5 gap-x-4 flex-wrap mt-3">
+                  <span className="flex flex-col items-start gap-2 w-full">
+                    <span className="font-grotesk font-extrabold text-[10px] tracking-[0.1em] uppercase text-ink-soft">谁付的</span>
                     <PaymentSplit
                       value={splitFromExpense(e)}
                       onChange={(v) => commitSplit(e, v)}
@@ -213,15 +214,15 @@ export function SplitSection({
                     />
                   </span>
                   {e.credit ? (
-                    <span className="credit-line">
-                      IHG credit <span className="cl-amt">−{fmtMoney(appliedCredit(e))}</span>
+                    <span className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[10px] tracking-[0.06em] uppercase whitespace-nowrap text-green bg-[color-mix(in_srgb,var(--color-green)_14%,#fff)] border-2 border-green rounded-full py-[3px] px-2.5">
+                      IHG credit <span className="font-mono">−{fmtMoney(appliedCredit(e))}</span>
                     </span>
                   ) : null}
-                  <span className="exp-net">
-                    实付 <b>{fmtMoney(netExpense(e))}</b>
+                  <span className="ml-auto font-cjk font-bold text-[12.5px] text-ink-soft">
+                    实付 <b className="font-mono font-bold text-ink text-[14px]">{fmtMoney(netExpense(e))}</b>
                   </span>
                   <button
-                    className="exp-edit"
+                    className="shrink-0 w-8 h-8 grid place-items-center border-2 border-ink rounded-[9px] bg-paper text-ink-soft cursor-pointer shadow-[3px_3px_0_var(--color-ink)] [transition:background_0.12s,color_0.12s,transform_0.12s] [&_svg]:w-4 [&_svg]:h-4 ml-auto hover:bg-yellow hover:text-ink hover:-translate-x-px hover:-translate-y-px"
                     title="编辑条目"
                     aria-label={`编辑 ${e.name}`}
                     onClick={() => setEditing(e)}
@@ -229,7 +230,7 @@ export function SplitSection({
                     <Icons.pencil sw={2.2} />
                   </button>
                   <button
-                    className="exp-del"
+                    className="shrink-0 w-8 h-8 grid place-items-center border-2 border-ink rounded-[9px] bg-paper text-ink-soft cursor-pointer shadow-[3px_3px_0_var(--color-ink)] [transition:background_0.12s,color_0.12s,transform_0.12s] [&_svg]:w-4 [&_svg]:h-4 ml-2 hover:bg-magenta hover:text-ink hover:-translate-x-px hover:-translate-y-px"
                     title="删除条目"
                     aria-label={`删除 ${e.name}`}
                     onClick={() => handleDelete(e)}
@@ -241,76 +242,76 @@ export function SplitSection({
             );
           })}
 
-          <div className="ledger-totals">
-            <div className="trow">
+          <div className="bg-[color-mix(in_srgb,var(--color-yellow)_13%,var(--color-paper-2))] border-t-[3px] border-t-ink">
+            <div className="flex items-center justify-between py-[11px] px-[17px] font-cjk font-bold text-[13.5px]">
               <span>小计 Subtotal</span>
-              <span className="tv">{fmtMoney(subtotal)}</span>
+              <span className="font-mono font-bold">{fmtMoney(subtotal)}</span>
             </div>
-            <div className="trow credit">
+            <div className="flex items-center justify-between py-[11px] px-[17px] font-cjk font-bold text-[13.5px] text-green">
               <span>Chase IHG credit</span>
-              <span className="tv">−{fmtMoney(creditTotal)}</span>
+              <span className="font-mono font-bold text-green">−{fmtMoney(creditTotal)}</span>
             </div>
-            <div className="trow grand">
+            <div className="flex items-center justify-between px-[17px] py-3.5 bg-ink text-paper font-display font-black uppercase tracking-[0.04em] text-[clamp(14px,3vw,17px)]">
               <span>实付合计 Net Total</span>
-              <span className="tv">{fmtMoney(total)}</span>
+              <span className="font-mono font-bold text-[clamp(17px,4vw,22px)] text-yellow">{fmtMoney(total)}</span>
             </div>
           </div>
         </div>
 
-        <div className="block-title" style={{ marginTop: 26 }}>
+        <div className="flex items-center gap-2.5 mb-3.5 font-display font-extrabold text-[13px] tracking-[0.14em] uppercase" style={{ marginTop: 26 }}>
           <span>结算 · Settle up</span>
-          <span className="bt-line" />
+          <span className="flex-1 h-0.5 bg-[repeating-linear-gradient(90deg,var(--color-ink)_0_7px,transparent_7px_13px)]" />
         </div>
 
-        <div className="settle">
-          <div className="settle-grid">
+        <div className="mt-4">
+          <div className="grid grid-cols-2 gap-3.5 max-[620px]:grid-cols-1">
             {travelerBalances.map(({ m, paid: p, bal, share: sh }) => {
               const owe = bal < -0.005;
               return (
-                <div key={m.id} className="card settle-person">
-                  <div className="sp-head">
+                <div key={m.id} className="bg-paper-2 border-[3px] border-ink rounded-card shadow-hard overflow-hidden py-[15px] px-4 [&:not(:first-child)]:mt-4">
+                  <div className="flex items-center gap-2.5">
                     <Avatar m={m} size="md" />
                     <div>
-                      <div className="nm">{m.name}</div>
-                      <div className="hd">@{m.handle}</div>
+                      <div className="font-cjk font-black text-[15px]">{m.name}</div>
+                      <div className="font-mono font-normal text-[11px] text-ink-soft">@{m.handle}</div>
                     </div>
                   </div>
-                  <div className="sp-rows">
-                    <div className="sp-line">
+                  <div className="mt-[13px] grid gap-[7px]">
+                    <div className="flex items-center justify-between font-cjk font-semibold text-[12.5px] text-ink-soft">
                       <span>已垫付</span>
-                      <span className="v">{fmtMoney(p)}</span>
+                      <span className="font-mono font-bold text-ink">{fmtMoney(p)}</span>
                     </div>
-                    <div className="sp-line">
+                    <div className="flex items-center justify-between font-cjk font-semibold text-[12.5px] text-ink-soft">
                       <span>应承担</span>
-                      <span className="v">{fmtMoney(sh)}</span>
+                      <span className="font-mono font-bold text-ink">{fmtMoney(sh)}</span>
                     </div>
                   </div>
-                  <div className={`sp-balance ${Math.abs(bal) < 0.005 ? "" : owe ? "owe" : "get"}`}>
+                  <div className="mt-[11px] pt-[11px] border-t-2 border-dashed border-t-[#e4ddcd] flex items-center justify-between font-cjk font-black text-[13.5px]">
                     <span>{Math.abs(bal) < 0.005 ? "已结清" : owe ? "需补付" : "应收回"}</span>
-                    <span className="v">{fmtMoney(Math.abs(bal))}</span>
+                    <span className={`font-mono font-bold text-[16px] ${Math.abs(bal) < 0.005 ? "" : owe ? "text-magenta" : "text-green"}`}>{fmtMoney(Math.abs(bal))}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="settle-result">
-            <span className="sr-flag">结算</span>
+          <div className="mt-3.5 py-4 px-[18px] bg-ink text-paper border-[3px] border-ink rounded-card shadow-hard-sm flex items-center gap-3.5 flex-wrap">
+            <span className="font-grotesk font-extrabold text-[11px] tracking-[0.14em] uppercase bg-yellow text-ink py-[5px] px-[11px] rounded-full">结算</span>
             {ower && receiver ? (
-              <span className="sr-txt sr-arrow">
-                <span className="payer-chip on" style={{ pointerEvents: "none" }}>
+              <span className="inline-flex items-center gap-[9px] font-cjk font-bold text-[14px]">
+                <span className="inline-flex items-center gap-1.5 cursor-pointer border-2 border-ink rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-bold text-[12px] bg-ink text-paper" style={{ pointerEvents: "none" }}>
                   <Avatar m={ower.m} size="xs" />
                   {ower.m.name}
                 </span>
-                <Icons.arrow sw={2.4} style={{ width: 18, height: 18, color: "var(--yellow)" }} />
-                <span className="payer-chip on" style={{ pointerEvents: "none" }}>
+                <Icons.arrow sw={2.4} style={{ width: 18, height: 18, color: "var(--color-yellow)" }} />
+                <span className="inline-flex items-center gap-1.5 cursor-pointer border-2 border-ink rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-bold text-[12px] bg-ink text-paper" style={{ pointerEvents: "none" }}>
                   <Avatar m={receiver.m} size="xs" />
                   {receiver.m.name}
                 </span>
-                转 <b>{fmtMoney(settleAmt)}</b>
+                转 <b className="font-mono font-bold text-yellow">{fmtMoney(settleAmt)}</b>
               </span>
             ) : (
-              <span className="sr-txt">两人已结清，无需互相转账。</span>
+              <span className="font-cjk font-bold text-[14px]">两人已结清，无需互相转账。</span>
             )}
           </div>
         </div>

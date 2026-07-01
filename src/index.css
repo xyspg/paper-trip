@@ -4,6 +4,59 @@
   --font-sans:
     "Archivo", "Noto Sans SC", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
+
+  /* Design system — migrated from the legacy :root block in App.css. These are
+     the single source of truth; `@theme` emits them as :root CSS vars and
+     generates the matching utilities (bg-paper, text-ink, shadow-hard, …). */
+  --color-paper: #fbf7ec;
+  --color-paper-2: #ffffff;
+  --color-ink: #14110f;
+  --color-ink-soft: #4a443d;
+  --color-magenta: #ff2d6b;
+  --color-cyan: #00bfd4;
+  --color-yellow: #ffc400;
+  --color-violet: #7a5cff;
+  --color-green: #11b98a;
+  --color-amber: #ff9a1e;
+  --color-red: #f03e3e;
+  --color-jetblue: #1466b8;
+
+  /* Hard neobrutalist offset shadows → shadow-hard / shadow-hard-sm */
+  --shadow-hard: 6px 6px 0 var(--color-ink);
+  --shadow-hard-sm: 4px 4px 0 var(--color-ink);
+
+  /* Card radius → rounded-card */
+  --radius-card: 16px;
+
+  /* Font stacks → font-display / font-grotesk / font-cjk / font-mono */
+  --font-display: "Archivo Expanded", "Arial Black", "Noto Sans SC", system-ui, sans-serif;
+  --font-grotesk: "Archivo", "Inter", "Noto Sans SC", system-ui, sans-serif;
+  --font-cjk: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Archivo", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, "SF Mono", monospace;
+
+  /* Toast slide-in → animate-toast-in (keyframe below) */
+  --animate-toast-in: toastIn 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+/* Only animation keyframes genuinely can't be expressed as utilities. The two
+   spinners reuse Tailwind's built-in `spin` keyframe via animate-[spin_…]. */
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dotted paper grid behind page surfaces — the radial-gradient + tiled
+   background-size don't reduce to a single readable utility, so it lives here. */
+@utility paper-grid {
+  background-image: radial-gradient(var(--color-ink) 1.1px, transparent 1.2px);
+  background-position: -8px -8px;
+  background-size: 22px 22px;
 }
 
 @layer base {

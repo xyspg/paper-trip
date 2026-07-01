@@ -32,7 +32,7 @@ export function Editable({
   return (
     <span
       ref={ref}
-      className={`edit ${className ?? ""}`}
+      className={`border-2 border-transparent rounded-lg py-[3px] px-[7px] my-[-3px] mx-[-7px] cursor-text transition-[border-color,background] duration-100 ease-[ease] outline-none hover:border-[#ddd4c2] hover:bg-paper focus:border-ink focus:bg-paper focus:shadow-[3px_3px_0_var(--color-ink)] empty:before:content-[attr(data-ph)] empty:before:text-ink-soft empty:before:opacity-55 ${className ?? ""}`}
       contentEditable
       suppressContentEditableWarning
       role="textbox"

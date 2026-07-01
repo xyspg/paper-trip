@@ -51,22 +51,22 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   }
 
   return (
-    <form className="add-modal" onSubmit={submit}>
-      <div className="am-head">
-        <span className="am-kicker">
+    <form className="flex flex-col" onSubmit={submit}>
+      <div className="flex items-center gap-3 px-[18px] py-[15px] bg-ink text-paper border-b-[3px] border-ink">
+        <span className="inline-flex items-center gap-[9px] font-display font-black text-[16px] tracking-[0.02em] uppercase [&_svg]:w-4.5 [&_svg]:h-4.5">
           {editing ? <Icons.pencil sw={2.8} /> : <Icons.plus sw={2.8} />}
           {editing ? "编辑花销条目" : "新增花销条目"}
         </span>
-        <button type="button" className="am-close" title="关闭" onClick={onClose}>
+        <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border-2 border-paper/30 bg-transparent text-paper cursor-pointer hover:bg-magenta hover:text-ink hover:border-paper [&_svg]:w-[15px] [&_svg]:h-[15px]" title="关闭" onClick={onClose}>
           <Icons.x sw={2.6} />
         </button>
       </div>
 
-      <div className="am-body">
-        <label className="am-field am-field-wide">
-          <span className="am-label">名称</span>
+      <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">
+        <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">名称</span>
           <input
-            className="am-input"
+            className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
             value={name}
             autoFocus
             autoComplete="off"
@@ -77,10 +77,10 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           />
         </label>
 
-        <label className="am-field am-field-wide">
-          <span className="am-label">明细（可选）</span>
+        <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">明细（可选）</span>
           <input
-            className="am-input"
+            className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
             value={sub}
             autoComplete="off"
             data-1p-ignore
@@ -90,10 +90,10 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           />
         </label>
 
-        <label className="am-field">
-          <span className="am-label">金额 (USD)</span>
+        <label className="flex flex-col gap-[7px] min-w-0">
+          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">金额 (USD)</span>
           <input
-            className="am-input"
+            className="font-cjk font-bold text-[14px] text-ink bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 outline-none shadow-[3px_3px_0_var(--color-ink)] w-full focus:shadow-[4px_4px_0_var(--color-ink)] placeholder:text-ink-soft placeholder:opacity-60"
             type="number"
             inputMode="decimal"
             step="0.01"
@@ -107,23 +107,23 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           />
         </label>
 
-        <div className="am-field am-field-wide">
-          <span className="am-label">谁付的 · 分摊</span>
+        <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">谁付的 · 分摊</span>
           <PaymentSplit value={split} onChange={setSplit} amount={parsed} />
         </div>
 
-        <div className="am-field am-field-wide">
-          <span className="am-label">类别</span>
-          <div className="am-chips">
+        <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">类别</span>
+          <div className="flex flex-wrap gap-[7px]">
             {CAT_KEYS.map((k) => (
               <button
                 type="button"
                 key={k}
-                className={`am-chip${cat === k ? " on" : ""}`}
+                className={`inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[11px] tracking-[0.04em] px-3 py-[7px] rounded-full border-2 border-ink text-ink cursor-pointer ${cat === k ? "bg-[var(--chip,var(--color-ink))] shadow-[3px_3px_0_var(--color-ink)] [&>span]:bg-ink" : "bg-paper-2"}`}
                 style={cssVars({ "--chip": CATS[k].color })}
                 onClick={() => setCat(k)}
               >
-                <span className="am-dot" />
+                <span className="w-2.5 h-2.5 rounded-[3px] border-[1.5px] border-ink bg-[var(--chip,var(--color-cyan))]" />
                 {CATS[k].label}
               </button>
             ))}
@@ -131,12 +131,12 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </div>
       </div>
 
-      <div className="am-foot">
-        <button type="button" className="pbtn dark" onClick={onClose}>
+      <div className="flex items-center gap-2.5 px-[18px] py-3.5 border-t-[3px] border-ink bg-paper">
+        <button type="button" className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] px-[15px] py-[9px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap transition-[transform,box-shadow] duration-[0.08s] ease-[ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-paper-2 text-ink shadow-[3px_3px_0_var(--color-ink)] disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_var(--color-ink)]" onClick={onClose}>
           取消
         </button>
-        <span className="sf-spacer" />
-        <button type="submit" className="pbtn solid" disabled={!canSubmit}>
+        <span />
+        <button type="submit" className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] px-[15px] py-[9px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap transition-[transform,box-shadow] duration-[0.08s] ease-[ease] [&_svg]:w-3.5 [&_svg]:h-3.5 bg-[var(--accent,var(--color-yellow))] text-ink shadow-[3px_3px_0_var(--color-ink)] hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_var(--color-ink)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_var(--color-ink)]" disabled={!canSubmit}>
           {editing ? <Icons.check sw={2.6} /> : <Icons.plus sw={2.6} />}
           {editing ? "保存修改" : "添加条目"}
         </button>

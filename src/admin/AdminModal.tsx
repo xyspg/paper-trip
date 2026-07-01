@@ -42,10 +42,10 @@ export function AdminModal({
         Dialog: {
           style: {
             width,
-            backgroundColor: "var(--paper-2)",
-            border: "3px solid var(--ink)",
-            borderRadius: "var(--radius)",
-            boxShadow: "var(--shadow)",
+            backgroundColor: "var(--color-paper-2)",
+            border: "3px solid var(--color-ink)",
+            borderRadius: "16px",
+            boxShadow: "var(--shadow-hard)",
             padding: "0",
             overflow: "hidden",
           },
@@ -53,7 +53,9 @@ export function AdminModal({
         Close: { style: { display: "none" } },
       }}
     >
-      <div className="admin-app admin-modal-scope">{children}</div>
+      <div className="admin-app text-ink font-grotesk leading-normal min-h-0! [background:transparent]! bg-none!">
+        {children}
+      </div>
     </Modal>
   )
 }

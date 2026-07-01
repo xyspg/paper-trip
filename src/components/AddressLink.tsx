@@ -26,7 +26,7 @@ function AppleMapsGlyph({ title }: { title: string }) {
       alt={title}
       width={26}
       height={26}
-      className="map-pop-img"
+      className="block rounded-md object-cover"
     />
   );
 }
@@ -96,7 +96,7 @@ export function AddressLink({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
-        className={`addr-link${className ? ` ${className}` : ""}`}
+        className={`appearance-none [-webkit-appearance:none] bg-transparent border-0 m-0 p-0 [font:inherit] text-left cursor-pointer${className ? ` ${className}` : ""}`}
         title="在地图中打开"
       >
         {leading}
@@ -104,15 +104,15 @@ export function AddressLink({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner sideOffset={8} align="start">
-          <Popover.Popup className="map-pop">
-            <Popover.Title render={<div />} className="map-pop-head">
+          <Popover.Popup className="box-border min-w-56 p-2 bg-paper-2 border-[3px] border-ink rounded-[14px] shadow-hard-sm outline-none transition-[opacity,transform] duration-[140ms] ease-[ease] data-[starting-style]:opacity-0 data-[starting-style]:[transform:translateY(-4px)_scale(0.98)] data-[ending-style]:opacity-0 data-[ending-style]:[transform:translateY(-4px)_scale(0.98)]">
+            <Popover.Title render={<div />} className="px-2 pt-1 pb-2 font-grotesk text-[11px] font-bold tracking-[0.08em] uppercase text-ink-soft">
               在地图中打开
             </Popover.Title>
-            <div className="map-pop-opts">
+            <div className="grid gap-1.5">
               {PROVIDERS.map((p) => (
                 <a
                   key={p.id}
-                  className="map-pop-opt"
+                  className="flex items-center gap-2.5 py-2 px-2.5 border-2 border-ink rounded-[10px] bg-paper-2 text-ink font-cjk text-[14px] font-semibold no-underline transition-[transform,box-shadow,background] duration-100 ease-[ease] hover:bg-[color-mix(in_srgb,var(--brand)_12%,var(--color-paper-2))] hover:[transform:translate(-1px,-1px)] hover:shadow-[3px_3px_0_var(--color-ink)] active:[transform:translate(0,0)] active:shadow-[1px_1px_0_var(--color-ink)]"
                   href={p.href(query)}
                   target="_blank"
                   rel="noreferrer"
@@ -120,12 +120,12 @@ export function AddressLink({
                   style={{ "--brand": p.brand } as CSSProperties}
                 >
                   <span
-                    className={`map-pop-ic${p.plainTile ? " map-pop-ic--plain" : ""}`}
+                    className={`grid place-items-center shrink-0 w-[30px] h-[30px] border-2 border-ink rounded-lg text-white ${p.plainTile ? "bg-white" : "bg-[var(--brand)]"}`}
                   >
                     {p.glyph}
                   </span>
-                  <span className="map-pop-lb">{p.label}</span>
-                  <ChevronRight className="map-pop-go" size={16} strokeWidth={2.4} />
+                  <span className="flex-1">{p.label}</span>
+                  <ChevronRight className="shrink-0 text-ink-soft" size={16} strokeWidth={2.4} />
                 </a>
               ))}
             </div>

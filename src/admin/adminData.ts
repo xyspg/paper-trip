@@ -47,7 +47,7 @@ export const MEMBERS: AdminMember[] = [
     name: "xyspg",
     handle: "xyspg",
     role: "管理员",
-    color: "var(--magenta)",
+    color: "var(--color-magenta)",
     traveler: true,
     initials: "XY",
     avatarUrl: "https://github.com/xyspg.png",
@@ -57,7 +57,7 @@ export const MEMBERS: AdminMember[] = [
     name: "Sapphire Rapids",
     handle: "sapphirerapids",
     role: "同行",
-    color: "var(--cyan)",
+    color: "var(--color-cyan)",
     traveler: true,
     initials: "SR",
     avatarUrl: "https://github.com/sapphire-rapids.png",
@@ -74,11 +74,11 @@ export const TRAVELER_IDS: string[] = TRAVELERS.map((m) => m.id);
 
 // ---- Category palette (shared with itinerary page) ----
 export const CATS: Record<StopCat, { label: string; color: string }> = {
-  transit: { label: "交通 · Transit", color: "var(--cyan)" },
-  food: { label: "用餐 · Food", color: "var(--yellow)" },
-  event: { label: "活动 · Event", color: "var(--magenta)" },
-  stay: { label: "酒店 · Stay", color: "var(--violet)" },
-  misc: { label: "杂项 · Misc", color: "var(--green)" },
+  transit: { label: "交通 · Transit", color: "var(--color-cyan)" },
+  food: { label: "用餐 · Food", color: "var(--color-yellow)" },
+  event: { label: "活动 · Event", color: "var(--color-magenta)" },
+  stay: { label: "酒店 · Stay", color: "var(--color-violet)" },
+  misc: { label: "杂项 · Misc", color: "var(--color-green)" },
 };
 
 export const STATUS: Record<StopStatus, { label: string; cls: string }> = {

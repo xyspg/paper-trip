@@ -9,24 +9,24 @@ import type { ExpenseItem } from "../trip/types"
 export function ExpenseItems({ items }: { items?: ExpenseItem[] }) {
   if (!items || items.length === 0) return null
   return (
-    <ul className="exp-items">
+    <ul className="flex flex-col gap-1.5 mt-2.5 py-[9px] px-[11px] list-none bg-ink/4 border-[1.5px] border-dashed border-ink rounded-[10px]">
       {items.map((it, i) => {
         const sharers =
           it.who && it.who.length ? TRAVELERS.filter((m) => it.who!.includes(m.id)) : null
         return (
-          <li className="exp-item" key={`${it.name}-${i}`}>
-            <span className="exp-item-label">
-              {it.quantity > 1 && <b className="exp-item-qty">{it.quantity}×</b>}
-              <span className="exp-item-name">{it.name}</span>
+          <li className="flex gap-2.5 items-center text-ink-soft font-cjk text-[12.5px] font-semibold" key={`${it.name}-${i}`}>
+            <span className="inline-flex flex-1 min-w-0 gap-[5px] items-baseline">
+              {it.quantity > 1 && <b className="shrink-0 text-magenta font-mono font-black">{it.quantity}×</b>}
+              <span className="overflow-hidden text-ink text-ellipsis whitespace-nowrap">{it.name}</span>
             </span>
             {sharers && (
-              <span className="exp-item-who" title={sharers.map((m) => m.name).join(" · ")}>
+              <span className="inline-flex shrink-0" title={sharers.map((m) => m.name).join(" · ")}>
                 {sharers.map((m) => (
-                  <Avatar key={m.id} m={m} size="xs" />
+                  <Avatar key={m.id} m={m} className="w-[18px] h-[18px] text-[9px] border-[1.5px] border-paper -ml-[5px] first:ml-0" />
                 ))}
               </span>
             )}
-            <span className="exp-item-price">{fmtMoney(it.price)}</span>
+            <span className="shrink-0 text-ink font-mono text-[12.5px] font-bold">{fmtMoney(it.price)}</span>
           </li>
         )
       })}

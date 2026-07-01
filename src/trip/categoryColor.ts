@@ -4,10 +4,10 @@ import type { TripItem } from "./types";
 // and the admin review queue. Values are bare var names; wrap with `var(...)` at
 // the use site.
 export const categoryColor: Record<TripItem["category"], string> = {
-  flight: "--cyan",
-  drive: "--cyan",
-  food: "--yellow",
-  event: "--magenta",
-  hotel: "--violet",
-  errand: "--green",
+  flight: "--color-cyan",
+  drive: "--color-cyan",
+  food: "--color-yellow",
+  event: "--color-magenta",
+  hotel: "--color-violet",
+  errand: "--color-green",
 };
