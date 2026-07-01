@@ -83,6 +83,10 @@ export const CATS: Record<StopCat, { label: string; color: string }> = {
   misc: { label: "杂项 · Misc", color: "#3f6f5b" },
 };
 
+// Category keys in declaration order, derived once so the add/edit modals share
+// one list instead of each redeclaring `Object.keys(CATS) as StopCat[]`.
+export const CAT_KEYS = Object.keys(CATS) as StopCat[];
+
 export const STATUS: Record<StopStatus, { label: string; cls: string }> = {
   booked: { label: "已预订", cls: "booked" },
   planned: { label: "计划中", cls: "planned" },
@@ -201,5 +205,20 @@ export const fmtMoney = (n: number): string =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+// Absolute local time with seconds, shared by the audit log and backup list.
+// Falls back to the raw string if the ISO input ever fails to parse.
+export const fmtTime = (iso: string): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+};
 
 export const uid = (p: string): string => `${p}_${Math.random().toString(36).slice(2, 8)}`;

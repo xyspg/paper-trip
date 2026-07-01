@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { ROLE } from "baseui/modal"
 import { AdminModal } from "./AdminModal"
 import { Icons } from "./AdminIcons"
-import { BTN, BTN_GHOST } from "./adminUi"
+import { BTN, BTN_GHOST, FIELD_INPUT, ModalFooter, ModalHeader } from "./adminUi"
 
 export type ConfirmModalProps = {
   isOpen: boolean
@@ -45,15 +45,7 @@ export function ConfirmModal({
       role={ROLE.alertdialog}
     >
       <div className="flex flex-col">
-        <div className="flex items-center gap-3 py-4 px-[18px] border-b border-[#ebe9e3]">
-          <span className="shrink-0 w-9 h-9 rounded-[10px] bg-[#f7e9e4] text-[#c2553f] grid place-items-center [&_svg]:size-[18px]">
-            <Icons.trash sw={2.4} />
-          </span>
-          <span className="font-sans font-bold text-[16px] tracking-tight">{title}</span>
-          <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border border-[#ebe9e3] bg-white text-[#76726a] cursor-pointer [&_svg]:size-[15px] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors" title="关闭" onClick={onClose}>
-            <Icons.x sw={2.6} />
-          </button>
-        </div>
+        <ModalHeader icon={<Icons.trash sw={2.4} />} title={title} onClose={onClose} tone="alert" />
 
         <div className="py-5 px-[18px] font-cjk text-[14px] leading-[1.6] text-[#3b3833] [&_b]:font-bold [&_b]:text-[#1c1b19]">
           {message}
@@ -63,7 +55,7 @@ export function ConfirmModal({
                 输入 <code>{requirePhrase}</code> 以确认
               </span>
               <input
-                className="font-cjk font-medium text-[14px] text-[#1c1b19] bg-white border border-[#ebe9e3] rounded-[10px] py-2.5 px-3 outline-none w-full transition-colors focus:border-[#1c1b19] placeholder:text-[#9b988f]"
+                className={FIELD_INPUT}
                 type="text"
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
@@ -77,7 +69,7 @@ export function ConfirmModal({
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 py-3.5 px-[18px] border-t border-[#ebe9e3] bg-[#fdfdfb]">
+        <ModalFooter>
           <button type="button" className={`${BTN} ${BTN_GHOST}`} autoFocus onClick={onClose}>
             {cancelLabel}
           </button>
@@ -91,7 +83,7 @@ export function ConfirmModal({
             <Icons.trash sw={2.4} />
             {confirmLabel}
           </button>
-        </div>
+        </ModalFooter>
       </div>
     </AdminModal>
   )

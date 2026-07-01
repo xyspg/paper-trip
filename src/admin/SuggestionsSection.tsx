@@ -3,7 +3,17 @@ import { categoryColor } from "../trip/categoryColor";
 import { timeAgo } from "../trip/relativeTime";
 import type { SuggestionStatus, TripItem, TripSuggestion } from "../trip/types";
 import { Icons } from "./AdminIcons";
-import { BTN_ACCENT, BTN_DANGER, BTN_GHOST, BTN_SM, Metrics, SectionHead } from "./adminUi";
+import {
+  AdminEmptyState,
+  BTN_ACCENT,
+  BTN_DANGER,
+  BTN_GHOST,
+  BTN_SM,
+  CHIP_OFF,
+  CHIP_ON,
+  Metrics,
+  SectionHead,
+} from "./adminUi";
 import { useConfirm } from "./useConfirm";
 import type { ToastFn } from "./useAdminToasts";
 
@@ -125,7 +135,7 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
         </span>
         <span className="flex-1" />
         <button
-          className={`font-grotesk font-semibold text-[11.5px] px-3 py-1.5 rounded-full border transition-colors ${showDone ? "bg-[#1c1b19] text-[#fafaf8] border-[#1c1b19]" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
+          className={`font-grotesk font-semibold text-[11.5px] px-3 py-1.5 rounded-full border transition-colors ${showDone ? CHIP_ON : CHIP_OFF}`}
           onClick={() => setShowDone((v) => !v)}
         >
           {showDone ? "隐藏已处理" : "显示已处理"}
@@ -134,15 +144,7 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
 
       <div className="grid gap-3.5 mt-4">
         {visible.length === 0 && (
-          <div className="text-center py-12 px-6 border border-dashed border-[#ebe9e3] rounded-[14px] bg-white">
-            <div className="w-14 h-14 mx-auto mb-3.5 rounded-[14px] bg-[#eef4f0] text-[#3f6f5b] grid place-items-center [&_svg]:size-[26px]">
-              <Icons.check sw={2.4} />
-            </div>
-            <div className="font-sans font-bold text-[17px]">收件箱已清空</div>
-            <div className="font-cjk text-[13px] text-[#76726a] mt-2">
-              没有待审建议了。新建议会出现在这里。
-            </div>
-          </div>
+          <AdminEmptyState title="收件箱已清空" body="没有待审建议了。新建议会出现在这里。" />
         )}
 
         {visible.map((s) => {

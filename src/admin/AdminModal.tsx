@@ -53,7 +53,7 @@ export function AdminModal({
         Close: { style: { display: "none" } },
       }}
     >
-      <div className="admin-app text-ink font-grotesk leading-normal min-h-0! [background:transparent]! bg-none!">
+      <div className="admin-app text-ink font-grotesk leading-normal min-h-0! [background:transparent]!">
         {children}
       </div>
     </Modal>

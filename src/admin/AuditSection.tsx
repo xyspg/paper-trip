@@ -1,8 +1,9 @@
 import { useAudit } from "../trip/hooks";
 import type { AuditEntry } from "../trip/api";
 import type { TripOp } from "../trip/ops";
+import { fmtTime } from "./adminData";
 import { Icons } from "./AdminIcons";
-import { BTN, BTN_GHOST, SectionHead } from "./adminUi";
+import { AdminEmptyState, RefreshButton, SectionHead } from "./adminUi";
 
 // Human-readable label per TripOp type, so the log reads as actions rather than
 // raw op identifiers. Typed to the TripOp union so adding an op fails the build
@@ -26,20 +27,6 @@ const OP_LABEL: Record<TripOp["type"] | "createBackup" | "deleteBackup" | "resto
   createBackup: "创建备份",
   deleteBackup: "删除备份",
   restoreBackup: "恢复备份",
-};
-
-// Absolute local time, plus seconds, so the trail is precise enough to audit.
-const fmtTime = (iso: string): string => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
 };
 
 function ActorCell({ e }: { e: AuditEntry }) {
@@ -69,25 +56,16 @@ export function AuditSection() {
         kicker="04 · Audit"
         title="操作记录"
         desc="每一次写操作的审计日志 · 记录操作人、动作、对象与时间 · 仅管理员可见"
-        actions={
-          <button
-            className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`}
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <Icons.swap sw={2.2} />
-            {isFetching ? "刷新中" : "刷新"}
-          </button>
-        }
+        actions={<RefreshButton onClick={() => refetch()} busy={isFetching} />}
       />
 
       <div className="mt-7">
         {isLoading ? (
-          <AuditState title="加载中…" body="正在读取审计日志。" />
+          <AdminEmptyState title="加载中…" body="正在读取审计日志。" icon={<Icons.repo sw={2.2} />} />
         ) : isError ? (
-          <AuditState title="无法加载审计日志" body="请确认你已登录管理员账号后重试。" warn />
+          <AdminEmptyState title="无法加载审计日志" body="请确认你已登录管理员账号后重试。" warn />
         ) : !entries || entries.length === 0 ? (
-          <AuditState title="暂无记录" body="发生写操作后，记录会出现在这里。" />
+          <AdminEmptyState title="暂无记录" body="发生写操作后，记录会出现在这里。" icon={<Icons.repo sw={2.2} />} />
         ) : (
           <div className="grid gap-2">
             {entries.map((e) => (
@@ -118,20 +96,6 @@ export function AuditSection() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function AuditState({ title, body, warn }: { title: string; body: string; warn?: boolean }) {
-  return (
-    <div className="text-center py-12 px-6 border border-dashed border-[#ebe9e3] rounded-[14px] bg-white">
-      <div
-        className={`w-14 h-14 mx-auto mb-3.5 rounded-[14px] grid place-items-center [&_svg]:size-[26px] ${warn ? "bg-[#f7e9e4] text-[#c2553f]" : "bg-[#eef4f0] text-[#3f6f5b]"}`}
-      >
-        {warn ? <Icons.x sw={2.4} /> : <Icons.repo sw={2.2} />}
-      </div>
-      <div className="font-sans font-bold text-[17px]">{title}</div>
-      <div className="font-cjk text-[13px] text-[#76726a] mt-2">{body}</div>
     </div>
   );
 }

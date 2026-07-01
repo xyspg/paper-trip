@@ -1,6 +1,18 @@
 import { useState } from "react"
 import { Icons } from "./AdminIcons"
-import { BTN, BTN_ACCENT, BTN_DANGER, BTN_GHOST, BTN_SM, SectionHead } from "./adminUi"
+import { fmtTime } from "./adminData"
+import {
+  AdminEmptyState,
+  BTN,
+  BTN_ACCENT,
+  BTN_DANGER,
+  BTN_GHOST,
+  BTN_SM,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  RefreshButton,
+  SectionHead,
+} from "./adminUi"
 import { useConfirm } from "./useConfirm"
 import type { ToastFn } from "./useAdminToasts"
 import {
@@ -14,19 +26,6 @@ import type { TripBackup } from "../trip/api"
 
 type Props = {
   toast: ToastFn
-}
-
-const fmtTime = (iso: string): string => {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  })
 }
 
 const downloadJson = (filename: string, data: unknown) => {
@@ -110,26 +109,15 @@ export function BackupSection({ toast }: Props) {
         kicker="05 · Backup"
         title="备份与恢复"
         desc="手动保存当前 trip JSON · 一键恢复快照 · 操作写入审计日志"
-        actions={
-          <button
-            className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`}
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <Icons.swap sw={2.2} />
-            {isFetching ? "刷新中" : "刷新"}
-          </button>
-        }
+        actions={<RefreshButton onClick={() => refetch()} busy={isFetching} />}
       />
 
       <section className="mt-6 bg-white border border-[#ebe9e3] rounded-[14px] overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_auto] gap-3 p-4 items-end max-[720px]:grid-cols-1">
           <label className="grid gap-1.5 min-w-0">
-            <span className="font-grotesk font-semibold text-[10.5px] tracking-[0.12em] uppercase text-[#9b988f]">
-              备份标签
-            </span>
+            <span className={FIELD_LABEL}>备份标签</span>
             <input
-              className="w-full box-border bg-white border border-[#ebe9e3] rounded-[10px] px-3 py-2.5 font-cjk font-medium text-[14px] outline-none focus:border-[#1c1b19] transition-colors"
+              className={FIELD_INPUT}
               value={label}
               placeholder={`Manual backup · rev ${tripSnap?.rev ?? "?"}`}
               maxLength={120}
@@ -157,11 +145,15 @@ export function BackupSection({ toast }: Props) {
 
       <section className="mt-5 grid gap-3">
         {isLoading ? (
-          <EmptyState title="加载中…" body="正在读取备份列表。" />
+          <AdminEmptyState title="加载中…" body="正在读取备份列表。" icon={<Icons.repo sw={2.2} />} />
         ) : isError ? (
-          <EmptyState title="无法加载备份" body="请确认你已登录管理员账号后重试。" warn />
+          <AdminEmptyState title="无法加载备份" body="请确认你已登录管理员账号后重试。" warn />
         ) : !backups || backups.length === 0 ? (
-          <EmptyState title="暂无备份" body="创建第一个备份后，会在这里显示可恢复的快照。" />
+          <AdminEmptyState
+            title="暂无备份"
+            body="创建第一个备份后，会在这里显示可恢复的快照。"
+            icon={<Icons.repo sw={2.2} />}
+          />
         ) : (
           backups.map((backup) => (
             <article
@@ -216,20 +208,6 @@ function Fact({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="mt-1.5 font-cjk font-semibold text-[13px] truncate">{value}</div>
-    </div>
-  )
-}
-
-function EmptyState({ title, body, warn }: { title: string; body: string; warn?: boolean }) {
-  return (
-    <div className="text-center py-12 px-6 border border-dashed border-[#ebe9e3] rounded-[14px] bg-white">
-      <div
-        className={`w-14 h-14 mx-auto mb-3.5 rounded-[14px] grid place-items-center [&_svg]:size-[26px] ${warn ? "bg-[#f7e9e4] text-[#c2553f]" : "bg-[#eef4f0] text-[#3f6f5b]"}`}
-      >
-        {warn ? <Icons.x sw={2.4} /> : <Icons.repo sw={2.2} />}
-      </div>
-      <div className="font-sans font-bold text-[17px]">{title}</div>
-      <div className="font-cjk text-[13px] text-[#76726a] mt-2">{body}</div>
     </div>
   )
 }

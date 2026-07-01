@@ -1,9 +1,21 @@
 import { useRef, useState } from "react"
+import type { ReactNode } from "react"
 import { AdminModal } from "./AdminModal"
 import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS, uid } from "./adminData"
 import { Avatar } from "./Avatar"
 import { Icons } from "./AdminIcons"
-import { BTN, BTN_GHOST, BTN_INK, BTN_SM, FIELD_INPUT, FIELD_LABEL } from "./adminUi"
+import {
+  BTN,
+  BTN_GHOST,
+  BTN_INK,
+  BTN_SM,
+  CHIP_OFF,
+  CHIP_ON,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  ModalFooter,
+  ModalHeader,
+} from "./adminUi"
 import { splitToExpense } from "./PaymentSplit"
 import type { NewExpenseInput } from "./AddExpenseModal"
 import { deriveShares, parseReceipt } from "./receipt"
@@ -173,30 +185,16 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         onChange={onFile}
       />
 
-      <div className="flex items-center gap-3 px-[18px] py-4 border-b border-[#ebe9e3]">
-        <span className="shrink-0 w-9 h-9 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] grid place-items-center [&_svg]:size-[17px]">
-          <Icons.camera sw={2.4} />
-        </span>
-        <span className="font-sans font-bold text-[16px] tracking-tight">扫描收据分账</span>
-        <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border border-[#ebe9e3] bg-white text-[#76726a] cursor-pointer [&_svg]:size-[15px] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors" title="关闭" onClick={onClose}>
-          <Icons.x sw={2.6} />
-        </button>
-      </div>
+      <ModalHeader icon={<Icons.camera sw={2.4} />} title="扫描收据分账" onClose={onClose} />
 
       {phase === "pick" && (
-        <div className="flex flex-col items-center text-center gap-3 px-7 py-10">
-          <div className="w-16 h-16 grid place-items-center rounded-[14px] bg-[#eef4f0] text-[#3f6f5b] [&_svg]:size-[32px]">
-            <Icons.camera sw={1.8} />
-          </div>
-          <div className="font-sans font-bold text-[19px]">拍下餐厅小票</div>
-          <div className="font-cjk text-[13px] leading-[1.6] text-[#76726a] max-w-[320px]">
-            iOS 27 同款 AI 识别
-          </div>
-          <button type="button" className={`${BTN} ${BTN_INK} mt-1.5 [&_svg]:size-3.5`} onClick={pickFile}>
-            <Icons.camera sw={2.4} />
-            拍照 / 选择照片
-          </button>
-        </div>
+        <ScanState
+          icon={<Icons.camera sw={1.8} />}
+          title="拍下餐厅小票"
+          body="iOS 27 同款 AI 识别"
+          action="拍照 / 选择照片"
+          onAction={pickFile}
+        />
       )}
 
       {phase === "loading" && (
@@ -208,17 +206,14 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       )}
 
       {phase === "error" && (
-        <div className="flex flex-col items-center text-center gap-3 px-7 py-10">
-          <div className="w-16 h-16 grid place-items-center rounded-[14px] bg-[#f7e9e4] text-[#c2553f] [&_svg]:size-[30px]">
-            <Icons.x sw={2.2} />
-          </div>
-          <div className="font-sans font-bold text-[19px]">识别失败</div>
-          <div className="font-cjk text-[13px] leading-[1.6] text-[#76726a] max-w-[320px]">{error}</div>
-          <button type="button" className={`${BTN} ${BTN_INK} mt-1.5 [&_svg]:size-3.5`} onClick={pickFile}>
-            <Icons.camera sw={2.4} />
-            重新拍照
-          </button>
-        </div>
+        <ScanState
+          tone="alert"
+          icon={<Icons.x sw={2.2} />}
+          title="识别失败"
+          body={error}
+          action="重新拍照"
+          onAction={pickFile}
+        />
       )}
 
       {phase === "review" && (
@@ -307,7 +302,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           <button
                             type="button"
                             key={m.id}
-                            className={`inline-flex items-center gap-1.5 cursor-pointer border rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-xs transition-colors ${row.who.includes(m.id) ? "bg-[#1c1b19] text-[#fafaf8] border-[#1c1b19]" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
+                            className={`inline-flex items-center gap-1.5 cursor-pointer border rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-xs transition-colors ${row.who.includes(m.id) ? CHIP_ON : CHIP_OFF}`}
                             onClick={() => toggle(row.id, m.id)}
                           >
                             <Avatar m={m} size="xs" />
@@ -416,7 +411,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 px-[18px] py-3.5 border-t border-[#ebe9e3] bg-[#fdfdfb]">
+          <ModalFooter>
             <button type="button" className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={pickFile}>
               <Icons.camera sw={2.4} />
               重新拍照
@@ -426,9 +421,43 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               <Icons.plus sw={2.6} />
               添加为花销
             </button>
-          </div>
+          </ModalFooter>
         </>
       )}
+    </div>
+  )
+}
+
+// Full-panel pick / error state for the scanner (the loading spinner phase is
+// distinct enough to stay inline). tone="alert" tints the icon for the error case.
+function ScanState({
+  tone,
+  icon,
+  title,
+  body,
+  action,
+  onAction,
+}: {
+  tone?: "accent" | "alert"
+  icon: ReactNode
+  title: string
+  body: string
+  action: string
+  onAction: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center text-center gap-3 px-7 py-10">
+      <div
+        className={`w-16 h-16 grid place-items-center rounded-[14px] [&_svg]:size-[30px] ${tone === "alert" ? "bg-[#f7e9e4] text-[#c2553f]" : "bg-[#eef4f0] text-[#3f6f5b]"}`}
+      >
+        {icon}
+      </div>
+      <div className="font-sans font-bold text-[19px]">{title}</div>
+      <div className="font-cjk text-[13px] leading-[1.6] text-[#76726a] max-w-[320px]">{body}</div>
+      <button type="button" className={`${BTN} ${BTN_INK} mt-1.5 [&_svg]:size-3.5`} onClick={onAction}>
+        <Icons.camera sw={2.4} />
+        {action}
+      </button>
     </div>
   )
 }

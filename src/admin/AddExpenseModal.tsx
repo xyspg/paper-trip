@@ -1,10 +1,18 @@
 import { useState } from "react"
 import { AdminModal } from "./AdminModal"
-import { CATS } from "./adminData"
 import type { Expense, StopCat } from "./adminData"
 import type { ExpenseItem, ExpenseSplit } from "../trip/types"
 import { Icons } from "./AdminIcons"
-import { BTN, BTN_GHOST, BTN_INK, FIELD_INPUT, FIELD_LABEL } from "./adminUi"
+import {
+  BTN,
+  BTN_GHOST,
+  BTN_INK,
+  CategoryChips,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  ModalFooter,
+  ModalHeader,
+} from "./adminUi"
 import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
 import type { SplitValue } from "./PaymentSplit"
 
@@ -28,8 +36,6 @@ type Props = {
   initial?: Expense | null
 }
 
-const CAT_KEYS = Object.keys(CATS) as StopCat[]
-
 // Reset the form whenever the modal (re)opens or targets a different expense by
 // keying the parent; this inner component always starts from fresh defaults.
 function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
@@ -52,17 +58,11 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 
   return (
     <form className="flex flex-col" onSubmit={submit}>
-      <div className="flex items-center gap-3 px-[18px] py-4 border-b border-[#ebe9e3]">
-        <span className="shrink-0 w-9 h-9 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] grid place-items-center [&_svg]:size-[17px]">
-          {editing ? <Icons.pencil sw={2.6} /> : <Icons.plus sw={2.6} />}
-        </span>
-        <span className="font-sans font-bold text-[16px] tracking-tight">
-          {editing ? "编辑花销条目" : "新增花销条目"}
-        </span>
-        <button type="button" className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border border-[#ebe9e3] bg-white text-[#76726a] cursor-pointer [&_svg]:size-[15px] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors" title="关闭" onClick={onClose}>
-          <Icons.x sw={2.6} />
-        </button>
-      </div>
+      <ModalHeader
+        icon={editing ? <Icons.pencil sw={2.6} /> : <Icons.plus sw={2.6} />}
+        title={editing ? "编辑花销条目" : "新增花销条目"}
+        onClose={onClose}
+      />
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
@@ -116,30 +116,11 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
           <span className={FIELD_LABEL}>类别</span>
-          <div className="flex flex-wrap gap-[7px]">
-            {CAT_KEYS.map((k) => {
-              const on = cat === k
-              return (
-                <button
-                  type="button"
-                  key={k}
-                  className={`inline-flex items-center gap-2 font-grotesk font-semibold text-[11px] tracking-[0.03em] px-3 py-[7px] rounded-full border transition-colors ${on ? "text-white" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
-                  style={on ? { background: CATS[k].color, borderColor: CATS[k].color } : undefined}
-                  onClick={() => setCat(k)}
-                >
-                  <span
-                    className="size-2 rounded-full"
-                    style={{ background: on ? "rgba(255,255,255,0.85)" : CATS[k].color }}
-                  />
-                  {CATS[k].label}
-                </button>
-              )
-            })}
-          </div>
+          <CategoryChips value={cat} onChange={setCat} />
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 px-[18px] py-3.5 border-t border-[#ebe9e3] bg-[#fdfdfb]">
+      <ModalFooter>
         <button type="button" className={`${BTN} ${BTN_GHOST}`} onClick={onClose}>
           取消
         </button>
@@ -148,7 +129,7 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           {editing ? <Icons.check sw={2.6} /> : <Icons.plus sw={2.6} />}
           {editing ? "保存修改" : "添加条目"}
         </button>
-      </div>
+      </ModalFooter>
     </form>
   )
 }

@@ -2,6 +2,7 @@ import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS } from "./adminData"
 import type { Expense, ExpenseSplit } from "../trip/types"
 import { expensePaidBy } from "../trip/expenses"
 import { Avatar } from "./Avatar"
+import { CHIP_OFF, CHIP_ON } from "./adminUi"
 
 // Editor value for who fronted an expense. `single` is the default 100% case;
 // `percent` / `amount` carry per-traveler weights. Kept separate from the stored
@@ -145,7 +146,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
           <button
             type="button"
             key={m.key}
-            className={`font-grotesk font-semibold text-[10px] tracking-[0.06em] uppercase cursor-pointer border rounded-full py-1 px-[11px] transition-colors ${mode === m.key ? "bg-[#1c1b19] text-[#fafaf8] border-[#1c1b19]" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
+            className={`font-grotesk font-semibold text-[10px] tracking-[0.06em] uppercase cursor-pointer border rounded-full py-1 px-[11px] transition-colors ${mode === m.key ? CHIP_ON : CHIP_OFF}`}
             onClick={() => setMode(m.key)}
           >
             {m.label}
@@ -159,7 +160,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
             <button
               type="button"
               key={m.id}
-              className={`inline-flex items-center gap-1.5 cursor-pointer border rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-[12px] transition-colors ${value.payer === m.id ? "bg-[#1c1b19] text-[#fafaf8] border-[#1c1b19]" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
+              className={`inline-flex items-center gap-1.5 cursor-pointer border rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-[12px] transition-colors ${value.payer === m.id ? CHIP_ON : CHIP_OFF}`}
               onClick={() => onChange({ mode: "single", payer: m.id })}
             >
               <Avatar m={m} size="xs" />
