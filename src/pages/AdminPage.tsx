@@ -128,7 +128,7 @@ export function AdminPage() {
           </Link>
           <span className="hidden min-[860px]:inline-flex items-center gap-2 ml-2 font-mono text-[12px] text-[#76726a] border border-[#ebe9e3] rounded-full px-3 py-1.5 [&_svg]:w-3.5 [&_svg]:h-3.5">
             <Icons.repo sw={2} />
-            aki-zero/anime-expo-2026
+            xyspg/anime-expo-2026
           </span>
           <span className="ml-auto" />
           <div className="flex items-center gap-2.5">

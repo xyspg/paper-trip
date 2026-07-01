@@ -82,7 +82,7 @@ export function AuditSection() {
                     {OP_LABEL[e.op as keyof typeof OP_LABEL] ?? e.op}
                   </span>
                   <span className="font-mono text-[11.5px] text-[#9b988f] whitespace-nowrap overflow-hidden text-ellipsis">
-                    {e.target ?? "—"}
+                    {e.target ?? "-"}
                   </span>
                   <span className="justify-self-end font-mono text-[11px] text-[#9b988f] max-[720px]:justify-self-start">
                     r{e.rev}

@@ -164,7 +164,7 @@ export function SectionHead({
   );
 }
 
-export type MetricItem = { k: string; v: number | string; sub?: string; color?: string };
+type MetricItem = { k: string; v: number | string; sub?: string; color?: string };
 
 // Bordered metric strip. The inner grid is nudged -1px right/down so each cell's
 // right/bottom rule is clipped at the rounded container edge, leaving only clean

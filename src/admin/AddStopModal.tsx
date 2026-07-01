@@ -8,6 +8,7 @@ import {
   BTN_GHOST,
   BTN_INK,
   CategoryChips,
+  CHIP_OFF,
   FIELD_INPUT,
   FIELD_LABEL,
   ModalFooter,
@@ -117,7 +118,7 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
                 <button
                   type="button"
                   key={k}
-                  className={`inline-flex items-center gap-[7px] font-grotesk font-semibold text-[11px] tracking-[0.03em] px-3 py-[7px] rounded-full border transition-colors ${on ? "text-white" : "bg-white text-[#3b3833] border-[#ebe9e3] hover:border-[#1c1b19]"}`}
+                  className={`inline-flex items-center gap-[7px] font-grotesk font-semibold text-[11px] tracking-[0.03em] px-3 py-[7px] rounded-full border transition-colors ${on ? "text-white" : CHIP_OFF}`}
                   style={on ? { background: STATUS_ON_HEX[STATUS[k].cls], borderColor: STATUS_ON_HEX[STATUS[k].cls] } : undefined}
                   onClick={() => setStatus(k)}
                 >

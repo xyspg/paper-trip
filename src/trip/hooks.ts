@@ -24,10 +24,10 @@ export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip })
 // unauthenticated /admin load (the endpoint 403s for non-admins); `retry: false`
 // because a 403 is authoritative, not a transient error worth re-issuing.
 export const useAudit = (enabled = true) =>
-  useQuery({ queryKey: ["audit"], queryFn: fetchAudit, enabled, retry: false });
+  useQuery({ queryKey: ["audit"], queryFn: fetchAudit, enabled, retry: false, staleTime: 30_000 });
 
 export const useBackups = (enabled = true) =>
-  useQuery({ queryKey: backupsKey, queryFn: fetchBackups, enabled, retry: false });
+  useQuery({ queryKey: backupsKey, queryFn: fetchBackups, enabled, retry: false, staleTime: 30_000 });
 
 export const useCreateBackup = () => {
   const queryClient = useQueryClient();
@@ -56,8 +56,9 @@ export const useRestoreBackup = () => {
   return useMutation({
     mutationFn: restoreBackup,
     onSuccess: (snapshot) => {
+      // Restore only bumps rev + writes one audit row; the backups list is
+      // unchanged, so don't invalidate it (avoids a redundant refetch).
       queryClient.setQueryData<TripSnapshot>(tripKey, snapshot);
-      queryClient.invalidateQueries({ queryKey: backupsKey });
       queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });

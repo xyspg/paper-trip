@@ -1,14 +1,9 @@
 import type { TripOp } from "./ops";
-import type { Trip } from "./types";
+import type { Trip, TripBackup } from "./types";
+
+export type { TripBackup };
 
 export type TripSnapshot = { rev: number; trip: Trip };
-export type TripBackup = {
-  id: string;
-  at: string;
-  rev: number;
-  label: string | null;
-  actorLogin: string;
-};
 
 export const fetchTrip = async (): Promise<TripSnapshot> => {
   const res = await fetch("/api/trip");

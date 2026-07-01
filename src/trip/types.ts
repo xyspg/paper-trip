@@ -1,3 +1,13 @@
+// A stored trip snapshot's summary row (backup list / create / restore metadata).
+// Defined here so the worker (Durable Object) and the client share one source.
+export type TripBackup = {
+  id: string;
+  at: string;
+  rev: number;
+  label: string | null;
+  actorLogin: string;
+};
+
 export type ItemStatus = "planned" | "locked" | "done";
 
 export type TripItem = {

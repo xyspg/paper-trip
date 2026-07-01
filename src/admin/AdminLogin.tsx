@@ -90,7 +90,7 @@ export function AdminLogin() {
                 授权范围
               </span>
               <span className="ml-auto font-mono text-[11px] text-[#76726a]">
-                aki-zero/anime-expo-2026
+                xyspg/anime-expo-2026
               </span>
             </div>
             {SCOPES.map((t) => (

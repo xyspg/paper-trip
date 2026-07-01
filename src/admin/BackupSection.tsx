@@ -23,19 +23,10 @@ import {
   useTrip,
 } from "../trip/hooks"
 import type { TripBackup } from "../trip/api"
+import { downloadText } from "../trip/exporters"
 
 type Props = {
   toast: ToastFn
-}
-
-const downloadJson = (filename: string, data: unknown) => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement("a")
-  anchor.href = url
-  anchor.download = filename
-  anchor.click()
-  URL.revokeObjectURL(url)
 }
 
 export function BackupSection({ toast }: Props) {
@@ -100,7 +91,11 @@ export function BackupSection({ toast }: Props) {
   const exportCurrent = () => {
     if (!tripSnap) return
     const stamp = new Date().toISOString().replaceAll(":", "-")
-    downloadJson(`ax26-trip-rev-${tripSnap.rev}-${stamp}.json`, tripSnap)
+    downloadText(
+      `ax26-trip-rev-${tripSnap.rev}-${stamp}.json`,
+      JSON.stringify(tripSnap, null, 2),
+      "application/json",
+    )
   }
 
   return (
@@ -204,9 +199,7 @@ export function BackupSection({ toast }: Props) {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-3.5 py-3 border-r border-[#ebe9e3] last:border-r-0 max-[640px]:border-r-0 max-[640px]:border-b max-[640px]:last:border-b-0">
-      <div className="font-grotesk font-semibold text-[10px] tracking-[0.12em] uppercase text-[#9b988f]">
-        {label}
-      </div>
+      <div className={FIELD_LABEL}>{label}</div>
       <div className="mt-1.5 font-cjk font-semibold text-[13px] truncate">{value}</div>
     </div>
   )

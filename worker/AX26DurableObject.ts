@@ -2,16 +2,10 @@ import { DurableObject } from "cloudflare:workers";
 import { tripData } from "../src/trip/tripData";
 import type { Trip } from "../src/trip/types";
 import { applyOp, type TripOp } from "../src/trip/ops";
+import type { TripBackup } from "../src/trip/types";
 import type { Env } from "./env";
 
 type Snapshot = { rev: number; trip: Trip };
-type BackupSummary = {
-  id: string;
-  at: string;
-  rev: number;
-  label: string | null;
-  actorLogin: string;
-};
 
 // Cap on retained audit rows. The GET view returns at most 500, so keeping the
 // most recent 2000 leaves ample history while bounding storage (each row can
@@ -32,7 +26,7 @@ type AuditRow = {
   detail: string;
 };
 
-type BackupRow = BackupSummary & {
+type BackupRow = TripBackup & {
   trip: string;
 };
 
@@ -185,10 +179,10 @@ export class AX26DurableObject extends DurableObject<Env> {
   }
 
   private listBackups(): Response {
+    // No LIMIT: every stored backup must stay listable, since deleteBackup can
+    // only target an id the list surfaced (a cap would orphan older snapshots).
     const backups = this.sql
-      .exec<BackupSummary>(
-        "SELECT id, at, rev, label, actorLogin FROM backups ORDER BY at DESC LIMIT 100",
-      )
+      .exec<TripBackup>("SELECT id, at, rev, label, actorLogin FROM backups ORDER BY at DESC")
       .toArray();
     return Response.json({ backups });
   }
@@ -215,13 +209,13 @@ export class AX26DurableObject extends DurableObject<Env> {
     this.recordAuditAction(req, "createBackup", id, { id, label, rev: this.rev }, at);
 
     return Response.json({
-      backup: { id, at, rev: this.rev, label, actorLogin } satisfies BackupSummary,
+      backup: { id, at, rev: this.rev, label, actorLogin } satisfies TripBackup,
     });
   }
 
   private deleteBackup(req: Request, id: string): Response {
     const existing = this.sql
-      .exec<BackupSummary>(
+      .exec<TripBackup>(
         "SELECT id, at, rev, label, actorLogin FROM backups WHERE id = ?",
         id,
       )
@@ -257,7 +251,7 @@ export class AX26DurableObject extends DurableObject<Env> {
 
     const { trip: _trip, ...backup } = row;
     return Response.json({ rev: this.rev, trip: this.trip, backup } satisfies Snapshot & {
-      backup: BackupSummary;
+      backup: TripBackup;
     });
   }
 

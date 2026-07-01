@@ -12,11 +12,10 @@ import {
 } from "../trip/expenses"
 import type { Trip } from "../trip/types"
 
-// Paper theme ledger: a port of the "分账" Claude Design layout (light masthead,
+// Ledger page: a port of the "分账" Claude Design layout (light masthead,
 // bordered summary split, editorial expense rows, totals block). Fed the app's
 // real expense data and keeps its richer features (per-person balances, split
-// payers, receipt items, PDF export). Anime keeps its own layout in LedgerPage;
-// this renders only when the paper theme is active.
+// payers, receipt items, PDF export).
 
 const logo = (src: string, alt: string) => (
   <img className="w-full h-full p-1 object-contain" src={src} alt={alt} />

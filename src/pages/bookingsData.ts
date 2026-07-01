@@ -1,8 +1,7 @@
-// Static booking data shared by both layouts (anime = BookingsPage, paper =
-// PaperBookings). Presentational/fixed (not synced), so it lives here as one
-// source instead of being duplicated per layout.
+// Static booking data for the bookings page (PaperBookings). Presentational and
+// fixed (not synced), so it lives here as one source.
 
-export type Endpoint = {
+type Endpoint = {
   time: string
   code: string
   city: string
@@ -11,7 +10,6 @@ export type Endpoint = {
 
 export type Flight = {
   rail: string
-  railColor?: string
   legLabel: string
   legClass?: string
   date: string
@@ -39,7 +37,6 @@ export const flights: Flight[] = [
   },
   {
     rail: "Return · 返程",
-    railColor: "var(--color-magenta)",
     legLabel: "返程 · Return",
     legClass: "ret",
     date: "周日 · 7月5日 2026",
