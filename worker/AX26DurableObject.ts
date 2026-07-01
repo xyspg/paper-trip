@@ -133,18 +133,30 @@ export class AX26DurableObject extends DurableObject<Env> {
       return new Response(null, { status: 101, webSocket: client });
     }
 
-    if (url.pathname.endsWith("/backups")) {
+    // Anchor backup routing to the exact canonical path. The worker's admin gate
+    // matches only "/api/trip/backups"(/...), so loose matching here (endsWith /
+    // unanchored regex) would let a non-canonical URL like /api/trip/x/backups
+    // slip past auth and reach a backup action. Unmatched method/action returns
+    // 405 rather than falling through to the trip-op mutator below.
+    if (url.pathname === "/api/trip/backups") {
       if (req.method === "GET") return this.listBackups();
       if (req.method === "POST") return this.createBackup(req);
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
-    const backupAction = url.pathname.match(/\/backups\/([^/]+)(?:\/(restore))?$/);
+    const backupAction = url.pathname.match(/^\/api\/trip\/backups\/([^/]+)(?:\/(restore))?$/);
     if (backupAction) {
-      const id = decodeURIComponent(backupAction[1]);
+      let id: string;
+      try {
+        id = decodeURIComponent(backupAction[1]);
+      } catch {
+        return new Response("Bad Request", { status: 400 });
+      }
       if (req.method === "DELETE" && !backupAction[2]) return this.deleteBackup(req, id);
       if (req.method === "POST" && backupAction[2] === "restore") {
         return this.restoreBackup(req, id);
       }
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
     if (req.method === "POST") {
@@ -160,7 +172,7 @@ export class AX26DurableObject extends DurableObject<Env> {
 
     // Admin-only audit read (the worker gates auth before forwarding). Newest
     // first; capped for the view (the table is itself pruned to AUDIT_RETENTION).
-    if (req.method === "GET" && url.pathname.endsWith("/audit")) {
+    if (req.method === "GET" && url.pathname === "/api/trip/audit") {
       const entries = this.sql
         .exec<AuditRow>(
           "SELECT seq, at, rev, op, target, actorId, actorLogin, actorEmail, ip, detail FROM audit ORDER BY seq DESC LIMIT 500",
