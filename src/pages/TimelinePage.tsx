@@ -1,20 +1,23 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import { AddressLink } from "../components/AddressLink";
 import { SuggestBox } from "../components/SuggestBox";
+import { useTheme } from "../theme/ThemeProvider";
 import { cardRecs } from "../trip/cardRecs";
 import { categoryColor } from "../trip/categoryColor";
 import { useCardImage, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripData } from "../trip/tripData";
 import type { ItemStatus, TripItem } from "../trip/types";
+import { PaperTimeline } from "./PaperTimeline";
+import { dayLabels, formatDayDate, itemPlans, renderRich } from "./timelineShared";
 
 type DayAccent = "magenta" | "cyan" | "green";
 
-// Per-day presentational metadata keyed by the real trip dates. The dates and
-// ordering come from the data; only the editorial label/tag/accent live here.
-const dayMeta: Record<string, { label: string; tag: string; accent: DayAccent }> = {
-  "2026-07-03": { label: "抵达 + Anime Expo 第一天", tag: "Arrival Day", accent: "magenta" },
-  "2026-07-04": { label: "Anime Expo 全天", tag: "Main Event", accent: "cyan" },
-  "2026-07-05": { label: "返程缓冲", tag: "Departure", accent: "green" },
+// Per-day accent for the anime chrome, keyed by the real trip dates. The
+// editorial label/tag live in the shared `dayLabels` (both layouts use them).
+const dayAccent: Record<string, DayAccent> = {
+  "2026-07-03": "magenta",
+  "2026-07-04": "cyan",
+  "2026-07-05": "green",
 };
 
 const categoryMeta: Record<TripItem["category"], { label: string; className: string }> = {
@@ -26,20 +29,6 @@ const categoryMeta: Record<TripItem["category"], { label: string; className: str
   errand: { label: "Misc", className: "[--cat:var(--color-green)]" },
 };
 
-// Render lightweight **bold** spans inside an otherwise plain editorial string.
-const renderRich = (text: string): ReactNode[] =>
-  text
-    .split(/\*\*(.+?)\*\*/g)
-    .map((part, index) =>
-      index % 2 === 1 ? (
-        <b key={index} className="font-extrabold">
-          {part}
-        </b>
-      ) : (
-        part
-      ),
-    );
-
 const statusLabel: Record<ItemStatus, string> = {
   planned: "计划中",
   locked: "已锁定",
@@ -50,37 +39,14 @@ const statusCycle: ItemStatus[] = ["planned", "locked", "done"];
 const nextStatus = (status: ItemStatus): ItemStatus =>
   statusCycle[(statusCycle.indexOf(status) + 1) % statusCycle.length];
 
-const formatDayDate = (iso: string): string => {
-  const date = new Date(`${iso}T00:00:00`);
-  const md = `${date.getMonth() + 1}/${date.getDate()}`;
-  const weekday = date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
-  return `${md} · ${weekday}`;
-};
-
 const shortDate = (iso: string): string => {
   const date = new Date(`${iso}T00:00:00`);
   return `${date.getMonth() + 1}/${date.getDate()}`;
 };
 
-type StopPlan = { kind: "main" | "alt"; label: string; text: string };
-
-const itemPlans = (item: TripItem): StopPlan[] => {
-  if (item.parking) {
-    const plans: StopPlan[] = [{ kind: "main", label: "主方案", text: item.parking.primary }];
-    if (item.parking.backup) {
-      plans.push({ kind: "alt", label: "备用", text: item.parking.backup });
-    }
-    return plans;
-  }
-  return item.notes.slice(0, 2).map((text, index) => ({
-    kind: index === 0 ? "main" : "alt",
-    label: index === 0 ? "提示" : "备注",
-    text,
-  }));
-};
-
 export function TimelinePage() {
   useTripLiveSync(); // 挂载时连 WS，收别人的改动
+  const { theme } = useTheme();
   const op = useTripOp();
   const { data } = useTrip();
   // 加载首帧用静态 tripData 兜底，拿到服务端数据后自动替换
@@ -100,6 +66,21 @@ export function TimelinePage() {
 
   const cycleStatus = (item: TripItem) =>
     op.mutate({ type: "setItemStatus", itemId: item.id, status: nextStatus(item.status) });
+
+  if (theme === "paper") {
+    return (
+      <PaperTimeline
+        trip={trip}
+        orderedDates={orderedDates}
+        stopNumbers={stopNumbers}
+        nextItem={nextItem}
+        nextPlan={nextPlan}
+        parkingCount={parkingCount}
+        dateRange={dateRange}
+        onCycleStatus={cycleStatus}
+      />
+    );
+  }
 
   return (
     <>
@@ -148,11 +129,12 @@ export function TimelinePage() {
       </section>
 
       {orderedDates.map((date, index) => {
-        const meta = dayMeta[date] ?? { label: date, tag: "", accent: "cyan" as DayAccent };
+        const meta = dayLabels[date] ?? { label: date, tag: "" };
+        const accent = dayAccent[date] ?? "cyan";
         const accentVar =
-          meta.accent === "magenta"
+          accent === "magenta"
             ? "[--accent:var(--color-magenta)]"
-            : meta.accent === "cyan"
+            : accent === "cyan"
               ? "[--accent:var(--color-cyan)]"
               : "[--accent:var(--color-green)]";
         return (

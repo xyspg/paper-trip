@@ -1,5 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { PageNav } from "./PageNav";
+import { SiteFooter } from "./SiteFooter";
 
 export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -15,6 +16,7 @@ export function RootLayout() {
       <div className="w-[min(1040px,100%)] mx-auto">
         <PageNav />
         <Outlet />
+        <SiteFooter />
       </div>
     </main>
   );
