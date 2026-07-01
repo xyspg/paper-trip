@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Icons } from "./AdminIcons"
+import { BTN, BTN_ACCENT, BTN_DANGER, BTN_GHOST, BTN_SM, SectionHead } from "./adminUi"
 import { useConfirm } from "./useConfirm"
 import type { ToastFn } from "./useAdminToasts"
 import {
@@ -105,37 +106,30 @@ export function BackupSection({ toast }: Props) {
 
   return (
     <div>
-      <div className="relative bg-ink text-paper border-[3px] border-ink rounded-card shadow-hard-sm py-[18px] px-[clamp(18px,3vw,26px)] overflow-hidden isolate flex items-center gap-4 flex-wrap before:content-[''] before:absolute before:inset-0 before:z-[-1] before:bg-[repeating-linear-gradient(115deg,transparent_0_24px,rgba(255,255,255,0.04)_24px_26px)]">
-        <span className="shrink-0 font-display font-black text-[24px] leading-none text-ink bg-green border-2 border-paper rounded-[10px] w-12 h-12 grid place-items-center">
-          05
-        </span>
-        <div className="min-w-0">
-          <div className="font-display font-black text-[clamp(19px,3vw,26px)] uppercase tracking-[0.01em] leading-none">
-            备份与恢复
-          </div>
-          <div className="font-cjk font-medium text-[13px] text-paper/72 mt-[7px]">
-            手动保存当前 trip JSON · 一键恢复快照 · 操作写入审计日志
-          </div>
-        </div>
-        <span className="flex-1" />
-        <button
-          className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[9px] px-[15px] rounded-full border-2 border-ink cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] [&_svg]:w-[14px] [&_svg]:h-[14px] bg-paper-2 text-ink shadow-[3px_3px_0_var(--color-ink)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--color-ink)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_var(--color-ink)]"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
-          <Icons.swap sw={2.2} />
-          {isFetching ? "刷新中" : "刷新"}
-        </button>
-      </div>
+      <SectionHead
+        kicker="05 · Backup"
+        title="备份与恢复"
+        desc="手动保存当前 trip JSON · 一键恢复快照 · 操作写入审计日志"
+        actions={
+          <button
+            className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`}
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <Icons.swap sw={2.2} />
+            {isFetching ? "刷新中" : "刷新"}
+          </button>
+        }
+      />
 
-      <section className="mt-[clamp(20px,4vw,30px)] bg-paper-2 border-[3px] border-ink rounded-card shadow-hard-sm overflow-hidden">
+      <section className="mt-6 bg-white border border-[#ebe9e3] rounded-[14px] overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_auto] gap-3 p-4 items-end max-[720px]:grid-cols-1">
           <label className="grid gap-1.5 min-w-0">
-            <span className="font-grotesk font-extrabold text-[10.5px] tracking-[0.12em] uppercase text-ink-soft">
+            <span className="font-grotesk font-semibold text-[10.5px] tracking-[0.12em] uppercase text-[#9b988f]">
               备份标签
             </span>
             <input
-              className="w-full box-border bg-paper border-2 border-ink rounded-[10px] px-3 py-2.5 font-cjk font-bold text-[14px] outline-none focus:shadow-[3px_3px_0_var(--color-ink)]"
+              className="w-full box-border bg-white border border-[#ebe9e3] rounded-[10px] px-3 py-2.5 font-cjk font-medium text-[14px] outline-none focus:border-[#1c1b19] transition-colors"
               value={label}
               placeholder={`Manual backup · rev ${tripSnap?.rev ?? "?"}`}
               maxLength={120}
@@ -143,7 +137,7 @@ export function BackupSection({ toast }: Props) {
             />
           </label>
           <button
-            className="inline-flex justify-center items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[10px] px-[15px] rounded-full border-2 border-ink text-ink bg-green cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] shadow-[3px_3px_0_var(--color-ink)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--color-ink)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none [&_svg]:w-3.5 [&_svg]:h-3.5"
+            className={`${BTN} ${BTN_ACCENT} justify-center [&_svg]:size-3.5`}
             onClick={create}
             disabled={busy}
           >
@@ -151,7 +145,7 @@ export function BackupSection({ toast }: Props) {
             创建备份
           </button>
           <button
-            className="inline-flex justify-center items-center gap-[7px] font-grotesk font-extrabold text-[12px] tracking-[0.02em] py-[10px] px-[15px] rounded-full border-2 border-ink text-ink bg-paper cursor-pointer whitespace-nowrap [transition:transform_0.08s_ease,box-shadow_0.08s_ease] shadow-[3px_3px_0_var(--color-ink)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--color-ink)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none [&_svg]:w-3.5 [&_svg]:h-3.5"
+            className={`${BTN} ${BTN_GHOST} justify-center [&_svg]:size-3.5`}
             onClick={exportCurrent}
             disabled={!tripSnap}
           >
@@ -172,20 +166,18 @@ export function BackupSection({ toast }: Props) {
           backups.map((backup) => (
             <article
               key={backup.id}
-              className="bg-paper-2 border-2 border-ink rounded-[12px] shadow-[3px_3px_0_var(--color-ink)] overflow-hidden"
+              className="bg-white border border-[#ebe9e3] rounded-[14px] overflow-hidden"
             >
-              <div className="grid grid-cols-[1fr_auto] gap-3 py-3 px-3.5 border-b-2 border-dashed border-ink max-[640px]:grid-cols-1">
+              <div className="grid grid-cols-[1fr_auto] gap-3 px-3.5 py-3 border-b border-dashed border-[#ebe9e3] max-[640px]:grid-cols-1">
                 <div className="min-w-0">
-                  <div className="font-cjk font-black text-[15px] leading-tight truncate">
+                  <div className="font-cjk font-bold text-[15px] leading-tight truncate">
                     {backup.label || `Manual backup · rev ${backup.rev}`}
                   </div>
-                  <div className="mt-1 font-mono text-[11px] text-ink-soft">
-                    {backup.id}
-                  </div>
+                  <div className="mt-1 font-mono text-[11px] text-[#9b988f]">{backup.id}</div>
                 </div>
                 <div className="flex gap-2 justify-end max-[640px]:justify-start">
                   <button
-                    className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[11px] tracking-[0.02em] py-1.5 px-[11px] rounded-full border-2 border-ink bg-paper-2 text-ink cursor-pointer whitespace-nowrap hover:bg-green disabled:opacity-45 [&_svg]:w-3.5 [&_svg]:h-3.5"
+                    className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-3.5`}
                     onClick={() => restore(backup)}
                     disabled={busy}
                   >
@@ -193,7 +185,7 @@ export function BackupSection({ toast }: Props) {
                     恢复
                   </button>
                   <button
-                    className="inline-flex items-center gap-[7px] font-grotesk font-extrabold text-[11px] tracking-[0.02em] py-1.5 px-[11px] rounded-full border-2 border-magenta text-magenta bg-paper-2 cursor-pointer whitespace-nowrap hover:bg-magenta hover:text-paper disabled:opacity-45 [&_svg]:w-3.5 [&_svg]:h-3.5"
+                    className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-3.5`}
                     onClick={() => remove(backup)}
                     disabled={busy}
                   >
@@ -219,28 +211,25 @@ export function BackupSection({ toast }: Props) {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="py-3 px-3.5 border-r-2 border-ink last:border-r-0 max-[640px]:border-r-0 max-[640px]:border-b-2 max-[640px]:last:border-b-0">
-      <div className="font-grotesk font-extrabold text-[10px] tracking-[0.12em] uppercase text-ink-soft">
+    <div className="px-3.5 py-3 border-r border-[#ebe9e3] last:border-r-0 max-[640px]:border-r-0 max-[640px]:border-b max-[640px]:last:border-b-0">
+      <div className="font-grotesk font-semibold text-[10px] tracking-[0.12em] uppercase text-[#9b988f]">
         {label}
       </div>
-      <div className="mt-1.5 font-cjk font-bold text-[13px] truncate">{value}</div>
+      <div className="mt-1.5 font-cjk font-semibold text-[13px] truncate">{value}</div>
     </div>
   )
 }
 
 function EmptyState({ title, body, warn }: { title: string; body: string; warn?: boolean }) {
   return (
-    <div className="text-center py-12 px-6 border-[3px] border-dashed border-ink rounded-card bg-paper-2">
+    <div className="text-center py-12 px-6 border border-dashed border-[#ebe9e3] rounded-[14px] bg-white">
       <div
-        className="w-14 h-14 mt-0 mx-auto mb-[14px] rounded-[14px] bg-[color-mix(in_srgb,var(--color-green)_18%,var(--color-paper-2))] border-[3px] border-ink grid place-items-center [&_svg]:w-7 [&_svg]:h-7"
-        style={{ color: warn ? "var(--color-magenta)" : "var(--color-green)" }}
+        className={`w-14 h-14 mx-auto mb-3.5 rounded-[14px] grid place-items-center [&_svg]:size-[26px] ${warn ? "bg-[#f7e9e4] text-[#c2553f]" : "bg-[#eef4f0] text-[#3f6f5b]"}`}
       >
-        {warn ? <Icons.x sw={2.4} /> : <Icons.repo sw={2.4} />}
+        {warn ? <Icons.x sw={2.4} /> : <Icons.repo sw={2.2} />}
       </div>
-      <div className="font-display font-extrabold text-[17px] uppercase tracking-[0.04em]">
-        {title}
-      </div>
-      <div className="font-cjk font-medium text-[13px] text-ink-soft mt-2">{body}</div>
+      <div className="font-sans font-bold text-[17px]">{title}</div>
+      <div className="font-cjk text-[13px] text-[#76726a] mt-2">{body}</div>
     </div>
   )
 }
