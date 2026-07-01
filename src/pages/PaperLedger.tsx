@@ -83,7 +83,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
             已抵扣 Chase IHG credit{" "}
-            <span className="font-mono font-bold text-[#3f6f5b]">−{fmtMoney(creditTotal)}</span>
+            <span className="font-sans font-bold text-[#3f6f5b]">−{fmtMoney(creditTotal)}</span>
           </div>
         </div>
         <div className="p-[20px_22px] bg-[#eef4f0]">
@@ -121,7 +121,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
                   <div className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] text-[#76726a]">
                     {label}
                   </div>
-                  <div className="mt-0.5 font-mono font-bold text-[17px]" style={{ color: tone }}>
+                  <div className="mt-0.5 font-sans font-bold text-[17px]" style={{ color: tone }}>
                     {fmtMoney(Math.abs(net))}
                   </div>
                 </div>
@@ -129,11 +129,11 @@ export function PaperLedger({ trip }: { trip: Trip }) {
               <div className="grid grid-cols-2 gap-2 mt-3 max-[480px]:grid-cols-1">
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   已垫付
-                  <b className="font-mono font-bold text-[#1c1b19]">{fmtMoney(balance?.paid ?? 0)}</b>
+                  <b className="font-sans font-bold text-[#1c1b19]">{fmtMoney(balance?.paid ?? 0)}</b>
                 </span>
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   应承担
-                  <b className="font-mono font-bold text-[#1c1b19]">{fmtMoney(balance?.share ?? each)}</b>
+                  <b className="font-sans font-bold text-[#1c1b19]">{fmtMoney(balance?.share ?? each)}</b>
                 </span>
               </div>
             </div>
@@ -176,8 +176,8 @@ export function PaperLedger({ trip }: { trip: Trip }) {
                   </span>
                   <span className="shrink-0 max-[480px]:w-full max-[480px]:pl-[51px] max-[480px]:mt-1.5">
                     <span className="inline-flex items-center gap-1 py-[5px] pr-[11px] pl-[9px] bg-[#fafaf8] border border-[#ebe9e3] rounded-[10px]">
-                      <span className="font-mono text-[14px] text-[#9b988f]">$</span>
-                      <span className="font-mono font-bold text-[15px] text-[#1c1b19]">
+                      <span className="font-sans text-[14px] text-[#9b988f]">$</span>
+                      <span className="font-sans font-bold text-[15px] text-[#1c1b19]">
                         {amountParts(item.amount)}
                       </span>
                     </span>
@@ -191,7 +191,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
                     <span className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.06em] whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full py-[3px] px-2.5">
                       Chase IHG credit
                     </span>
-                    <span className="font-mono font-bold text-[13px] text-[#3f6f5b]">
+                    <span className="font-sans font-bold text-[13px] text-[#3f6f5b]">
                       −{fmtMoney(appliedCredit(item))}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
                                 {pct}%
                               </span>
                             )}
-                            <b className="font-mono font-bold text-[12.5px] text-[#1c1b19]">{fmtMoney(amt)}</b>
+                            <b className="font-sans font-bold text-[12.5px] text-[#1c1b19]">{fmtMoney(amt)}</b>
                           </span>
                         )
                       })}
@@ -228,10 +228,10 @@ export function PaperLedger({ trip }: { trip: Trip }) {
 
                 <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    实付 <b className="font-mono font-bold text-[#1c1b19] text-[13.5px]">{fmtMoney(net)}</b>
+                    实付 <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">{fmtMoney(net)}</b>
                   </span>
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    每人 <b className="font-mono font-bold text-[#1c1b19] text-[13.5px]">{fmtMoney(net / 2)}</b>
+                    每人 <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">{fmtMoney(net / 2)}</b>
                   </span>
                 </div>
               </div>
@@ -243,19 +243,19 @@ export function PaperLedger({ trip }: { trip: Trip }) {
         <div className="bg-[#eef4f0] border-t border-[#ebe9e3]">
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px]">
             <span>小计 Subtotal</span>
-            <span className="font-mono font-bold">{fmtMoney(subtotal)}</span>
+            <span className="font-sans font-bold">{fmtMoney(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
             <span>Chase IHG credit</span>
-            <span className="font-mono font-bold">−{fmtMoney(creditTotal)}</span>
+            <span className="font-sans font-bold">−{fmtMoney(creditTotal)}</span>
           </div>
           <div className="flex items-center justify-between py-[15px] px-[18px] bg-[#1c1b19] text-[#fafaf8] font-sans font-extrabold tracking-[0.01em] text-[clamp(15px,3vw,17px)]">
             <span>实付合计 Net Total</span>
-            <span className="font-mono text-white text-[clamp(18px,4vw,22px)]">{fmtMoney(grand)}</span>
+            <span className="font-sans text-white text-[clamp(18px,4vw,22px)]">{fmtMoney(grand)}</span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] bg-white border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[14px]">
             <span>每人均摊 Per Person</span>
-            <span className="font-mono font-bold text-[#3f6f5b] text-[16px]">{fmtMoney(each)}</span>
+            <span className="font-sans font-bold text-[#3f6f5b] text-[16px]">{fmtMoney(each)}</span>
           </div>
         </div>
       </section>

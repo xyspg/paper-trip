@@ -188,10 +188,10 @@ export function SplitSection({
                   <span className="block font-cjk text-[12px] text-[#76726a] mt-0.5">{e.sub}</span>
                 </span>
                 <span className="shrink-0 inline-flex items-center border border-[#ebe9e3] rounded-[10px] bg-white px-2.5 py-1 focus-within:border-[#1c1b19] transition-colors">
-                  <span className="font-mono text-[14px] text-[#9b988f]">$</span>
+                  <span className="font-sans text-[14px] text-[#9b988f]">$</span>
                   <input
                     key={`${e.id}-${e.amount}`}
-                    className="w-[84px] border-0 outline-none bg-transparent font-mono font-bold text-[15px] text-right text-[#1c1b19] [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
+                    className="w-[84px] border-0 outline-none bg-transparent font-sans font-bold text-[15px] text-right text-[#1c1b19] [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
                     type="number"
                     inputMode="decimal"
                     step="0.01"
@@ -222,11 +222,11 @@ export function SplitSection({
                 </span>
                 {e.credit ? (
                   <span className="inline-flex items-center gap-1.5 font-grotesk text-[10px] tracking-[0.06em] uppercase whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full px-2.5 py-1">
-                    IHG credit <span className="font-mono">−{fmtMoney(appliedCredit(e))}</span>
+                    IHG credit <span className="font-sans">−{fmtMoney(appliedCredit(e))}</span>
                   </span>
                 ) : null}
                 <span className="ml-auto font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                  实付 <b className="font-mono font-bold text-[#1c1b19] text-[14px]">{fmtMoney(netExpense(e))}</b>
+                  实付 <b className="font-sans font-bold text-[#1c1b19] text-[14px]">{fmtMoney(netExpense(e))}</b>
                 </span>
                 <button
                   className="shrink-0 w-8 h-8 grid place-items-center border border-[#ebe9e3] rounded-[9px] bg-white text-[#76726a] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors [&_svg]:size-4"
@@ -252,15 +252,15 @@ export function SplitSection({
         <div className="bg-[#eef4f0] border-t border-[#ebe9e3]">
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px]">
             <span>小计 Subtotal</span>
-            <span className="font-mono">{fmtMoney(subtotal)}</span>
+            <span className="font-sans">{fmtMoney(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
             <span>Chase IHG credit</span>
-            <span className="font-mono">−{fmtMoney(creditTotal)}</span>
+            <span className="font-sans">−{fmtMoney(creditTotal)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-3.5 bg-[#1c1b19] text-[#fafaf8] font-sans font-bold tracking-[0.02em] text-[16px]">
             <span>实付合计 Net Total</span>
-            <span className="font-mono text-[20px] text-white">{fmtMoney(total)}</span>
+            <span className="font-sans text-[20px] text-white">{fmtMoney(total)}</span>
           </div>
         </div>
       </div>
@@ -289,17 +289,17 @@ export function SplitSection({
               <div className="grid gap-1.5 mt-3.5">
                 <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
                   <span>已垫付</span>
-                  <span className="font-mono text-[#1c1b19]">{fmtMoney(p)}</span>
+                  <span className="font-sans text-[#1c1b19]">{fmtMoney(p)}</span>
                 </div>
                 <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
                   <span>应承担</span>
-                  <span className="font-mono text-[#1c1b19]">{fmtMoney(sh)}</span>
+                  <span className="font-sans text-[#1c1b19]">{fmtMoney(sh)}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[13.5px]">
                 <span>{settled ? "已结清" : owe ? "需补付" : "应收回"}</span>
                 <span
-                  className="font-mono text-[16px]"
+                  className="font-sans text-[16px]"
                   style={{ color: settled ? undefined : owe ? "#c2553f" : "#3f6f5b" }}
                 >
                   {fmtMoney(Math.abs(bal))}
@@ -328,7 +328,7 @@ export function SplitSection({
               <Avatar m={receiver.m} size="xs" />
               {receiver.m.name}
             </span>
-            转 <b className="font-mono text-white">{fmtMoney(settleAmt)}</b>
+            转 <b className="font-sans text-white">{fmtMoney(settleAmt)}</b>
           </span>
         ) : (
           <span className="font-cjk font-semibold text-[14px]">两人已结清，无需互相转账。</span>

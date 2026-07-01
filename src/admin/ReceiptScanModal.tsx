@@ -398,15 +398,15 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             <div className="flex flex-col gap-[5px] px-3.5 py-3 border border-[#ebe9e3] rounded-xl bg-[#fdfdfb] col-span-full">
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>菜品小计</span>
-                <span className="font-mono font-semibold">{fmtMoney(lineSubtotal)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(lineSubtotal)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>税费 / 小费</span>
-                <span className="font-mono font-semibold">{fmtMoney(extra)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(extra)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-bold text-base text-[#1c1b19] mt-1 pt-2 border-t border-dashed border-[#ebe9e3]">
                 <span>合计</span>
-                <span className="font-mono font-bold">{fmtMoney(grandTotal)}</span>
+                <span className="font-sans font-bold">{fmtMoney(grandTotal)}</span>
               </div>
             </div>
           </div>

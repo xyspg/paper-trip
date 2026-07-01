@@ -181,7 +181,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
                 <span className="inline-flex items-center gap-[5px] border border-[#ebe9e3] rounded-[9px] bg-white py-[3px] px-[9px] focus-within:border-[#1c1b19] transition-colors">
                   <input
                     key={`${m.id}-${mode}-${cur}`}
-                    className="w-[58px] border-none outline-none bg-transparent font-mono font-bold text-[13px] text-[#1c1b19] text-right [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
+                    className="w-[58px] border-none outline-none bg-transparent font-sans font-bold text-[13px] text-[#1c1b19] text-right [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
                     type="number"
                     inputMode="decimal"
                     min="0"
