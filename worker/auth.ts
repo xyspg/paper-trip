@@ -9,6 +9,10 @@ import type { Env } from "./env";
 // or email matching). 42668274 = xyspg, 194129427 = Sapphire-Rapids.
 const ADMIN_IDS = new Set([42668274, 194129427]);
 
+// Shared with agent-token verification so both credential kinds gate on the
+// same live allowlist (removing an id revokes sessions AND agent tokens).
+export const isAdminId = (id: number): boolean => ADMIN_IDS.has(id);
+
 // Fixed callback registered with the GitHub OAuth app. The proxy validates our
 // return origin and forwards GitHub's `code` back to us. See xyspg/oauth-proxy.
 const PROXY = "https://oauth.xyspg.moe/callback/github";
@@ -34,24 +38,24 @@ export type SessionUser = {
 };
 
 // ---- base64url helpers (URL-safe, no padding) ----
-function bytesToB64url(bytes: Uint8Array): string {
+export function bytesToB64url(bytes: Uint8Array): string {
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
-function b64urlToBytes(s: string): Uint8Array {
+export function b64urlToBytes(s: string): Uint8Array {
   const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
   const bin = atob(s.replaceAll("-", "+").replaceAll("_", "/") + pad);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
-const strToB64url = (s: string) => bytesToB64url(enc.encode(s));
-const b64urlToStr = (s: string) => new TextDecoder().decode(b64urlToBytes(s));
+export const strToB64url = (s: string) => bytesToB64url(enc.encode(s));
+export const b64urlToStr = (s: string) => new TextDecoder().decode(b64urlToBytes(s));
 
 // ---- HMAC-SHA256 signed, stateless session token: `<payload>.<sig>`.
 // Keyed by the GitHub client secret, so no extra secret to manage. ----
-function hmacKey(secret: string): Promise<CryptoKey> {
+export function hmacKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "raw",
     enc.encode(secret),
@@ -61,14 +65,14 @@ function hmacKey(secret: string): Promise<CryptoKey> {
   );
 }
 
-async function signSession(user: SessionUser, secret: string): Promise<string> {
+export async function signSession(user: SessionUser, secret: string): Promise<string> {
   const payload = { ...user, exp: Math.floor(Date.now() / 1000) + SESSION_TTL };
   const body = strToB64url(JSON.stringify(payload));
   const sig = await crypto.subtle.sign("HMAC", await hmacKey(secret), enc.encode(body));
   return `${body}.${bytesToB64url(new Uint8Array(sig))}`;
 }
 
-async function verifySession(token: string, secret: string): Promise<SessionUser | null> {
+export async function verifySession(token: string, secret: string): Promise<SessionUser | null> {
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
   const ok = await crypto.subtle.verify(
@@ -80,6 +84,10 @@ async function verifySession(token: string, secret: string): Promise<SessionUser
   if (!ok) return null;
   try {
     const p = JSON.parse(b64urlToStr(body)) as SessionUser & { exp?: number };
+    // Agent bearer tokens are signed with this same key. Their `kind` claim
+    // (plus the axa_ prefix) must never be accepted as a browser session, or a
+    // leaked agent token would escalate to full admin (reset, restore, ...).
+    if ("kind" in p) return null;
     if (typeof p.exp !== "number" || p.exp < Date.now() / 1000) return null;
     // Re-check the allowlist on every request, not just at login, so removing an
     // id from ADMIN_IDS revokes any live session immediately instead of waiting
