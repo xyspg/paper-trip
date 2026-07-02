@@ -46,8 +46,10 @@ function scrubPassUrls(trip: Trip): void {
 function opTarget(op: TripOp): string | null {
   switch (op.type) {
     case "setItemStatus":
+    case "deleteItem":
       return op.itemId;
     case "updateItem":
+    case "addItem":
       return op.item.id;
     case "setChecklistItem":
       return op.checklistId;

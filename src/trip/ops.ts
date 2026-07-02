@@ -13,6 +13,8 @@ import type {
 export type TripOp =
   | { type: "setItemStatus"; itemId: string; status: ItemStatus }
   | { type: "updateItem"; item: TripItem }
+  | { type: "addItem"; item: TripItem }
+  | { type: "deleteItem"; itemId: string }
   | { type: "setChecklistItem"; checklistId: string; item: ChecklistItem }
   | { type: "addSuggestion"; suggestion: TripSuggestion }
   | { type: "setSuggestionStatus"; suggestionId: string; status: SuggestionStatus }
@@ -42,6 +44,21 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
         ...trip,
         items: trip.items.map((item) => (item.id === op.item.id ? op.item : item)),
       };
+
+    case "addItem": {
+      // Re-adding an existing id replaces it (idempotent under agent retries).
+      // Insert in (date, time) order — the timeline renders array order within
+      // a day, so a blind append would show a new stop out of sequence.
+      const items = trip.items.filter((item) => item.id !== op.item.id);
+      const key = (i: TripItem) => `${i.date} ${i.time}`;
+      const at = items.findIndex((existing) => key(existing) > key(op.item));
+      if (at === -1) items.push(op.item);
+      else items.splice(at, 0, op.item);
+      return { ...trip, items };
+    }
+
+    case "deleteItem":
+      return { ...trip, items: trip.items.filter((item) => item.id !== op.itemId) };
 
     case "setChecklistItem":
       return {
