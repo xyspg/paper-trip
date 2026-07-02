@@ -1,6 +1,6 @@
-import type { CSSProperties, ReactNode } from "react"
+import { useState, type CSSProperties, type ReactNode } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Clock, DollarSign, ExternalLink, Hash, Lock, MapPin, Repeat2, Route } from "lucide-react"
+import { AlertTriangle, Archive, ChevronDown, Clock, DollarSign, ExternalLink, Hash, Lock, MapPin, Repeat2, Route } from "lucide-react"
 import { openAdminLogin, useAdminUser } from "../admin/auth"
 import { AddressLink } from "../components/AddressLink"
 import { SuggestBox } from "../components/SuggestBox"
@@ -45,6 +45,13 @@ const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
 
 const PAPER_BOLD = "font-bold text-[#1c1b19]"
 
+// The trip runs on LA time. Archive by LA's calendar date, not the device's,
+// so a day isn't archived while it is still that evening in LA (e.g. a phone
+// on NYC time flips to 7/4 at 9pm LA time on 7/3). en-CA formats as YYYY-MM-DD,
+// matching the trip's ISO date keys for plain string comparison.
+const todayInLA = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date())
+
 export function PaperTimeline({
   trip,
   orderedDates,
@@ -59,6 +66,32 @@ export function PaperTimeline({
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined
   const titleLead = titleWords.join(" ")
   const nextStatus = statusMeta[nextItem.status]
+
+  // Days before today (LA time) are archived into a collapsed section at the
+  // bottom; the rest stay inline. Manual header toggles are stored as sparse
+  // overrides so the date-derived defaults (archived → collapsed) still apply
+  // to days the user never touched, even after server data replaces the trip.
+  const today = todayInLA()
+  const activeDates = orderedDates.filter((date) => date >= today)
+  const archivedDates = orderedDates.filter((date) => date < today)
+  const [dayOverrides, setDayOverrides] = useState<Record<string, boolean>>({})
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const isDayCollapsed = (date: string) => dayOverrides[date] ?? date < today
+  const toggleDay = (date: string) =>
+    setDayOverrides((prev) => ({ ...prev, [date]: !isDayCollapsed(date) }))
+
+  const renderDay = (date: string) => (
+    <DaySection
+      key={date}
+      date={date}
+      dayNumber={orderedDates.indexOf(date) + 1}
+      items={trip.items.filter((item) => item.date === date)}
+      stopNumbers={stopNumbers}
+      onCycleStatus={onCycleStatus}
+      collapsed={isDayCollapsed(date)}
+      onToggle={() => toggleDay(date)}
+    />
+  )
 
   return (
     <div className="font-sans text-[#1c1b19]">
@@ -107,42 +140,28 @@ export function PaperTimeline({
       </section>
 
       {/* DAY SECTIONS */}
-      {orderedDates.map((date, index) => {
-        const meta = dayLabels[date] ?? { label: date, tag: "" }
-        return (
-          <section className="mt-[clamp(34px,6vw,48px)]" key={date}>
-            <div className="flex gap-[13px] items-center mb-1">
-              <div className="grid shrink-0 w-[38px] h-[38px] place-items-center font-grotesk font-bold text-[14px] tracking-[0.02em] text-[#fafaf8] bg-[#1c1b19] rounded-[10px]">
-                {(index + 1).toString().padStart(2, "0")}
-              </div>
-              <div>
-                <div className="font-grotesk font-bold text-[15px] tracking-[0.04em]">
-                  {formatDayDate(date)}
-                </div>
-                <div className="mt-px font-cjk text-[12.5px] text-[#76726a]">{meta.label}</div>
-              </div>
-              {meta.tag && (
-                <div className="ml-auto font-grotesk font-semibold text-[10px] uppercase tracking-[0.14em] text-[#76726a] whitespace-nowrap py-[5px] px-[11px] border border-[#ebe9e3] rounded-full">
-                  {meta.tag}
-                </div>
-              )}
-            </div>
+      {activeDates.map(renderDay)}
 
-            <div className="relative mt-[18px] pl-[30px] before:content-[''] before:absolute before:left-[13px] before:top-2 before:bottom-2 before:w-px before:bg-[#ebe9e3] max-[620px]:pl-0 max-[620px]:before:hidden">
-              {trip.items
-                .filter((item) => item.date === date)
-                .map((item) => (
-                  <Ticket
-                    key={item.id}
-                    item={item}
-                    stopNumber={stopNumbers.get(item.id) ?? 0}
-                    onCycleStatus={onCycleStatus}
-                  />
-                ))}
-            </div>
-          </section>
-        )
-      })}
+      {/* ARCHIVED DAYS — days already past in LA, tucked behind one toggle */}
+      {archivedDates.length > 0 && (
+        <section className="mt-[clamp(34px,6vw,48px)]">
+          <button
+            type="button"
+            aria-expanded={archiveOpen}
+            onClick={() => setArchiveOpen((open) => !open)}
+            className="flex w-full items-center justify-center gap-2.5 py-3 px-[18px] bg-transparent border border-dashed border-[#cfccc2] rounded-[14px] font-cjk font-semibold text-[13px] text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19]"
+          >
+            <Archive size={15} strokeWidth={2.2} />
+            查看已归档日程（{archivedDates.length} 天）
+            <ChevronDown
+              className={`transition-transform ${archiveOpen ? "rotate-180" : ""}`}
+              size={16}
+              strokeWidth={2.2}
+            />
+          </button>
+          {archiveOpen && archivedDates.map(renderDay)}
+        </section>
+      )}
 
       {/* LEGEND */}
       <section className="mt-[clamp(34px,6vw,48px)] p-[22px] bg-white border border-[#ebe9e3] rounded-[14px]">
@@ -170,6 +189,75 @@ export function PaperTimeline({
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
     </div>
+  )
+}
+
+function DaySection({
+  date,
+  dayNumber,
+  items,
+  stopNumbers,
+  onCycleStatus,
+  collapsed,
+  onToggle,
+}: {
+  date: string
+  dayNumber: number
+  items: TripItem[]
+  stopNumbers: Map<string, number>
+  onCycleStatus: (item: TripItem) => void
+  collapsed: boolean
+  onToggle: () => void
+}) {
+  const meta = dayLabels[date] ?? { label: date, tag: "" }
+  return (
+    <section className="mt-[clamp(34px,6vw,48px)]">
+      <button
+        type="button"
+        aria-expanded={!collapsed}
+        title={collapsed ? "展开当天日程" : "折叠当天日程"}
+        onClick={onToggle}
+        className="flex gap-[13px] items-center mb-1 w-full p-0 bg-transparent border-0 text-left text-inherit cursor-pointer group"
+      >
+        <span className="grid shrink-0 w-[38px] h-[38px] place-items-center font-grotesk font-bold text-[14px] tracking-[0.02em] text-[#fafaf8] bg-[#1c1b19] rounded-[10px]">
+          {dayNumber.toString().padStart(2, "0")}
+        </span>
+        <span className="min-w-0">
+          <span className="block font-grotesk font-bold text-[15px] tracking-[0.04em]">
+            {formatDayDate(date)}
+          </span>
+          <span className="block mt-px font-cjk text-[12.5px] text-[#76726a]">
+            {meta.label}
+            {collapsed && ` · ${items.length} 站`}
+          </span>
+        </span>
+        <span className="ml-auto flex shrink-0 items-center gap-2.5">
+          {meta.tag && (
+            <span className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.14em] text-[#76726a] whitespace-nowrap py-[5px] px-[11px] border border-[#ebe9e3] rounded-full">
+              {meta.tag}
+            </span>
+          )}
+          <ChevronDown
+            className={`text-[#9b988f] transition-transform group-hover:text-[#1c1b19] ${collapsed ? "-rotate-90" : ""}`}
+            size={18}
+            strokeWidth={2.2}
+          />
+        </span>
+      </button>
+
+      {!collapsed && (
+        <div className="relative mt-[18px] pl-[30px] before:content-[''] before:absolute before:left-[13px] before:top-2 before:bottom-2 before:w-px before:bg-[#ebe9e3] max-[620px]:pl-0 max-[620px]:before:hidden">
+          {items.map((item) => (
+            <Ticket
+              key={item.id}
+              item={item}
+              stopNumber={stopNumbers.get(item.id) ?? 0}
+              onCycleStatus={onCycleStatus}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
