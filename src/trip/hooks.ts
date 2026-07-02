@@ -2,16 +2,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMountEffect } from "../useMountEffect";
 import {
   createBackup,
+  createTrip,
   deleteBackup,
+  deleteTrip,
   fetchAudit,
   fetchBackups,
   fetchCreditCards,
+  fetchMembers,
   fetchTrip,
   fetchTripMeta,
   fetchTrips,
+  patchTrip,
+  removeMember,
   restoreBackup,
   sendOp,
   tripWsUrl,
+  type NewTripInput,
   type TripSnapshot,
 } from "./api";
 import { applyOp, type TripOp } from "./ops";
@@ -40,6 +46,58 @@ export const useTripMeta = (tripId: string) =>
 
 export const useTrips = (enabled = true) =>
   useQuery({ queryKey: tripsKey, queryFn: fetchTrips, enabled, retry: false });
+
+export const useCreateTrip = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NewTripInput) => createTrip(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tripsKey }),
+  });
+};
+
+export const usePatchTrip = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: Partial<NewTripInput>) => patchTrip(tripId, patch),
+    onSuccess: (meta) => {
+      // The registry row is the response; the DO document update arrives over
+      // the live websocket on its own.
+      queryClient.setQueryData(tripMetaKey(tripId), meta);
+      queryClient.invalidateQueries({ queryKey: tripsKey });
+    },
+  });
+};
+
+export const useDeleteTrip = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteTrip(tripId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tripsKey });
+      queryClient.removeQueries({ queryKey: tripKey(tripId) });
+      queryClient.removeQueries({ queryKey: tripMetaKey(tripId) });
+    },
+  });
+};
+
+export const membersKey = (tripId: string) => ["members", tripId] as const;
+
+export const useMembers = (tripId: string, enabled = true) =>
+  useQuery({
+    queryKey: membersKey(tripId),
+    queryFn: () => fetchMembers(tripId),
+    enabled,
+    retry: false,
+    staleTime: 30_000,
+  });
+
+export const useRemoveMember = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => removeMember(tripId, userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey(tripId) }),
+  });
+};
 
 // Member-only audit trail. Gated by `enabled` so it never fires on a public or
 // unauthenticated /admin load (the endpoint 403s for non-members); `retry: false`

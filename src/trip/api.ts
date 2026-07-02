@@ -47,6 +47,78 @@ export const fetchTrips = async (): Promise<TripMeta[]> => {
   return data.trips;
 };
 
+export type NewTripInput = {
+  title: string;
+  startDate?: string;
+  endDate?: string;
+  timezone?: string;
+  visibility?: TripVisibility;
+};
+
+export const createTrip = async (input: NewTripInput): Promise<TripMeta> => {
+  const res = await fetch("/api/trips", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`POST /api/trips failed: ${res.status}`);
+  const { trip } = (await res.json()) as { trip: TripMeta };
+  return trip;
+};
+
+export const patchTrip = async (
+  tripId: string,
+  patch: Partial<NewTripInput>,
+): Promise<TripMeta> => {
+  const res = await fetch(trips(tripId), {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`PATCH ${trips(tripId)} failed: ${res.status}`);
+  const { trip } = (await res.json()) as { trip: TripMeta };
+  return trip;
+};
+
+export const deleteTrip = async (tripId: string): Promise<void> => {
+  const res = await fetch(trips(tripId), { method: "DELETE" });
+  if (!res.ok) throw new Error(`DELETE ${trips(tripId)} failed: ${res.status}`);
+};
+
+// A registered member of the trip (has signed in at least once).
+export type TripMemberInfo = {
+  userId: string;
+  memberKey: string;
+  role: TripRole;
+  name: string;
+  login: string | null;
+  image: string | null;
+  color: string | null;
+};
+
+// A seeded/pre-provisioned person who has never signed in (claim, not account).
+export type PendingClaim = {
+  memberKey: string;
+  role: TripRole;
+  name: string;
+  color: string | null;
+};
+
+export const fetchMembers = async (
+  tripId: string,
+): Promise<{ members: TripMemberInfo[]; pending: PendingClaim[] }> => {
+  const res = await fetch(`${trips(tripId)}/members`);
+  if (!res.ok) throw new Error(`GET ${trips(tripId)}/members failed: ${res.status}`);
+  return (await res.json()) as { members: TripMemberInfo[]; pending: PendingClaim[] };
+};
+
+export const removeMember = async (tripId: string, userId: string): Promise<void> => {
+  const res = await fetch(`${trips(tripId)}/members/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`DELETE member failed: ${res.status}`);
+};
+
 export const fetchTrip = async (tripId: string): Promise<TripSnapshot> => {
   const res = await fetch(`${trips(tripId)}/trip`);
   if (!res.ok) throw new TripAccessError(res.status);

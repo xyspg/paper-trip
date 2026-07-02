@@ -24,6 +24,8 @@ import { Route as TTripIdAdminRouteImport } from './routes/t.$tripId.admin'
 import { Route as TTripIdAdminIndexRouteImport } from './routes/t.$tripId.admin.index'
 import { Route as TTripIdAdminSuggestionsRouteImport } from './routes/t.$tripId.admin.suggestions'
 import { Route as TTripIdAdminSplitRouteImport } from './routes/t.$tripId.admin.split'
+import { Route as TTripIdAdminSettingsRouteImport } from './routes/t.$tripId.admin.settings'
+import { Route as TTripIdAdminMembersRouteImport } from './routes/t.$tripId.admin.members'
 import { Route as TTripIdAdminItineraryRouteImport } from './routes/t.$tripId.admin.itinerary'
 import { Route as TTripIdAdminBackupsRouteImport } from './routes/t.$tripId.admin.backups'
 import { Route as TTripIdAdminAuditRouteImport } from './routes/t.$tripId.admin.audit'
@@ -104,6 +106,16 @@ const TTripIdAdminSplitRoute = TTripIdAdminSplitRouteImport.update({
   path: '/split',
   getParentRoute: () => TTripIdAdminRoute,
 } as any)
+const TTripIdAdminSettingsRoute = TTripIdAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => TTripIdAdminRoute,
+} as any)
+const TTripIdAdminMembersRoute = TTripIdAdminMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => TTripIdAdminRoute,
+} as any)
 const TTripIdAdminItineraryRoute = TTripIdAdminItineraryRouteImport.update({
   id: '/itinerary',
   path: '/itinerary',
@@ -142,6 +154,8 @@ export interface FileRoutesByFullPath {
   '/t/$tripId/admin/audit': typeof TTripIdAdminAuditRoute
   '/t/$tripId/admin/backups': typeof TTripIdAdminBackupsRoute
   '/t/$tripId/admin/itinerary': typeof TTripIdAdminItineraryRoute
+  '/t/$tripId/admin/members': typeof TTripIdAdminMembersRoute
+  '/t/$tripId/admin/settings': typeof TTripIdAdminSettingsRoute
   '/t/$tripId/admin/split': typeof TTripIdAdminSplitRoute
   '/t/$tripId/admin/suggestions': typeof TTripIdAdminSuggestionsRoute
   '/t/$tripId/admin/': typeof TTripIdAdminIndexRoute
@@ -161,6 +175,8 @@ export interface FileRoutesByTo {
   '/t/$tripId/admin/audit': typeof TTripIdAdminAuditRoute
   '/t/$tripId/admin/backups': typeof TTripIdAdminBackupsRoute
   '/t/$tripId/admin/itinerary': typeof TTripIdAdminItineraryRoute
+  '/t/$tripId/admin/members': typeof TTripIdAdminMembersRoute
+  '/t/$tripId/admin/settings': typeof TTripIdAdminSettingsRoute
   '/t/$tripId/admin/split': typeof TTripIdAdminSplitRoute
   '/t/$tripId/admin/suggestions': typeof TTripIdAdminSuggestionsRoute
   '/t/$tripId/admin': typeof TTripIdAdminIndexRoute
@@ -183,6 +199,8 @@ export interface FileRoutesById {
   '/t/$tripId/admin/audit': typeof TTripIdAdminAuditRoute
   '/t/$tripId/admin/backups': typeof TTripIdAdminBackupsRoute
   '/t/$tripId/admin/itinerary': typeof TTripIdAdminItineraryRoute
+  '/t/$tripId/admin/members': typeof TTripIdAdminMembersRoute
+  '/t/$tripId/admin/settings': typeof TTripIdAdminSettingsRoute
   '/t/$tripId/admin/split': typeof TTripIdAdminSplitRoute
   '/t/$tripId/admin/suggestions': typeof TTripIdAdminSuggestionsRoute
   '/t/$tripId/admin/': typeof TTripIdAdminIndexRoute
@@ -206,6 +224,8 @@ export interface FileRouteTypes {
     | '/t/$tripId/admin/audit'
     | '/t/$tripId/admin/backups'
     | '/t/$tripId/admin/itinerary'
+    | '/t/$tripId/admin/members'
+    | '/t/$tripId/admin/settings'
     | '/t/$tripId/admin/split'
     | '/t/$tripId/admin/suggestions'
     | '/t/$tripId/admin/'
@@ -225,6 +245,8 @@ export interface FileRouteTypes {
     | '/t/$tripId/admin/audit'
     | '/t/$tripId/admin/backups'
     | '/t/$tripId/admin/itinerary'
+    | '/t/$tripId/admin/members'
+    | '/t/$tripId/admin/settings'
     | '/t/$tripId/admin/split'
     | '/t/$tripId/admin/suggestions'
     | '/t/$tripId/admin'
@@ -246,6 +268,8 @@ export interface FileRouteTypes {
     | '/t/$tripId/admin/audit'
     | '/t/$tripId/admin/backups'
     | '/t/$tripId/admin/itinerary'
+    | '/t/$tripId/admin/members'
+    | '/t/$tripId/admin/settings'
     | '/t/$tripId/admin/split'
     | '/t/$tripId/admin/suggestions'
     | '/t/$tripId/admin/'
@@ -367,6 +391,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TTripIdAdminSplitRouteImport
       parentRoute: typeof TTripIdAdminRoute
     }
+    '/t/$tripId/admin/settings': {
+      id: '/t/$tripId/admin/settings'
+      path: '/settings'
+      fullPath: '/t/$tripId/admin/settings'
+      preLoaderRoute: typeof TTripIdAdminSettingsRouteImport
+      parentRoute: typeof TTripIdAdminRoute
+    }
+    '/t/$tripId/admin/members': {
+      id: '/t/$tripId/admin/members'
+      path: '/members'
+      fullPath: '/t/$tripId/admin/members'
+      preLoaderRoute: typeof TTripIdAdminMembersRouteImport
+      parentRoute: typeof TTripIdAdminRoute
+    }
     '/t/$tripId/admin/itinerary': {
       id: '/t/$tripId/admin/itinerary'
       path: '/itinerary'
@@ -413,6 +451,8 @@ interface TTripIdAdminRouteChildren {
   TTripIdAdminAuditRoute: typeof TTripIdAdminAuditRoute
   TTripIdAdminBackupsRoute: typeof TTripIdAdminBackupsRoute
   TTripIdAdminItineraryRoute: typeof TTripIdAdminItineraryRoute
+  TTripIdAdminMembersRoute: typeof TTripIdAdminMembersRoute
+  TTripIdAdminSettingsRoute: typeof TTripIdAdminSettingsRoute
   TTripIdAdminSplitRoute: typeof TTripIdAdminSplitRoute
   TTripIdAdminSuggestionsRoute: typeof TTripIdAdminSuggestionsRoute
   TTripIdAdminIndexRoute: typeof TTripIdAdminIndexRoute
@@ -423,6 +463,8 @@ const TTripIdAdminRouteChildren: TTripIdAdminRouteChildren = {
   TTripIdAdminAuditRoute: TTripIdAdminAuditRoute,
   TTripIdAdminBackupsRoute: TTripIdAdminBackupsRoute,
   TTripIdAdminItineraryRoute: TTripIdAdminItineraryRoute,
+  TTripIdAdminMembersRoute: TTripIdAdminMembersRoute,
+  TTripIdAdminSettingsRoute: TTripIdAdminSettingsRoute,
   TTripIdAdminSplitRoute: TTripIdAdminSplitRoute,
   TTripIdAdminSuggestionsRoute: TTripIdAdminSuggestionsRoute,
   TTripIdAdminIndexRoute: TTripIdAdminIndexRoute,

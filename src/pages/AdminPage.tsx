@@ -15,12 +15,22 @@ import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 import { useTripAccess } from "../components/TripLayout";
 
-type SectionKey = "itinerary" | "suggestions" | "split" | "backups" | "audit" | "agent";
+type SectionKey =
+  | "itinerary"
+  | "suggestions"
+  | "split"
+  | "members"
+  | "backups"
+  | "audit"
+  | "agent"
+  | "settings";
 type NavEntry = {
   key: SectionKey;
   label: string;
   icon: IconName;
   badge?: boolean;
+  // Shown only to the trip's owner (settings).
+  ownerOnly?: boolean;
 };
 
 // Each section lives at its own route (`…/admin/itinerary` …) so a refresh or
@@ -29,9 +39,11 @@ const NAV: NavEntry[] = [
   { key: "itinerary", label: "行程停靠点", icon: "route" },
   { key: "suggestions", label: "待审建议", icon: "chat", badge: true },
   { key: "split", label: "分账金额", icon: "wallet" },
+  { key: "members", label: "成员", icon: "users" },
   { key: "backups", label: "备份恢复", icon: "repo" },
   { key: "audit", label: "操作记录", icon: "repo" },
   { key: "agent", label: "Agent 协作", icon: "sparkle" },
+  { key: "settings", label: "行程设置", icon: "gear", ownerOnly: true },
 ];
 
 const ADMIN_SHELL = "min-h-screen text-ink font-sans leading-normal bg-paper";
@@ -64,10 +76,14 @@ export function AdminPage({ tripId }: { tripId: string }) {
     itinerary: stops.length,
     suggestions: pendingCount,
     split: expenses.length,
+    members: travelers.length || null,
     backups: backups?.length ?? 0,
     audit: auditEntries?.length ?? 0,
     agent: null,
+    settings: null,
   };
+
+  const nav = NAV.filter((n) => !n.ownerOnly || meta.role === "owner");
 
   if (isLoading) {
     return (
@@ -198,7 +214,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
             <div className="font-grotesk text-[10px] tracking-[0.16em] uppercase text-[#9b988f] px-2.5 pb-1">
               管理区
             </div>
-            {NAV.map((n) => {
+            {nav.map((n) => {
               const active = pathname.includes(`/admin/${n.key}`);
               const badge = Boolean(n.badge) && (counts[n.key] ?? 0) > 0;
               const Ico = Icons[n.icon];
@@ -228,7 +244,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
           </aside>
 
           <div className="hidden max-[760px]:flex fixed bottom-0 left-0 right-0 z-40 bg-[#fdfdfb] border-t border-[#ebe9e3] px-3 py-2 gap-2">
-            {NAV.map((n) => {
+            {nav.map((n) => {
               const active = pathname.includes(`/admin/${n.key}`);
               const badge = Boolean(n.badge) && (counts[n.key] ?? 0) > 0;
               const Ico = Icons[n.icon];
