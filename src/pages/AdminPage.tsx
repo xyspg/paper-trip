@@ -12,7 +12,7 @@ import { ADMIN_SESSION_KEY, adminLogout, useAdminUser } from "../admin/auth";
 import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 
-type SectionKey = "itinerary" | "suggestions" | "split" | "backups" | "audit";
+type SectionKey = "itinerary" | "suggestions" | "split" | "backups" | "audit" | "agent";
 type NavEntry = {
   key: SectionKey;
   to: string;
@@ -29,6 +29,7 @@ const NAV: NavEntry[] = [
   { key: "split", to: "/admin/split", label: "分账金额", icon: "wallet" },
   { key: "backups", to: "/admin/backups", label: "备份恢复", icon: "repo" },
   { key: "audit", to: "/admin/audit", label: "操作记录", icon: "repo" },
+  { key: "agent", to: "/admin/agent", label: "Agent 协作", icon: "sparkle" },
 ];
 
 const ADMIN_SHELL = "min-h-screen text-ink font-sans leading-normal bg-paper";
@@ -53,12 +54,14 @@ export function AdminPage() {
   const expenses = tripSnap?.trip.expenses ?? [];
 
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
-  const counts: Record<SectionKey, number> = {
+  // `null` = this section has no meaningful count, so the sidebar hides the chip.
+  const counts: Record<SectionKey, number | null> = {
     itinerary: stops.length,
     suggestions: pendingCount,
     split: expenses.length,
     backups: backups?.length ?? 0,
     audit: auditEntries?.length ?? 0,
+    agent: null,
   };
 
   if (isLoading) {
@@ -151,7 +154,7 @@ export function AdminPage() {
             </div>
             {NAV.map((n) => {
               const active = pathname.startsWith(n.to);
-              const badge = Boolean(n.badge) && counts[n.key] > 0;
+              const badge = Boolean(n.badge) && (counts[n.key] ?? 0) > 0;
               const Ico = Icons[n.icon];
               return (
                 <Link
@@ -165,11 +168,13 @@ export function AdminPage() {
                     <Ico sw={2.2} />
                   </span>
                   {n.label}
-                  <span
-                    className={`ml-auto font-mono text-[11px] min-w-[22px] h-[22px] px-1.5 grid place-items-center rounded-full ${badge ? "bg-[#c2553f] text-white" : active ? "bg-white/[0.12] text-[#fafaf8]" : "bg-[#fafaf8] text-[#76726a] border border-[#ebe9e3]"}`}
-                  >
-                    {counts[n.key]}
-                  </span>
+                  {counts[n.key] !== null && (
+                    <span
+                      className={`ml-auto font-mono text-[11px] min-w-[22px] h-[22px] px-1.5 grid place-items-center rounded-full ${badge ? "bg-[#c2553f] text-white" : active ? "bg-white/[0.12] text-[#fafaf8]" : "bg-[#fafaf8] text-[#76726a] border border-[#ebe9e3]"}`}
+                    >
+                      {counts[n.key]}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -178,7 +183,7 @@ export function AdminPage() {
           <div className="hidden max-[760px]:flex fixed bottom-0 left-0 right-0 z-40 bg-[#fdfdfb] border-t border-[#ebe9e3] px-3 py-2 gap-2">
             {NAV.map((n) => {
               const active = pathname.startsWith(n.to);
-              const badge = Boolean(n.badge) && counts[n.key] > 0;
+              const badge = Boolean(n.badge) && (counts[n.key] ?? 0) > 0;
               const Ico = Icons[n.icon];
               return (
                 <Link
