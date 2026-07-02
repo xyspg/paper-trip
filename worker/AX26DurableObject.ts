@@ -41,13 +41,37 @@ function scrubPassUrls(trip: Trip): void {
   }
 }
 
+// Minimal structural gate for whole-trip PUT bodies: enough to stop an agent
+// from persisting a payload the UI can't render (wrong trip id, missing
+// arrays), without re-validating every field the op path already trusts
+// authenticated writers with.
+function isTripShape(x: unknown, expectedId: string): x is Trip {
+  if (typeof x !== "object" || x === null) return false;
+  const t = x as Record<string, unknown>;
+  return (
+    t.id === expectedId &&
+    typeof t.title === "string" &&
+    typeof t.dates === "object" &&
+    t.dates !== null &&
+    typeof t.base === "object" &&
+    t.base !== null &&
+    Array.isArray(t.items) &&
+    Array.isArray(t.checklists) &&
+    Array.isArray(t.documents) &&
+    Array.isArray(t.suggestions) &&
+    Array.isArray(t.expenses)
+  );
+}
+
 // The id of the entity a write touched, for the audit `target` column. Bulk ops
 // (`clearSuggestions`, `resetExpenses`, `reset`) affect everything, so null.
 function opTarget(op: TripOp): string | null {
   switch (op.type) {
     case "setItemStatus":
+    case "deleteItem":
       return op.itemId;
     case "updateItem":
+    case "addItem":
       return op.item.id;
     case "setChecklistItem":
       return op.checklistId;
@@ -163,6 +187,35 @@ export class AX26DurableObject extends DurableObject<Env> {
         return this.restoreBackup(req, id);
       }
       return new Response("Method Not Allowed", { status: 405 });
+    }
+
+    if (req.method === "PUT" && url.pathname === "/api/trip") {
+      const body = (await req.json().catch(() => null)) as {
+        rev?: unknown;
+        trip?: unknown;
+      } | null;
+      if (!body || typeof body.rev !== "number" || !isTripShape(body.trip, this.trip.id)) {
+        return Response.json({ error: "bad_request" }, { status: 400 });
+      }
+      // Optimistic lock: the caller edited the snapshot it fetched. A rev
+      // mismatch means someone else wrote in between — hand back the current
+      // state (the caller refetches, reapplies, retries) instead of clobbering.
+      if (body.rev !== this.rev) {
+        return Response.json(
+          { error: "stale_rev", rev: this.rev, trip: this.trip },
+          { status: 409 },
+        );
+      }
+      const at = new Date().toISOString();
+      this.trip = { ...body.trip, updatedAt: at };
+      scrubPassUrls(this.trip);
+      this.rev += 1;
+      this.persist();
+      // Audit records only the fact of the replacement; embedding the full
+      // body would bloat the audit table past what AUDIT_RETENTION is sized for.
+      this.recordAuditAction(req, "replaceTrip", null, { rev: this.rev }, at);
+      this.broadcast({ type: "update", rev: this.rev, trip: this.trip });
+      return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
     }
 
     if (req.method === "POST") {

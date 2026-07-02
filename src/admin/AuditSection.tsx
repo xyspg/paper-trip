@@ -8,9 +8,14 @@ import { AdminEmptyState, RefreshButton, SectionHead } from "./adminUi";
 // Human-readable label per TripOp type, so the log reads as actions rather than
 // raw op identifiers. Typed to the TripOp union so adding an op fails the build
 // here until it is labeled, matching the exhaustive opTarget() switch in the worker.
-const OP_LABEL: Record<TripOp["type"] | "createBackup" | "deleteBackup" | "restoreBackup", string> = {
+const OP_LABEL: Record<
+  TripOp["type"] | "createBackup" | "deleteBackup" | "restoreBackup" | "replaceTrip",
+  string
+> = {
   setItemStatus: "更新停靠点状态",
   updateItem: "编辑停靠点",
+  addItem: "新增停靠点",
+  deleteItem: "删除停靠点",
   setChecklistItem: "勾选清单项",
   addSuggestion: "提交建议",
   setSuggestionStatus: "处理建议",
@@ -27,6 +32,7 @@ const OP_LABEL: Record<TripOp["type"] | "createBackup" | "deleteBackup" | "resto
   createBackup: "创建备份",
   deleteBackup: "删除备份",
   restoreBackup: "恢复备份",
+  replaceTrip: "整份替换行程",
 };
 
 function ActorCell({ e }: { e: AuditEntry }) {
