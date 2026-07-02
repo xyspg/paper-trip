@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { UserRound } from "lucide-react";
 import { routes } from "../routes";
-import { openAdminLogin, useAdminUser } from "../admin/auth";
+import { signInWithGitHub, useAdminUser } from "../admin/auth";
 
 export function PageNav() {
   return (
@@ -30,7 +29,6 @@ export function PageNav() {
 // separate chrome, so it never goes through the SPA router), login prompt when
 // not. Hidden while the probe is in flight to avoid a wrong-state flash.
 function SessionButton() {
-  const queryClient = useQueryClient();
   const { data: user, isLoading } = useAdminUser();
   if (isLoading) return null;
 
@@ -52,7 +50,7 @@ function SessionButton() {
       className={`${base} border-[#ebe9e3] text-[#76726a] hover:border-[#1c1b19] hover:text-[#1c1b19]`}
       title="使用 GitHub 登录"
       aria-label="使用 GitHub 登录"
-      onClick={() => openAdminLogin(queryClient)}
+      onClick={() => signInWithGitHub(window.location.pathname)}
     >
       <UserRound size={17} strokeWidth={2.2} />
     </button>

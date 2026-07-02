@@ -19,4 +19,12 @@
     ],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AX26DurableObject"] }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ax26",
+      "database_id": "d0540efe-89e1-4709-8b4e-85d475e50e4a",
+      "migrations_dir": "migrations",
+    },
+  ],
 }

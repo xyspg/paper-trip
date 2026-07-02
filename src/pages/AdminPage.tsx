@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
@@ -8,7 +7,7 @@ import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
 import { AdminLogin } from "../admin/AdminLogin";
-import { ADMIN_SESSION_KEY, adminLogout, useAdminUser } from "../admin/auth";
+import { adminLogout, useAdminUser } from "../admin/auth";
 import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 
@@ -35,7 +34,6 @@ const NAV: NavEntry[] = [
 const ADMIN_SHELL = "min-h-screen text-ink font-sans leading-normal bg-paper";
 
 export function AdminPage() {
-  const queryClient = useQueryClient();
   const { data: user, isLoading } = useAdminUser();
   // Active tab is derived from the current path so the sidebar highlights the
   // section the router is actually showing.
@@ -95,8 +93,9 @@ export function AdminPage() {
   };
 
   const logout = async () => {
+    // authClient.useSession is a shared store; signOut flips every subscriber
+    // (this shell, the public nav) without any cache to clear by hand.
     await adminLogout();
-    queryClient.setQueryData(ADMIN_SESSION_KEY, null);
     toast("已退出登录", "warn");
   };
 

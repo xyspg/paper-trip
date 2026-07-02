@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 
-import { sessionUser } from "./auth";
+import { LEGACY_TRIP_ID, memberUser } from "./registry";
 import type { Env } from "./env";
 
 // Receipt OCR/parse for the admin split view. The browser uploads a downscaled
 // JPEG; we hand it to Gemini with a strict JSON schema and return the structured
-// line items. Admin-gated (only a valid session, which is only ever issued to
-// the one allowed GitHub email) so the key and quota stay protected.
+// line items. Membership-gated so the key and quota stay protected.
 
 const MODEL = "gemini-3.1-flash-lite";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -61,7 +60,7 @@ type ParsedReceipt = {
 const receipt = new Hono<{ Bindings: Env }>();
 
 receipt.post("/parse", async (c) => {
-  const user = await sessionUser(c);
+  const user = await memberUser(c, LEGACY_TRIP_ID);
   if (!user) return c.json({ error: "forbidden" }, 403);
 
   const key = c.env.GEMINI_API_KEY;

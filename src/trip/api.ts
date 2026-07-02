@@ -29,7 +29,8 @@ export type AuditEntry = {
   rev: number;
   op: string;
   target: string | null;
-  actorId: number | null;
+  // Numeric on rows written before the better-auth migration, string after.
+  actorId: number | string | null;
   actorLogin: string;
   actorEmail: string | null;
   ip: string | null;

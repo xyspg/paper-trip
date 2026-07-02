@@ -19,7 +19,9 @@ type AuditRow = {
   rev: number;
   op: string;
   target: string | null;
-  actorId: number | null;
+  // Historically the GitHub numeric id; better-auth actor ids are strings.
+  // SQLite's INTEGER affinity keeps both readable side by side.
+  actorId: number | string | null;
   actorLogin: string;
   actorEmail: string | null;
   ip: string | null;
@@ -340,7 +342,7 @@ export class AX26DurableObject extends DurableObject<Env> {
       this.rev,
       op,
       target,
-      Number(req.headers.get("x-actor-id")) || null,
+      req.headers.get("x-actor-id") || null,
       req.headers.get("x-actor-login") || "public",
       req.headers.get("x-actor-email") || null,
       req.headers.get("x-actor-ip") || null,
