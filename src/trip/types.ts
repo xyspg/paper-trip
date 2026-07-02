@@ -30,7 +30,10 @@ export type TripItem = {
     backup?: string;
     warning?: string;
     provider?: string;
-    passUrl?: string;
+    // Never store the provider's pass URL here: it is a capability URL (anyone
+    // holding it can edit/cancel the reservation) and trip data is public.
+    // The worker serves it from the PARKING_PASS_URLS secret, keyed by
+    // reservationId, behind the admin session (/api/parking-pass/:rid).
     reservationId?: string;
     address?: string;
     validFrom?: string;

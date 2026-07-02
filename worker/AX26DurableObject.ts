@@ -30,6 +30,17 @@ type BackupRow = TripBackup & {
   trip: string;
 };
 
+// Trips persisted before the parking-pass proxy carry the secret provider
+// capability URL in `parking.passUrl`, and public reads (/api/trip, the
+// websocket snapshot) serve this.trip verbatim. Strip the legacy field at
+// every point state enters memory: init load and backup restore.
+function scrubPassUrls(trip: Trip): void {
+  for (const item of trip.items) {
+    const parking = item.parking as ({ passUrl?: string } & typeof item.parking) | undefined;
+    if (parking?.passUrl) delete parking.passUrl;
+  }
+}
+
 // The id of the entity a write touched, for the audit `target` column. Bulk ops
 // (`clearSuggestions`, `resetExpenses`, `reset`) affect everything, so null.
 function opTarget(op: TripOp): string | null {
@@ -104,6 +115,7 @@ export class AX26DurableObject extends DurableObject<Env> {
       const before = JSON.stringify(this.trip);
       this.trip.suggestions ??= [];
       this.trip.expenses ??= structuredClone(tripData.expenses);
+      scrubPassUrls(this.trip);
       // Persist the backfill so the SQL row (and dashboard Query panel) reflects it.
       if (JSON.stringify(this.trip) !== before) this.persist();
     });
@@ -238,6 +250,8 @@ export class AX26DurableObject extends DurableObject<Env> {
 
     const at = new Date().toISOString();
     this.trip = { ...(JSON.parse(row.trip) as Trip), updatedAt: at };
+    // Backups taken before the parking-pass proxy still embed the secret URL.
+    scrubPassUrls(this.trip);
     this.rev += 1;
     this.persist();
     this.recordAuditAction(

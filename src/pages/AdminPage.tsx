@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
@@ -8,7 +8,7 @@ import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
 import type { IconName } from "../admin/AdminIcons";
 import { AdminLogin } from "../admin/AdminLogin";
-import { ADMIN_SESSION_KEY, adminLogout, fetchAdminUser } from "../admin/auth";
+import { ADMIN_SESSION_KEY, adminLogout, useAdminUser } from "../admin/auth";
 import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 
@@ -35,12 +35,7 @@ const ADMIN_SHELL = "min-h-screen text-ink font-sans leading-normal bg-paper";
 
 export function AdminPage() {
   const queryClient = useQueryClient();
-  const { data: user, isLoading } = useQuery({
-    queryKey: ADMIN_SESSION_KEY,
-    queryFn: fetchAdminUser,
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: user, isLoading } = useAdminUser();
   // Active tab is derived from the current path so the sidebar highlights the
   // section the router is actually showing.
   const pathname = useRouterState({ select: (s) => s.location.pathname });

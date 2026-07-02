@@ -11,8 +11,7 @@ export type StopPlan = { kind: "main" | "alt"; label: string; text: string }
 export const hasRichParking = (item: TripItem): boolean =>
   Boolean(
     item.parking &&
-      (item.parking.passUrl ||
-        item.parking.reservationId ||
+      (item.parking.reservationId ||
         item.parking.address ||
         item.parking.validFrom ||
         item.parking.price),

@@ -22,6 +22,22 @@ app.get("/api", (c) => c.text("ok"));
 app.route("/api/auth", auth);
 app.route("/api/receipt", receipt);
 
+// Parking pass links are capability URLs — knowing one is full authority to
+// edit or cancel the reservation — so the real URL never leaves the server.
+// Signed-in admins get a 302 to the provider; everyone else a 403.
+app.get("/api/parking-pass/:rid", async (c) => {
+  if (!(await sessionUser(c))) return c.json({ error: "forbidden" }, 403);
+  let urls: Record<string, string> = {};
+  try {
+    urls = JSON.parse(c.env.PARKING_PASS_URLS ?? "{}") as Record<string, string>;
+  } catch {
+    // Malformed secret reads as "no passes configured" and falls through to 404.
+  }
+  const url = urls[c.req.param("rid")];
+  if (!url) return c.json({ error: "not found" }, 404);
+  return c.redirect(url, 302);
+});
+
 app.all("/api/trip", forwardTrip);
 app.all("/api/trip/*", forwardTrip);
 

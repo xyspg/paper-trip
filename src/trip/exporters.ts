@@ -49,7 +49,6 @@ export const toMarkdown = (trip: Trip) => {
                   : "",
                 typeof item.parking.price === "number" ? `    - 价格：$${item.parking.price.toFixed(2)}` : "",
                 item.parking.inOutAllowed ? "    - In & Out Allowed" : "",
-                item.parking.passUrl ? `    - 停车证：${item.parking.passUrl}` : "",
                 item.parking.backup ? `    - 备用停车：${item.parking.backup}` : "",
                 item.parking.warning ? `    - 提醒：${item.parking.warning}` : "",
                 ...(item.parking.notes ?? []).map((note) => `    - ${note}`),
