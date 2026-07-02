@@ -359,7 +359,7 @@ function PlanRow({ plan }: { plan: StopPlan }) {
   const alt = plan.kind === "alt"
   return (
     <div
-      className={`flex gap-[11px] items-start py-2.5 px-[13px] rounded-[10px] border ${
+      className={`flex gap-[11px] items-center py-2.5 px-[13px] rounded-[10px] border ${
         alt ? "border-dashed border-[#d8d5cb] bg-[#fafaf8]" : "border-[#ebe9e3] bg-[#fdfdfb]"
       }`}
     >

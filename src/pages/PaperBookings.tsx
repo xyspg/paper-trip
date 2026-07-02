@@ -79,7 +79,7 @@ function BoardingPass({ flight }: { flight: Flight }) {
         className="shrink-0 w-[46px] flex items-center justify-center text-white max-[600px]:w-[38px]"
         style={{ background: accent }}
       >
-        <span className="font-grotesk font-semibold text-[11px] uppercase tracking-[0.18em] whitespace-nowrap [writing-mode:vertical-rl] rotate-180 max-[600px]:text-[10px] max-[600px]:tracking-[0.12em]">
+        <span className="font-grotesk font-semibold text-[11px] uppercase tracking-[0.18em] whitespace-nowrap [writing-mode:vertical-rl] max-[600px]:text-[10px] max-[600px]:tracking-[0.12em]">
           {flight.rail}
         </span>
       </div>

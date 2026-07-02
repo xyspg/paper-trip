@@ -56,7 +56,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]))
 
   return (
-    <div className="max-w-[760px] mx-auto font-sans text-[#1c1b19]">
+    <div className="font-sans text-[#1c1b19]">
       {/* MASTHEAD */}
       <header className="pb-[28px] border-b border-[#ebe9e3]">
         <span className="inline-flex gap-[9px] items-center font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b08648]">
