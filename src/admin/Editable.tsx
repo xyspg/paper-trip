@@ -13,7 +13,7 @@ type EditableProps = {
 // Inline contentEditable that commits on blur. The DOM text is set imperatively so
 // React never reconciles the editable content (which would fight the caret). Initial
 // text is written on mount; callers pass a `key` derived from the value so an external
-// change (e.g. adopting a rewrite) remounts the node with fresh text — reset-with-key,
+// change (e.g. adopting a rewrite) remounts the node with fresh text via reset-with-key,
 // not a per-render effect.
 export function Editable({
   value,
@@ -32,7 +32,7 @@ export function Editable({
   return (
     <span
       ref={ref}
-      className={`border-2 border-transparent rounded-lg py-[3px] px-[7px] my-[-3px] mx-[-7px] cursor-text transition-[border-color,background] duration-100 ease-[ease] outline-none hover:border-[#ddd4c2] hover:bg-paper focus:border-ink focus:bg-paper focus:shadow-[3px_3px_0_var(--color-ink)] empty:before:content-[attr(data-ph)] empty:before:text-ink-soft empty:before:opacity-55 ${className ?? ""}`}
+      className={`border border-transparent rounded-md py-[2px] px-1.5 my-[-2px] mx-[-6px] cursor-text transition-colors outline-none hover:border-[#e3ded4] hover:bg-[#fafaf8] focus:border-[#1c1b19] focus:bg-white empty:before:content-[attr(data-ph)] empty:before:text-[#9b988f] empty:before:opacity-60 ${className ?? ""}`}
       contentEditable
       suppressContentEditableWarning
       role="textbox"

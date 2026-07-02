@@ -1,5 +1,7 @@
 import type { TripOp } from "./ops";
-import type { Trip } from "./types";
+import type { Trip, TripBackup } from "./types";
+
+export type { TripBackup };
 
 export type TripSnapshot = { rev: number; trip: Trip };
 
@@ -39,6 +41,37 @@ export const fetchAudit = async (): Promise<AuditEntry[]> => {
   if (!res.ok) throw new Error(`GET /api/trip/audit failed: ${res.status}`);
   const { entries } = (await res.json()) as { entries: AuditEntry[] };
   return entries;
+};
+
+export const fetchBackups = async (): Promise<TripBackup[]> => {
+  const res = await fetch("/api/trip/backups");
+  if (!res.ok) throw new Error(`GET /api/trip/backups failed: ${res.status}`);
+  const { backups } = (await res.json()) as { backups: TripBackup[] };
+  return backups;
+};
+
+export const createBackup = async (label?: string): Promise<TripBackup> => {
+  const res = await fetch("/api/trip/backups", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+  if (!res.ok) throw new Error(`POST /api/trip/backups failed: ${res.status}`);
+  const { backup } = (await res.json()) as { backup: TripBackup };
+  return backup;
+};
+
+export const deleteBackup = async (id: string): Promise<void> => {
+  const res = await fetch(`/api/trip/backups/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`DELETE /api/trip/backups failed: ${res.status}`);
+};
+
+export const restoreBackup = async (id: string): Promise<TripSnapshot & { backup: TripBackup }> => {
+  const res = await fetch(`/api/trip/backups/${encodeURIComponent(id)}/restore`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`POST /api/trip/backups/:id/restore failed: ${res.status}`);
+  return (await res.json()) as TripSnapshot & { backup: TripBackup };
 };
 
 export const tripWsUrl = (): string => {

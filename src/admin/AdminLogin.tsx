@@ -10,8 +10,14 @@ const ERRORS: Record<string, string> = {
   config: "OAuth 未正确配置。",
 };
 
+const SCOPES = [
+  "读取你的 GitHub 身份与头像",
+  "校验你是该行程仓库的协作者",
+  "读写行程 / 建议 / 账目内容",
+];
+
 // GitHub OAuth full-screen login. The button hands off to the Worker, which runs
-// the OAuth round-trip and redirects back to /admin.
+// the OAuth round-trip and redirects back to /admin. Calm editorial design.
 export function AdminLogin() {
   const [busy, setBusy] = useState(false);
   const params = new URLSearchParams(window.location.search);
@@ -20,8 +26,6 @@ export function AdminLogin() {
 
   // A rejected account is a dead end on GitHub's side: GitHub auto-reuses the
   // already-authorized session, so clicking "登录" again just loops back here.
-  // We tell the user to sign out of GitHub themselves (a link to github.com/logout
-  // does nothing over a plain GET; it needs a POST with a CSRF token).
   const forbidden = error === "forbidden";
   const errMsg =
     forbidden && login
@@ -36,25 +40,40 @@ export function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center p-[clamp(16px,4vw,48px)]">
-      <div className="relative w-[min(440px,100%)] bg-paper-2 border-[3px] border-ink rounded-card shadow-hard overflow-hidden">
-        <div className="relative bg-ink text-paper px-[26px] pt-[26px] pb-[22px] overflow-hidden isolate before:content-[''] before:absolute before:inset-0 before:z-[-1] before:bg-[repeating-linear-gradient(115deg,transparent_0_26px,rgba(255,45,107,0.12)_26px_28px),radial-gradient(circle_at_90%_12%,rgba(0,191,212,0.22),transparent_44%),radial-gradient(circle_at_6%_96%,rgba(255,196,0,0.16),transparent_42%)]">
-          <span className="inline-flex items-center gap-[9px] font-grotesk font-extrabold text-[11px] tracking-[0.24em] uppercase text-ink bg-yellow border-2 border-paper py-[5px] px-[11px] rounded-full whitespace-nowrap">
-            <span className="w-[6px] h-[6px] rounded-full bg-magenta" />
-            Admin
-          </span>
-          <h1 className="font-display font-black text-[clamp(28px,7vw,40px)] leading-[0.94] uppercase mt-4">
-            Anime Expo <span className="text-magenta [-webkit-text-stroke:2px_var(--color-paper)] [paint-order:stroke_fill]">2026</span>
-          </h1>
+    <div className="min-h-screen grid place-items-center px-5 py-12">
+      <div className="w-full max-w-[420px]">
+        <div className="flex items-center gap-3 mb-9">
+          <div className="w-10 h-10 rounded-[11px] bg-[#1c1b19] text-[#fafaf8] grid place-items-center font-grotesk font-bold text-[16px]">
+            AX
+          </div>
+          <div>
+            <div className="font-grotesk text-[11px] tracking-[0.16em] uppercase text-[#3f6f5b]">
+              Admin · 行程作战表后台
+            </div>
+            <div className="font-sans font-bold text-[15px] mt-0.5">Anime Expo 2026</div>
+          </div>
         </div>
 
-        <div className="pt-6 px-[26px] pb-[26px] flex flex-col gap-[14px]">
-          {errMsg && <p className="my-0 mx-0.5 text-center font-cjk font-semibold text-[12.5px] text-magenta">{errMsg}</p>}
+        <div className="bg-white border border-[#ebe9e3] rounded-[14px] p-7">
+          <h1 className="font-sans font-bold text-[24px] tracking-tight">登录管理后台</h1>
+          <p className="font-cjk text-[13.5px] text-[#76726a] leading-relaxed mt-3">
+            管理行程停靠点、审批同行人建议、更新分账金额。仅该行程仓库的协作者可进入。
+          </p>
 
-          <button className={`w-full flex items-center justify-center gap-3 bg-ink text-paper border-[3px] border-ink rounded-[12px] shadow-hard-sm py-[15px] px-[18px] cursor-pointer font-grotesk font-extrabold text-[15px] tracking-[0.02em] whitespace-nowrap transition-[transform,box-shadow] duration-[0.08s] ease-[ease] hover:-translate-x-px hover:-translate-y-px hover:shadow-[5px_5px_0_var(--color-ink)] active:translate-x-1 active:translate-y-1 active:shadow-none [&_svg]:w-[22px] [&_svg]:h-[22px] [&_svg]:shrink-0${busy ? " opacity-70 pointer-events-none" : ""}`} onClick={signIn} disabled={busy}>
+          {errMsg && (
+            <p className="mt-4 text-center font-cjk font-semibold text-[12.5px] text-[#c2553f]">
+              {errMsg}
+            </p>
+          )}
+
+          <button
+            className={`w-full flex items-center justify-center gap-2 mt-6 py-3.5 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[13px] cursor-pointer transition-colors hover:bg-black [&_svg]:w-5 [&_svg]:h-5 [&_svg]:shrink-0${busy ? " opacity-70 pointer-events-none" : ""}`}
+            onClick={signIn}
+            disabled={busy}
+          >
             {busy ? (
               <>
-                <span className="w-[18px] h-[18px] rounded-full border-[3px] border-paper/30 border-t-yellow animate-[spin_0.7s_linear_infinite]" />
+                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-[spin_0.7s_linear_infinite]" />
                 <span>正在跳转 GitHub…</span>
               </>
             ) : (
@@ -65,9 +84,35 @@ export function AdminLogin() {
             )}
           </button>
 
-          {forbidden && (
-            <p className="my-0 mx-0.5 text-center font-cjk font-semibold text-[12px] text-[rgba(20,18,16,0.5)] no-underline hover:text-magenta">
+          <div className="mt-6 rounded-[12px] border border-[#ebe9e3] overflow-hidden">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[#fafaf8] border-b border-[#ebe9e3]">
+              <span className="font-grotesk text-[10px] tracking-[0.14em] uppercase text-[#9b988f]">
+                授权范围
+              </span>
+              <span className="ml-auto font-mono text-[11px] text-[#76726a]">
+                xyspg/anime-expo-2026
+              </span>
+            </div>
+            {SCOPES.map((t) => (
+              <div
+                key={t}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 font-cjk text-[12.5px] text-[#3b3833] border-b border-[#f0eee8] last:border-0 [&_svg]:w-3 [&_svg]:h-3"
+              >
+                <span className="w-[18px] h-[18px] rounded-md bg-[#eef4f0] text-[#3f6f5b] grid place-items-center shrink-0">
+                  <Icons.check sw={3} />
+                </span>
+                {t}
+              </div>
+            ))}
+          </div>
+
+          {forbidden ? (
+            <p className="text-center font-cjk text-[11.5px] text-[#9b988f] mt-5">
               登录了错误的账号？请先在 github.com 退出该账号，再回来重试。
+            </p>
+          ) : (
+            <p className="text-center font-cjk text-[11.5px] text-[#9b988f] mt-5">
+              仅 <b className="font-mono text-[#76726a]">repo collaborators</b> 可登录
             </p>
           )}
         </div>

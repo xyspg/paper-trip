@@ -17,10 +17,10 @@ type Props = {
   children: ReactNode
 }
 
-// Shared Base Web Modal shell for every admin dialog: neo-brutalist chrome
-// (thick border, hard shadow, no padding), the built-in close button hidden in
-// favor of each body's own header X, and the `.admin-app` scope so the design
-// tokens resolve. Each modal renders only its body as children.
+// Shared Base Web Modal shell for every admin dialog: calm editorial chrome
+// (hairline border, soft lift shadow, no padding), the built-in close button
+// hidden in favor of each body's own header X, and the `.admin-app` scope so the
+// design tokens resolve. Each modal renders only its body as children.
 export function AdminModal({
   isOpen,
   onClose,
@@ -43,9 +43,9 @@ export function AdminModal({
           style: {
             width,
             backgroundColor: "var(--color-paper-2)",
-            border: "3px solid var(--color-ink)",
+            border: "1px solid var(--color-line)",
             borderRadius: "16px",
-            boxShadow: "var(--shadow-hard)",
+            boxShadow: "0 24px 60px -20px rgba(20, 20, 30, 0.35)",
             padding: "0",
             overflow: "hidden",
           },
@@ -53,7 +53,7 @@ export function AdminModal({
         Close: { style: { display: "none" } },
       }}
     >
-      <div className="admin-app text-ink font-grotesk leading-normal min-h-0! [background:transparent]! bg-none!">
+      <div className="admin-app text-ink font-grotesk leading-normal min-h-0! [background:transparent]!">
         {children}
       </div>
     </Modal>

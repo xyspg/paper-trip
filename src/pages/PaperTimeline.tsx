@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from "react"
-import { AlertTriangle, Clock, DollarSign, ExternalLink, Hash, MapPin, Repeat2, Route } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { AlertTriangle, Clock, DollarSign, ExternalLink, Hash, Lock, MapPin, Repeat2, Route } from "lucide-react"
+import { openAdminLogin, useAdminUser } from "../admin/auth"
 import { AddressLink } from "../components/AddressLink"
 import { SuggestBox } from "../components/SuggestBox"
 import { cardRecs } from "../trip/cardRecs"
@@ -362,20 +364,47 @@ function ParkingPanel({ item }: { item: TripItem }) {
             </AddressLink>
           )}
 
-          {parking.passUrl && (
-            <a
-              className="inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] hover:bg-[#3f6f5b]"
-              href={parking.passUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              SpotHero Pass
-              <ExternalLink size={14} strokeWidth={2.4} />
-            </a>
+          {parking.reservationId && (
+            <ParkingPassButton
+              reservationId={parking.reservationId}
+              provider={parking.provider ?? "Parking"}
+            />
           )}
         </div>
       </div>
     </div>
+  )
+}
+
+// The provider pass URL is a capability link (holding it = authority to edit or
+// cancel the reservation), so it stays server-side: signed-in admins follow the
+// /api/parking-pass redirect, everyone else is offered the GitHub login first.
+function ParkingPassButton({ reservationId, provider }: { reservationId: string; provider: string }) {
+  const queryClient = useQueryClient()
+  const { data: user } = useAdminUser()
+  const className =
+    "inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] border-0 bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] cursor-pointer hover:bg-[#3f6f5b]"
+
+  return user ? (
+    <a
+      className={className}
+      href={`/api/parking-pass/${encodeURIComponent(reservationId)}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {provider} Pass
+      <ExternalLink size={14} strokeWidth={2.4} />
+    </a>
+  ) : (
+    <button
+      type="button"
+      className={className}
+      title="使用 GitHub 登录后打开"
+      onClick={() => openAdminLogin(queryClient)}
+    >
+      {provider} Pass · 登录打开
+      <Lock size={14} strokeWidth={2.4} />
+    </button>
   )
 }
 

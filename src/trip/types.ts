@@ -1,3 +1,13 @@
+// A stored trip snapshot's summary row (backup list / create / restore metadata).
+// Defined here so the worker (Durable Object) and the client share one source.
+export type TripBackup = {
+  id: string;
+  at: string;
+  rev: number;
+  label: string | null;
+  actorLogin: string;
+};
+
 export type ItemStatus = "planned" | "locked" | "done";
 
 export type TripItem = {
@@ -20,7 +30,10 @@ export type TripItem = {
     backup?: string;
     warning?: string;
     provider?: string;
-    passUrl?: string;
+    // Never store the provider's pass URL here: it is a capability URL (anyone
+    // holding it can edit/cancel the reservation) and trip data is public.
+    // The worker serves it from the PARKING_PASS_URLS secret, keyed by
+    // reservationId, behind the admin session (/api/parking-pass/:rid).
     reservationId?: string;
     address?: string;
     validFrom?: string;

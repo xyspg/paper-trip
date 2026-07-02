@@ -93,8 +93,6 @@ export const tripData: Trip = {
       parking: {
         primary: "SpotHero · 1109 S Main St. - Lot",
         provider: "SpotHero",
-        passUrl:
-          "https://spothero.com/parking-pass/127078527?key=1527d54f475a0cdbb40e416718ffea66281cd90d54408c6a444c4e4e2a6bb193",
         reservationId: "127078527",
         address: "1109 S Main St, Los Angeles, CA",
         validFrom: "12:00 PM",

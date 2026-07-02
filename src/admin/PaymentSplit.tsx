@@ -2,6 +2,7 @@ import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS } from "./adminData"
 import type { Expense, ExpenseSplit } from "../trip/types"
 import { expensePaidBy } from "../trip/expenses"
 import { Avatar } from "./Avatar"
+import { CHIP_OFF, CHIP_ON } from "./adminUi"
 
 // Editor value for who fronted an expense. `single` is the default 100% case;
 // `percent` / `amount` carry per-traveler weights. Kept separate from the stored
@@ -145,7 +146,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
           <button
             type="button"
             key={m.key}
-            className={`font-grotesk font-extrabold text-[10px] tracking-[0.06em] uppercase cursor-pointer border-2 border-ink rounded-full py-1 px-[11px] ${mode === m.key ? "bg-ink text-paper shadow-[3px_3px_0_var(--color-ink)]" : "bg-paper-2 text-ink"}`}
+            className={`font-grotesk font-semibold text-[10px] tracking-[0.06em] uppercase cursor-pointer border rounded-full py-1 px-[11px] transition-colors ${mode === m.key ? CHIP_ON : CHIP_OFF}`}
             onClick={() => setMode(m.key)}
           >
             {m.label}
@@ -159,7 +160,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
             <button
               type="button"
               key={m.id}
-              className={`inline-flex items-center gap-1.5 cursor-pointer border-2 border-ink rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-bold text-[12px] ${value.payer === m.id ? "bg-ink text-paper" : "bg-paper-2"}`}
+              className={`inline-flex items-center gap-1.5 cursor-pointer border rounded-full py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-[12px] transition-colors ${value.payer === m.id ? CHIP_ON : CHIP_OFF}`}
               onClick={() => onChange({ mode: "single", payer: m.id })}
             >
               <Avatar m={m} size="xs" />
@@ -173,14 +174,14 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
             const cur = Math.max(0, Number(shares[m.id]) || 0)
             return (
               <div className="flex items-center gap-2.5" key={`${m.id}-${mode}`}>
-                <span className="inline-flex items-center gap-1.5 font-cjk font-bold text-[12px] min-w-[92px]">
+                <span className="inline-flex items-center gap-1.5 font-cjk font-semibold text-[12px] min-w-[92px]">
                   <Avatar m={m} size="xs" />
                   {m.name}
                 </span>
-                <span className="inline-flex items-center gap-[5px] border-2 border-ink rounded-[9px] bg-paper py-[3px] px-[9px] shadow-[3px_3px_0_var(--color-ink)] focus-within:shadow-[3px_3px_0_var(--color-ink)]">
+                <span className="inline-flex items-center gap-[5px] border border-[#ebe9e3] rounded-[9px] bg-white py-[3px] px-[9px] focus-within:border-[#1c1b19] transition-colors">
                   <input
                     key={`${m.id}-${mode}-${cur}`}
-                    className="w-[58px] border-none outline-none bg-transparent font-mono font-extrabold text-[13px] text-ink text-right [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
+                    className="w-[58px] border-none outline-none bg-transparent font-sans font-bold text-[13px] text-[#1c1b19] text-right [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
                     type="number"
                     inputMode="decimal"
                     min="0"
@@ -196,13 +197,13 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
                       if (e.key === "Enter") e.currentTarget.blur()
                     }}
                   />
-                  <span className="font-grotesk font-extrabold text-[12px] text-ink-soft">{mode === "percent" ? "%" : "$"}</span>
+                  <span className="font-grotesk font-semibold text-[12px] text-[#9b988f]">{mode === "percent" ? "%" : "$"}</span>
                 </span>
-                <span className="font-grotesk font-extrabold text-[12px] text-ink-soft ml-auto">{fmtMoney(contributions[m.id] ?? 0)}</span>
+                <span className="font-grotesk font-semibold text-[12px] text-[#3f6f5b] ml-auto">{fmtMoney(contributions[m.id] ?? 0)}</span>
               </div>
             )
           })}
-          <div className={`font-grotesk font-bold text-[10px] tracking-[0.04em] ${weightSum <= 0 ? "text-magenta" : "text-ink-soft"}`}>
+          <div className={`font-grotesk font-semibold text-[10px] tracking-[0.04em] ${weightSum <= 0 ? "text-[#c2553f]" : "text-[#9b988f]"}`}>
             {weightSum <= 0
               ? "请为至少一人填写分摊"
               : mode === "percent"

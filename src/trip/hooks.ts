@@ -1,10 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMountEffect } from "../useMountEffect";
-import { fetchAudit, fetchCreditCards, fetchTrip, sendOp, tripWsUrl, type TripSnapshot } from "./api";
+import {
+  createBackup,
+  deleteBackup,
+  fetchAudit,
+  fetchBackups,
+  fetchCreditCards,
+  fetchTrip,
+  restoreBackup,
+  sendOp,
+  tripWsUrl,
+  type TripSnapshot,
+} from "./api";
 import { applyOp, type TripOp } from "./ops";
 import type { Trip } from "./types";
 
 const tripKey = ["trip"] as const;
+const backupsKey = ["trip-backups"] as const;
 
 export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip });
 
@@ -12,7 +24,45 @@ export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip })
 // unauthenticated /admin load (the endpoint 403s for non-admins); `retry: false`
 // because a 403 is authoritative, not a transient error worth re-issuing.
 export const useAudit = (enabled = true) =>
-  useQuery({ queryKey: ["audit"], queryFn: fetchAudit, enabled, retry: false });
+  useQuery({ queryKey: ["audit"], queryFn: fetchAudit, enabled, retry: false, staleTime: 30_000 });
+
+export const useBackups = (enabled = true) =>
+  useQuery({ queryKey: backupsKey, queryFn: fetchBackups, enabled, retry: false, staleTime: 30_000 });
+
+export const useCreateBackup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createBackup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: backupsKey });
+      queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+};
+
+export const useDeleteBackup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteBackup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: backupsKey });
+      queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+};
+
+export const useRestoreBackup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: restoreBackup,
+    onSuccess: (snapshot) => {
+      // Restore only bumps rev + writes one audit row; the backups list is
+      // unchanged, so don't invalidate it (avoids a redundant refetch).
+      queryClient.setQueryData<TripSnapshot>(tripKey, snapshot);
+      queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+};
 
 // Resolve a card's art by its catalog name. The card list rarely changes, so it
 // is cached indefinitely; cards missing from the catalog (or before the fetch

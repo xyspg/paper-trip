@@ -32,6 +32,9 @@ dist-ssr
 .wrangler
 worker-configuration.d.ts
 
+# TanStack Router generated tmp/cache (routeTree.gen.ts is committed; this dir is not)
+.tanstack/
+
 # Playwright MCP session artifacts (screenshots, snapshots, console logs)
 .playwright-mcp/
 .claude/*

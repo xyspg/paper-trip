@@ -1,6 +1,5 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { PageNav } from "./PageNav";
-import { SiteFooter } from "./SiteFooter";
 
 export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -12,11 +11,10 @@ export function RootLayout() {
   }
 
   return (
-    <main className="min-h-svh p-[clamp(14px,3vw,40px)] overflow-x-clip bg-paper paper-grid text-ink font-grotesk leading-normal">
+    <main className="min-h-svh p-[clamp(14px,3vw,40px)] overflow-x-clip bg-paper text-ink font-sans leading-normal">
       <div className="w-[min(1040px,100%)] mx-auto">
         <PageNav />
         <Outlet />
-        <SiteFooter />
       </div>
     </main>
   );
