@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SuggestionsSection } from "../admin/SuggestionsSection";
 import { useAdmin } from "../admin/AdminContext";
 
-export const Route = createFileRoute("/admin/suggestions")({
+export const Route = createFileRoute("/t/$tripId/admin/suggestions")({
   component: SuggestionsRoute,
 });
 

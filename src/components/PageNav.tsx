@@ -1,34 +1,41 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { UserRound } from "lucide-react";
-import { routes } from "../routes";
+import { tripTabs } from "../routes";
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
 
 export function PageNav() {
+  // Rendered above every non-admin page; the trip tabs only make sense when a
+  // trip is in the URL (dashboard/invite pages just get the session button).
+  const { tripId } = useParams({ strict: false });
+
   return (
     <nav className="flex flex-wrap items-center gap-2 mb-[26px]" aria-label="页面导航">
-      {routes.map((route) => (
-        <Link
-          key={route.id}
-          to={route.path}
-          className="py-2 px-[15px] whitespace-nowrap no-underline tracking-[0.04em] border rounded-full transition-colors font-grotesk text-[12px] font-semibold"
-          activeOptions={{ exact: true }}
-          activeProps={{ className: "text-[#fafaf8] bg-[#1c1b19] border-[#1c1b19]" }}
-          inactiveProps={{
-            className: "text-[#3b3833] bg-white border-[#ebe9e3] hover:border-[#1c1b19]",
-          }}
-        >
-          {route.label}
-        </Link>
-      ))}
-      <SessionButton />
+      {tripId &&
+        tripTabs.map((tab) => (
+          <Link
+            key={tab.id}
+            to={tab.to}
+            params={{ tripId }}
+            className="py-2 px-[15px] whitespace-nowrap no-underline tracking-[0.04em] border rounded-full transition-colors font-grotesk text-[12px] font-semibold"
+            activeOptions={{ exact: true }}
+            activeProps={{ className: "text-[#fafaf8] bg-[#1c1b19] border-[#1c1b19]" }}
+            inactiveProps={{
+              className: "text-[#3b3833] bg-white border-[#ebe9e3] hover:border-[#1c1b19]",
+            }}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      <SessionButton tripId={tripId} />
     </nav>
   );
 }
 
-// GitHub avatar when signed in (opens /admin in a new tab — the admin shell is
-// separate chrome, so it never goes through the SPA router), login prompt when
-// not. Hidden while the probe is in flight to avoid a wrong-state flash.
-function SessionButton() {
+// GitHub avatar when signed in (opens the trip's admin console in a new tab —
+// the admin shell is separate chrome, so it never goes through the SPA
+// router), login prompt when not. Hidden while the probe is in flight to avoid
+// a wrong-state flash.
+function SessionButton({ tripId }: { tripId?: string }) {
   const { data: user, isLoading } = useAdminUser();
   if (isLoading) return null;
 
@@ -40,7 +47,7 @@ function SessionButton() {
       className={`${base} border-[#ebe9e3] hover:border-[#1c1b19]`}
       title={`${user.login} · 打开管理后台`}
       aria-label="打开管理后台"
-      onClick={() => window.open("/admin", "_blank")}
+      onClick={() => window.open(tripId ? `/t/${tripId}/admin` : "/", "_blank")}
     >
       <img className="h-full w-full object-cover" src={user.avatarUrl} alt="" draggable={false} />
     </button>

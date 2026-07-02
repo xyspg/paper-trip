@@ -24,18 +24,20 @@ import {
 } from "../trip/hooks"
 import type { TripBackup } from "../trip/api"
 import { downloadText } from "../trip/exporters"
+import { useAdmin } from "./AdminContext"
 
 type Props = {
   toast: ToastFn
 }
 
 export function BackupSection({ toast }: Props) {
+  const { tripId } = useAdmin()
   const [label, setLabel] = useState("")
-  const { data: tripSnap } = useTrip()
-  const { data: backups, isLoading, isError, refetch, isFetching } = useBackups()
-  const createBackup = useCreateBackup()
-  const restoreBackup = useRestoreBackup()
-  const deleteBackup = useDeleteBackup()
+  const { data: tripSnap } = useTrip(tripId)
+  const { data: backups, isLoading, isError, refetch, isFetching } = useBackups(tripId)
+  const createBackup = useCreateBackup(tripId)
+  const restoreBackup = useRestoreBackup(tripId)
+  const deleteBackup = useDeleteBackup(tripId)
   const { confirm, confirmModal } = useConfirm()
 
   const busy = createBackup.isPending || restoreBackup.isPending || deleteBackup.isPending

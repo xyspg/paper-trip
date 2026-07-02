@@ -1,7 +1,8 @@
 import { useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { AdminModal } from "./AdminModal"
-import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS, uid } from "./adminData"
+import { fmtMoney, round2, uid } from "./adminData"
+import { useAdmin } from "./AdminContext"
 import { Avatar } from "./Avatar"
 import { Icons } from "./AdminIcons"
 import {
@@ -37,7 +38,8 @@ const sumPrices = (rows: { price: number }[]) => rows.reduce((s, r) => s + r.pri
 
 // Everyone selected (or nobody, which falls back to everyone) means an even AA
 // split, stored as `who: undefined` so the renderers skip redundant chips.
-const isAA = (who: string[]) => who.length === 0 || who.length === TRAVELER_IDS.length
+const isAA = (who: string[], travelerIds: string[]) =>
+  who.length === 0 || who.length === travelerIds.length
 
 // "pick" waits for a photo, "loading" is the OCR round-trip, "review" is the
 // editable split, "error" shows a retry. One inner component per open keeps the
@@ -45,6 +47,8 @@ const isAA = (who: string[]) => who.length === 0 || who.length === TRAVELER_IDS.
 type Phase = "pick" | "loading" | "review" | "error"
 
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
+  const { travelers } = useAdmin()
+  const travelerIds = travelers.map((m) => m.id)
   const fileRef = useRef<HTMLInputElement>(null)
   const [phase, setPhase] = useState<Phase>("pick")
   const [error, setError] = useState("")
@@ -82,7 +86,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           name: it.name,
           quantity: it.quantity,
           price: it.price,
-          who: [...TRAVELER_IDS], // default AA
+          who: [...travelerIds], // default AA
         })),
       )
       setExtra(round2(gap))
@@ -113,12 +117,12 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const addRow = () =>
     setRows((prev) => [
       ...prev,
-      { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...TRAVELER_IDS] },
+      { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...travelerIds] },
     ])
 
-  const auto = deriveShares(rows, TRAVELER_IDS, extra)
+  const auto = deriveShares(rows, travelerIds, extra)
   const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0
-  const grandTotal = round2(TRAVELER_IDS.reduce((s, id) => s + finalOf(id), 0))
+  const grandTotal = round2(travelerIds.reduce((s, id) => s + finalOf(id), 0))
   const lineSubtotal = round2(sumPrices(rows))
   const hasOverride = Object.keys(manual).length > 0
 
@@ -152,15 +156,15 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
   const submit = () => {
     if (!canSubmit) return
-    const shares = Object.fromEntries(TRAVELER_IDS.map((id) => [id, finalOf(id)]))
-    const { payer, split } = splitToExpense({ mode: "amount", shares })
+    const shares = Object.fromEntries(travelerIds.map((id) => [id, finalOf(id)]))
+    const { payer, split } = splitToExpense({ mode: "amount", shares }, travelerIds)
     const items: ExpenseItem[] = cleanRows.map((r) => {
-      const who = r.who.filter((id) => TRAVELER_IDS.includes(id))
+      const who = r.who.filter((id) => travelerIds.includes(id))
       return {
         name: r.name.trim() || "未命名",
         quantity: r.quantity,
         price: round2(r.price),
-        who: isAA(who) ? undefined : who,
+        who: isAA(who, travelerIds) ? undefined : who,
       }
     })
     onSubmit({
@@ -236,7 +240,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               <span className={FIELD_LABEL}>菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）</span>
               <div className="flex flex-col gap-[9px]">
                 {rows.map((row) => {
-                  const rowIsAA = isAA(row.who)
+                  const rowIsAA = isAA(row.who, travelerIds)
                   return (
                     <div className="border border-[#ebe9e3] rounded-xl bg-white px-3 py-2.5" key={row.id}>
                       <div className="flex items-center gap-[7px]">
@@ -298,7 +302,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         </button>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-[9px]">
-                        {TRAVELERS.map((m) => (
+                        {travelers.map((m) => (
                           <button
                             type="button"
                             key={m.id}
@@ -364,7 +368,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                {TRAVELERS.map((m) => (
+                {travelers.map((m) => (
                   <div className="flex items-center justify-between gap-2.5 px-3 py-2 border border-[#ebe9e3] rounded-xl bg-white" key={m.id}>
                     <span className="inline-flex items-center gap-2 font-cjk font-semibold text-sm text-[#1c1b19]">
                       <Avatar m={m} size="xs" />

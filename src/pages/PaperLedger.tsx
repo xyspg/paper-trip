@@ -2,7 +2,8 @@ import { ExternalLink, Wallet } from "lucide-react"
 import type { ReactNode } from "react"
 import { Avatar } from "../admin/Avatar"
 import { ExpenseItems } from "../admin/ExpenseItems"
-import { TRAVELERS, TRAVELER_IDS, fmtMoney } from "../admin/adminData"
+import { fmtMoney } from "../admin/adminData"
+import { tripTravelers } from "../trip/roster"
 import {
   appliedCredit,
   expenseBalances,
@@ -40,7 +41,7 @@ async function exportPdf(trip: Trip) {
   const previewWindow = window.open("", "_blank")
   try {
     const { exportLedgerPdf } = await import("../trip/exportLedgerPdf")
-    await exportLedgerPdf(trip, TRAVELERS, previewWindow)
+    await exportLedgerPdf(trip, tripTravelers(trip), previewWindow)
   } catch (err) {
     previewWindow?.close()
     console.error("导出 PDF 失败", err)
@@ -49,9 +50,11 @@ async function exportPdf(trip: Trip) {
 }
 
 export function PaperLedger({ trip }: { trip: Trip }) {
+  const travelers = tripTravelers(trip)
+  const travelerIds = travelers.map((m) => m.id)
   const ledger = trip.expenses
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger)
-  const balances = expenseBalances(ledger, TRAVELER_IDS)
+  const balances = expenseBalances(ledger, travelerIds)
   const each = balances[0]?.share ?? 0
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]))
 
@@ -101,7 +104,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
 
       {/* PER-PERSON BALANCES */}
       <section className="grid grid-cols-2 gap-3 mt-4 max-[560px]:grid-cols-1" aria-label="两人各自结算金额">
-        {TRAVELERS.map((m) => {
+        {travelers.map((m) => {
           const balance = balanceById[m.id]
           const net = balance?.balance ?? 0
           const owe = net < -0.005
@@ -160,8 +163,8 @@ export function PaperLedger({ trip }: { trip: Trip }) {
           {ledger.map((item) => {
             const net = netExpense(item)
             const brand = PRESENTATION[item.id]
-            const paidBy = expensePaidBy(item, TRAVELER_IDS)
-            const payers = TRAVELERS.filter((m) => (paidBy[m.id] ?? 0) > 0.005)
+            const paidBy = expensePaidBy(item, travelerIds)
+            const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005)
             const isSplit = payers.length > 1
             return (
               <div key={item.id} className="py-4 px-[18px] border-b border-dashed border-[#ebe9e3] last:border-b-0">
@@ -183,7 +186,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
                   </span>
                 </div>
 
-                <ExpenseItems items={item.items} />
+                <ExpenseItems items={item.items} travelers={travelers} />
 
                 {item.credit > 0 && (
                   <div className="flex gap-2 items-center justify-end mt-2.5 max-[480px]:justify-start max-[480px]:pl-[51px]">

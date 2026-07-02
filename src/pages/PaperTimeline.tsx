@@ -18,7 +18,7 @@ type PaperTimelineProps = {
   trip: Trip
   orderedDates: string[]
   stopNumbers: Map<string, number>
-  nextItem: TripItem
+  nextItem?: TripItem
   nextPlan: string
   parkingCount: number
   dateRange: string
@@ -64,7 +64,8 @@ export function PaperTimeline({
   const titleWords = trip.title.trim().split(/\s+/)
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined
   const titleLead = titleWords.join(" ")
-  const nextStatus = statusMeta[nextItem.status]
+  // Fresh trips have no items yet; the next-action row simply doesn't render.
+  const nextStatus = nextItem ? statusMeta[nextItem.status] : undefined
 
   // Days before today (LA time) are archived into a collapsed section at the
   // bottom; the rest stay inline. Manual header toggles are stored as sparse
@@ -82,6 +83,7 @@ export function PaperTimeline({
   const renderDay = (date: string) => (
     <DaySection
       key={date}
+      tripId={trip.id}
       date={date}
       dayNumber={orderedDates.indexOf(date) + 1}
       items={trip.items.filter((item) => item.date === date)}
@@ -116,27 +118,44 @@ export function PaperTimeline({
       </header>
 
       {/* NEXT ACTION */}
-      <section
-        className="flex gap-[18px] items-center flex-wrap mt-[22px] py-[18px] px-[22px] bg-white border border-[#ebe9e3] rounded-[14px]"
-        aria-label="下一步行动"
-      >
-        <span className="font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-white bg-[#3f6f5b] rounded-full py-[5px] px-3">
-          下一步行动
-        </span>
-        <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">{nextItem.time}</span>
-        <div>
-          <div className="font-cjk font-bold text-[17px]">{nextItem.title}</div>
-          <div className="mt-[3px] font-cjk text-[12.5px] text-[#76726a]">
-            {nextPlan} · {nextStatus.label}
-          </div>
-        </div>
-        <span
-          className="ml-auto font-grotesk text-[10.5px] font-semibold tracking-[0.04em] rounded-full py-[5px] px-3 border"
-          style={{ color: nextStatus.color, borderColor: nextStatus.border, background: nextStatus.bg }}
+      {nextItem && nextStatus && (
+        <section
+          className="flex gap-[18px] items-center flex-wrap mt-[22px] py-[18px] px-[22px] bg-white border border-[#ebe9e3] rounded-[14px]"
+          aria-label="下一步行动"
         >
-          {nextStatus.label}
-        </span>
-      </section>
+          <span className="font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-white bg-[#3f6f5b] rounded-full py-[5px] px-3">
+            下一步行动
+          </span>
+          <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">{nextItem.time}</span>
+          <div>
+            <div className="font-cjk font-bold text-[17px]">{nextItem.title}</div>
+            <div className="mt-[3px] font-cjk text-[12.5px] text-[#76726a]">
+              {nextPlan} · {nextStatus.label}
+            </div>
+          </div>
+          <span
+            className="ml-auto font-grotesk text-[10.5px] font-semibold tracking-[0.04em] rounded-full py-[5px] px-3 border"
+            style={{ color: nextStatus.color, borderColor: nextStatus.border, background: nextStatus.bg }}
+          >
+            {nextStatus.label}
+          </span>
+        </section>
+      )}
+
+      {/* EMPTY STATE — a brand-new trip with no stops yet */}
+      {trip.items.length === 0 && (
+        <section className="grid place-items-center mt-[22px] py-16 px-6 bg-white border border-[#ebe9e3] rounded-[14px] text-center">
+          <div>
+            <div className="font-grotesk text-[11px] tracking-[0.16em] uppercase text-[#3f6f5b]">
+              Empty Timeline
+            </div>
+            <div className="mt-2 font-sans font-bold text-[20px] tracking-tight">还没有停靠点</div>
+            <p className="mt-2 font-cjk text-[13px] text-[#76726a] leading-relaxed">
+              在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* DAY SECTIONS */}
       {activeDates.map(renderDay)}
@@ -192,6 +211,7 @@ export function PaperTimeline({
 }
 
 function DaySection({
+  tripId,
   date,
   dayNumber,
   items,
@@ -200,6 +220,7 @@ function DaySection({
   collapsed,
   onToggle,
 }: {
+  tripId: string
   date: string
   dayNumber: number
   items: TripItem[]
@@ -249,6 +270,7 @@ function DaySection({
           {items.map((item) => (
             <Ticket
               key={item.id}
+              tripId={tripId}
               item={item}
               stopNumber={stopNumbers.get(item.id) ?? 0}
               onCycleStatus={onCycleStatus}
@@ -275,10 +297,12 @@ function Stat({ k, v, sub, accent }: { k: string; v: string; sub: string; accent
 }
 
 function Ticket({
+  tripId,
   item,
   stopNumber,
   onCycleStatus,
 }: {
+  tripId: string
   item: TripItem
   stopNumber: number
   onCycleStatus: (item: TripItem) => void
@@ -346,7 +370,7 @@ function Ticket({
           {cardRec && <PayWith rec={cardRec} accent={category.color} />}
 
           <div className="mt-3 flex">
-            <SuggestBox itemId={item.id} itemTitle={item.title} />
+            <SuggestBox tripId={tripId} itemId={item.id} itemTitle={item.title} />
           </div>
         </div>
       </div>

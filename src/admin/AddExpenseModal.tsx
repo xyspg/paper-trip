@@ -15,6 +15,7 @@ import {
 } from "./adminUi"
 import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
 import type { SplitValue } from "./PaymentSplit"
+import { useAdmin } from "./AdminContext"
 
 export type NewExpenseInput = {
   name: string
@@ -39,12 +40,15 @@ type Props = {
 // Reset the form whenever the modal (re)opens or targets a different expense by
 // keying the parent; this inner component always starts from fresh defaults.
 function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
+  const { travelers } = useAdmin()
   const editing = Boolean(initial)
   const [name, setName] = useState(initial?.name ?? "")
   const [sub, setSub] = useState(initial?.sub ?? "")
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "")
   const [cat, setCat] = useState<StopCat>(initial?.cat ?? "event")
-  const [split, setSplit] = useState<SplitValue>(initial ? splitFromExpense(initial) : defaultSplit)
+  const [split, setSplit] = useState<SplitValue>(() =>
+    initial ? splitFromExpense(initial) : defaultSplit(travelers),
+  )
 
   const parsed = Math.max(0, parseFloat(amount) || 0)
   const canSubmit = name.trim().length > 0
@@ -52,7 +56,10 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!canSubmit) return
-    const { payer, split: splitField } = splitToExpense(split)
+    const { payer, split: splitField } = splitToExpense(
+      split,
+      travelers.map((m) => m.id),
+    )
     onSubmit({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer, split: splitField })
   }
 
@@ -111,7 +118,7 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
           <span className={FIELD_LABEL}>谁付的 · 分摊</span>
-          <PaymentSplit value={split} onChange={setSplit} amount={parsed} />
+          <PaymentSplit value={split} onChange={setSplit} amount={parsed} travelers={travelers} />
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">

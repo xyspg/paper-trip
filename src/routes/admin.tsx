@@ -1,15 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AdminPage } from "../pages/AdminPage";
-import { BaseWebProvider } from "../admin/baseweb";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { LEGACY_TRIP_ID } from "../trip/legacy";
 
-// `/admin` is a layout route: it renders the shared chrome (topbar, sidebar,
-// auth gate) and an <Outlet />. The active section lives in the path
-// (`/admin/itinerary` …) so a refresh keeps the section instead of needing a
-// `?tab=` search param.
+// Pre-multi-tenant bookmark: /admin always meant the legacy trip's console.
 export const Route = createFileRoute("/admin")({
-  component: () => (
-    <BaseWebProvider>
-      <AdminPage />
-    </BaseWebProvider>
-  ),
+  beforeLoad: () => {
+    throw redirect({
+      to: "/t/$tripId/admin",
+      params: { tripId: LEGACY_TRIP_ID },
+      replace: true,
+    });
+  },
 });

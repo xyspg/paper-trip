@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BackupSection } from "../admin/BackupSection";
 import { useAdmin } from "../admin/AdminContext";
 
-export const Route = createFileRoute("/admin/backups")({
+export const Route = createFileRoute("/t/$tripId/admin/backups")({
   component: BackupsRoute,
 });
 

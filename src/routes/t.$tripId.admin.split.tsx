@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SplitSection } from "../admin/SplitSection";
 import { useAdmin } from "../admin/AdminContext";
 
-export const Route = createFileRoute("/admin/split")({
+export const Route = createFileRoute("/t/$tripId/admin/split")({
   component: SplitRoute,
 });
 

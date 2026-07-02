@@ -1,4 +1,5 @@
-import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS } from "./adminData"
+import { fmtMoney, round2 } from "./adminData"
+import type { AdminMember } from "./adminData"
 import type { Expense, ExpenseSplit } from "../trip/types"
 import { expensePaidBy } from "../trip/expenses"
 import { Avatar } from "./Avatar"
@@ -13,16 +14,22 @@ export type SplitValue =
   | { mode: "percent"; shares: Record<string, number> }
   | { mode: "amount"; shares: Record<string, number> }
 
-export const defaultSplit = (): SplitValue => ({ mode: "single", payer: TRAVELERS[0]?.id ?? "" })
+export const defaultSplit = (travelers: AdminMember[]): SplitValue => ({
+  mode: "single",
+  payer: travelers[0]?.id ?? "",
+})
 
 // Convert the editor value into the fields stored on an Expense. For a split we
 // also stamp the largest contributor as `payer` so any code that still reads a
 // single payer has a sensible fallback label.
-export const splitToExpense = (v: SplitValue): { payer: string; split?: ExpenseSplit } => {
+export const splitToExpense = (
+  v: SplitValue,
+  travelerIds: string[],
+): { payer: string; split?: ExpenseSplit } => {
   if (v.mode === "single") return { payer: v.payer }
-  let top = TRAVELER_IDS[0] ?? ""
+  let top = travelerIds[0] ?? ""
   let topVal = -1
-  for (const id of TRAVELER_IDS) {
+  for (const id of travelerIds) {
     const val = Math.max(0, Number(v.shares[id]) || 0)
     if (val > topVal) {
       topVal = val
@@ -42,20 +49,20 @@ const MODES: { key: SplitValue["mode"]; label: string }[] = [
 ]
 
 // Even percentage seed (e.g. 50 / 50 for two travelers), remainder on the last.
-const evenPercent = (): Record<string, number> => {
-  const n = TRAVELER_IDS.length || 1
+const evenPercent = (ids: string[]): Record<string, number> => {
+  const n = ids.length || 1
   const base = Math.floor(100 / n)
   const out: Record<string, number> = {}
-  TRAVELER_IDS.forEach((id, i) => {
+  ids.forEach((id, i) => {
     out[id] = i === n - 1 ? 100 - base * (n - 1) : base
   })
   return out
 }
 
-const evenAmount = (amount: number): Record<string, number> => {
-  const n = TRAVELER_IDS.length || 1
+const evenAmount = (ids: string[], amount: number): Record<string, number> => {
+  const n = ids.length || 1
   const each = round2(amount / n)
-  return Object.fromEntries(TRAVELER_IDS.map((id) => [id, each]))
+  return Object.fromEntries(ids.map((id) => [id, each]))
 }
 
 type Props = {
@@ -63,12 +70,15 @@ type Props = {
   onChange: (v: SplitValue) => void
   // Net amount the split is divided over, used only for the live $ preview.
   amount: number
+  // The trip's roster the money can be split across.
+  travelers: AdminMember[]
 }
 
 // Lets an admin record who fronted an expense: a single payer (default 100%) or
 // a proportional split by percentage or dollar amount. The numbers are
 // normalized, so "80 / 20" and "300 / 10" both just describe proportions.
-export function PaymentSplit({ value, onChange, amount }: Props) {
+export function PaymentSplit({ value, onChange, amount, travelers }: Props) {
+  const travelerIds = travelers.map((m) => m.id)
   const mode = value.mode
   const shares = mode === "single" ? {} : value.shares
 
@@ -76,12 +86,12 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
   // the target unit, not copy the raw numbers across (a $138.25 share is not a
   // 138.25% share). Falls back to an even seed when the source has no weight.
   const reshare = (from: Record<string, number>, next: "percent" | "amount"): Record<string, number> => {
-    const total = TRAVELER_IDS.reduce((s, id) => s + Math.max(0, Number(from[id]) || 0), 0)
-    if (total <= 0) return next === "percent" ? evenPercent() : evenAmount(amount)
+    const total = travelerIds.reduce((s, id) => s + Math.max(0, Number(from[id]) || 0), 0)
+    if (total <= 0) return next === "percent" ? evenPercent(travelerIds) : evenAmount(travelerIds, amount)
     if (next === "amount") {
       // Distribute the net amount by the source proportions.
       return Object.fromEntries(
-        TRAVELER_IDS.map((id) => [
+        travelerIds.map((id) => [
           id,
           round2((Math.max(0, Number(from[id]) || 0) / total) * amount),
         ]),
@@ -90,8 +100,8 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
     // Percent: normalize to 100, dropping any rounding remainder on the last traveler.
     const out: Record<string, number> = {}
     let acc = 0
-    TRAVELER_IDS.forEach((id, i) => {
-      if (i === TRAVELER_IDS.length - 1) {
+    travelerIds.forEach((id, i) => {
+      if (i === travelerIds.length - 1) {
         out[id] = Math.max(0, 100 - acc)
       } else {
         const p = Math.round((Math.max(0, Number(from[id]) || 0) / total) * 100)
@@ -105,15 +115,15 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
   const setMode = (next: SplitValue["mode"]) => {
     if (next === mode) return
     if (next === "single") {
-      const payer = mode === "single" ? value.payer : splitToExpense(value).payer
+      const payer = mode === "single" ? value.payer : splitToExpense(value, travelerIds).payer
       onChange({ mode: "single", payer })
       return
     }
     const seed =
       mode === "single"
         ? next === "percent"
-          ? evenPercent()
-          : evenAmount(amount)
+          ? evenPercent(travelerIds)
+          : evenAmount(travelerIds, amount)
         : reshare(value.shares, next)
     onChange({ mode: next, shares: seed })
   }
@@ -132,12 +142,12 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
     sub: "",
     amount,
     credit: 0,
-    payer: mode === "single" ? value.payer : splitToExpense(value).payer,
+    payer: mode === "single" ? value.payer : splitToExpense(value, travelerIds).payer,
     split: mode === "single" ? undefined : { mode, shares: value.shares },
   }
-  const contributions = expensePaidBy(preview, TRAVELER_IDS)
+  const contributions = expensePaidBy(preview, travelerIds)
   const weightSum =
-    mode === "single" ? 0 : TRAVELER_IDS.reduce((s, id) => s + Math.max(0, Number(shares[id]) || 0), 0)
+    mode === "single" ? 0 : travelerIds.reduce((s, id) => s + Math.max(0, Number(shares[id]) || 0), 0)
 
   return (
     <div className="flex flex-col gap-[9px] w-full">
@@ -156,7 +166,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
 
       {mode === "single" ? (
         <div className="inline-flex gap-[5px]">
-          {TRAVELERS.map((m) => (
+          {travelers.map((m) => (
             <button
               type="button"
               key={m.id}
@@ -170,7 +180,7 @@ export function PaymentSplit({ value, onChange, amount }: Props) {
         </div>
       ) : (
         <div className="flex flex-col gap-[7px]">
-          {TRAVELERS.map((m) => {
+          {travelers.map((m) => {
             const cur = Math.max(0, Number(shares[m.id]) || 0)
             return (
               <div className="flex items-center gap-2.5" key={`${m.id}-${mode}`}>
