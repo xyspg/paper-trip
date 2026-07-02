@@ -4,23 +4,45 @@ import type { Context } from "hono";
 import { createAuth } from "./auth";
 import { agentUser, signAgentToken } from "./agentToken";
 import type { AgentClaims } from "./agentToken";
-import { LEGACY_TRIP_ID, memberUser } from "./registry";
-import type { Member } from "./registry";
+import {
+  LEGACY_TRIP_ID,
+  MEMBER_COLORS,
+  addMembership,
+  claimMemberships,
+  countMembers,
+  createTrip,
+  deleteTrip,
+  getMembership,
+  getTrip,
+  listClaims,
+  listMembers,
+  listTripsForUser,
+  memberUser,
+  removeMembership,
+  sessionMember,
+  syncRoster,
+  updateTrip,
+} from "./registry";
+import type { Member, TripRow, TripVisibility } from "./registry";
+import { sessionUser } from "./auth";
 import receipt from "./receipt";
 import type { Env } from "./env";
 import type { TripOp } from "../src/trip/ops";
 
 export { AX26DurableObject } from "./AX26DurableObject";
 
-// Ops a public timeline visitor may run without signing in: toggling a stop's
-// status and submitting a comment. Everything else — reviewing/deleting
-// suggestions, editing items, reset — needs trip membership. Unknown ops fail
-// closed.
+// Ops a public visitor may run on a PUBLIC trip without signing in: toggling a
+// stop's status and submitting a comment. Private trips accept nothing
+// anonymous. Unknown ops fail closed.
 const PUBLIC_OPS = new Set<TripOp["type"]>(["setItemStatus", "addSuggestion"]);
 
+// Destructive bulk ops: owner-only. A member can edit any content, but only
+// the trip's owner may wipe it wholesale.
+const OWNER_OPS = new Set<TripOp["type"]>(["reset", "resetExpenses", "clearSuggestions"]);
+
 // Ops a bearer-token agent may run: every content edit, but never the
-// destructive bulk ops (reset, resetExpenses, clearSuggestions) — those stay
-// behind a human session. Unknown ops fail closed here too.
+// destructive bulk ops — those stay behind a human owner session. Unknown ops
+// fail closed here too.
 const AGENT_OPS = new Set<TripOp["type"]>([
   "setItemStatus",
   "updateItem",
@@ -38,12 +60,36 @@ const AGENT_OPS = new Set<TripOp["type"]>([
   "setExpenseSplit",
 ]);
 
-// What forwardWithActor stamps into x-actor-* headers. Sessions map 1:1; agent
+// What forward() stamps into x-actor-* headers. Sessions map 1:1; agent
 // tokens keep the minter's user id but prefix the login with `agent:` so the
 // audit trail separates human clicks from delegated agent writes at a glance.
 type Actor = { id: string | null; login: string; email: string };
 const sessionActor = (u: Member): Actor => ({ id: u.id, login: u.login, email: u.email });
 const agentActor = (a: AgentClaims): Actor => ({ id: a.sub, login: `agent:${a.login}`, email: "" });
+
+// Registry row → the JSON shape the client consumes.
+const tripMeta = (t: TripRow) => ({
+  id: t.id,
+  title: t.title,
+  visibility: t.visibility,
+  startDate: t.start_date,
+  endDate: t.end_date,
+  timezone: t.timezone,
+  createdAt: t.created_at,
+});
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const asDate = (v: unknown): string | null => (typeof v === "string" && DATE_RE.test(v) ? v : null);
+const asVisibility = (v: unknown): TripVisibility | null =>
+  v === "public" || v === "private" ? v : null;
+
+// Short random slug; ~51 bits, plenty for a friend-circle registry (creation
+// retries on the astronomically unlikely collision).
+function newTripId(): string {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(10));
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -76,7 +122,7 @@ app.post("/api/agent/token", async (c) => {
 
 // Parking pass links are capability URLs — knowing one is full authority to
 // edit or cancel the reservation — so the real URL never leaves the server.
-// Trip members get a 302 to the provider; everyone else a 403.
+// Legacy-trip members get a 302 to the provider; everyone else a 403.
 app.get("/api/parking-pass/:rid", async (c) => {
   if (!(await memberUser(c, LEGACY_TRIP_ID))) return c.json({ error: "forbidden" }, 403);
   let urls: Record<string, string> = {};
@@ -90,48 +136,265 @@ app.get("/api/parking-pass/:rid", async (c) => {
   return c.redirect(url, 302);
 });
 
-app.all("/api/trip", forwardTrip);
-app.all("/api/trip/*", forwardTrip);
+// ---- registry: trips, members ----
 
-// Reads and WebSocket upgrades are public (the legacy trip is registered
-// public); writes are gated by credential: member session (everything), agent
-// bearer token (AGENT_OPS + whole-trip PUT + backup list/create), anonymous
-// (PUBLIC_OPS only). We peek the op from a clone so the original body still
-// reaches the Durable Object.
-async function forwardTrip(c: Context<{ Bindings: Env }>): Promise<Response> {
-  const req = c.req.raw;
-  const path = new URL(req.url).pathname;
+app.get("/api/trips", async (c) => {
+  const user = await sessionUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  // Promote any pending seed/invite claims first so a first-ever sign-in
+  // already sees the trips waiting for them.
+  const claimed = await claimMemberships(c.env.DB, user.id);
+  await Promise.all(claimed.map((id) => syncRoster(c.env, id)));
+  const trips = await listTripsForUser(c.env.DB, user.id);
+  return c.json({ trips: trips.map((t) => ({ ...tripMeta(t), role: t.role })) });
+});
 
-  // The audit trail is member-only to read; never expose it to visitors or agents.
-  if (req.method === "GET" && path === "/api/trip/audit") {
-    if (!(await memberUser(c, LEGACY_TRIP_ID))) return c.json({ error: "forbidden" }, 403);
-    return stub(c.env).fetch(req);
+app.post("/api/trips", async (c) => {
+  const user = await sessionUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const body = (await c.req.json().catch(() => null)) as {
+    title?: unknown;
+    startDate?: unknown;
+    endDate?: unknown;
+    timezone?: unknown;
+    visibility?: unknown;
+  } | null;
+  const title = typeof body?.title === "string" ? body.title.trim().slice(0, 120) : "";
+  if (!title) return c.json({ error: "title_required" }, 400);
+  const startDate = asDate(body?.startDate);
+  const endDate = asDate(body?.endDate);
+  const timezone =
+    typeof body?.timezone === "string" && body.timezone ? body.timezone : "America/Los_Angeles";
+  const visibility = asVisibility(body?.visibility) ?? "private";
+
+  // Retry the slug on collision; two failures in a row means something is
+  // deeply wrong with the RNG, not the registry.
+  let id = newTripId();
+  for (let attempt = 0; (await getTrip(c.env.DB, id)) && attempt < 2; attempt++) {
+    id = newTripId();
   }
 
-  // Backups include full trip snapshots and restore/delete actions. Members get
-  // everything; agents may only list and create on the collection path (SKILL.md
-  // tells them to snapshot before a bulk PUT) — restore/delete stay human-only.
-  if (path === "/api/trip/backups" || path.startsWith("/api/trip/backups/")) {
-    const user = await memberUser(c, LEGACY_TRIP_ID);
-    if (user) return forwardWithActor(c, req, sessionActor(user));
-    const agent = await agentUser(c, LEGACY_TRIP_ID);
-    if (
-      agent &&
-      path === "/api/trip/backups" &&
-      (req.method === "GET" || req.method === "POST")
-    ) {
-      return forwardWithActor(c, req, agentActor(agent));
+  await createTrip(c.env.DB, {
+    id,
+    title,
+    visibility,
+    startDate,
+    endDate,
+    timezone,
+    createdBy: user.id,
+  });
+  await addMembership(c.env.DB, {
+    tripId: id,
+    userId: user.id,
+    role: "owner",
+    memberKey: user.id,
+    color: MEMBER_COLORS[0],
+  });
+  const init = await c.env.AX26.getByName(id).fetch(
+    new Request("https://do/internal/init", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tripId: id,
+        title,
+        dates: { start: startDate ?? "", end: endDate ?? "" },
+        timezone,
+      }),
+    }),
+  );
+  if (!init.ok) {
+    // Roll the registry back so a botched init isn't a permanent ghost row.
+    await deleteTrip(c.env.DB, id);
+    return c.json({ error: "init_failed" }, 500);
+  }
+  await syncRoster(c.env, id);
+  const trip = await getTrip(c.env.DB, id);
+  return c.json({ trip: trip ? { ...tripMeta(trip), role: "owner" as const } : null }, 201);
+});
+
+app.get("/api/trips/:tripId", async (c) => {
+  const tripId = c.req.param("tripId");
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+  const { user, member } = await sessionMember(c, tripId);
+  if (trip.visibility === "private" && !member) {
+    return c.json({ error: user ? "forbidden" : "unauthorized" }, user ? 403 : 401);
+  }
+  return c.json({ trip: { ...tripMeta(trip), role: member?.role ?? null } });
+});
+
+app.patch("/api/trips/:tripId", async (c) => {
+  const tripId = c.req.param("tripId");
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+
+  const body = (await c.req.json().catch(() => null)) as {
+    title?: unknown;
+    startDate?: unknown;
+    endDate?: unknown;
+    timezone?: unknown;
+    visibility?: unknown;
+  } | null;
+  if (!body) return c.json({ error: "bad_request" }, 400);
+
+  const patch = {
+    title:
+      typeof body.title === "string" && body.title.trim()
+        ? body.title.trim().slice(0, 120)
+        : undefined,
+    visibility: asVisibility(body.visibility) ?? undefined,
+    startDate: asDate(body.startDate) ?? undefined,
+    endDate: asDate(body.endDate) ?? undefined,
+    timezone: typeof body.timezone === "string" && body.timezone ? body.timezone : undefined,
+  };
+  await updateTrip(c.env.DB, tripId, patch);
+
+  // Mirror document-visible metadata into the DO so mastheads update live.
+  if (patch.title || patch.startDate || patch.endDate || patch.timezone) {
+    await c.env.AX26.getByName(tripId).fetch(
+      new Request("https://do/internal/meta", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: patch.title,
+          dates: { start: patch.startDate, end: patch.endDate },
+          timezone: patch.timezone,
+        }),
+      }),
+    );
+  }
+  const updated = await getTrip(c.env.DB, tripId);
+  return c.json({ trip: updated ? { ...tripMeta(updated), role: "owner" as const } : null });
+});
+
+app.delete("/api/trips/:tripId", async (c) => {
+  const tripId = c.req.param("tripId");
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+  // Registry row first (the trip disappears from lists even if the DO wipe
+  // needs a retry), then the DO's storage.
+  await deleteTrip(c.env.DB, tripId);
+  await c.env.AX26.getByName(tripId).fetch(
+    new Request("https://do/internal/destroy", { method: "POST" }),
+  );
+  return c.json({ ok: true });
+});
+
+app.get("/api/trips/:tripId/members", async (c) => {
+  const tripId = c.req.param("tripId");
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (!member) return c.json({ error: "forbidden" }, 403);
+  const [members, claims] = await Promise.all([
+    listMembers(c.env.DB, tripId),
+    listClaims(c.env.DB, tripId),
+  ]);
+  return c.json({
+    members: members.map((m) => ({
+      userId: m.userId,
+      memberKey: m.memberKey,
+      role: m.role,
+      name: m.name,
+      login: m.login,
+      image: m.image,
+      color: m.color,
+    })),
+    // Seeded people who have never signed in; they hold a claim, not an account.
+    pending: claims.map((cl) => ({
+      memberKey: cl.member_key,
+      role: cl.role,
+      name: cl.display_name,
+      color: cl.color,
+    })),
+  });
+});
+
+app.delete("/api/trips/:tripId/members/:userId", async (c) => {
+  const tripId = c.req.param("tripId");
+  const targetId = c.req.param("userId");
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+  const target = await getMembership(c.env.DB, tripId, targetId);
+  if (!target) return c.json({ error: "not_found" }, 404);
+  if (target.role === "owner") return c.json({ error: "cannot_remove_owner" }, 403);
+  await removeMembership(c.env.DB, tripId, targetId);
+  await syncRoster(c.env, tripId);
+  return c.json({ ok: true, members: await countMembers(c.env.DB, tripId) });
+});
+
+// ---- trip content: forwarded to the trip's Durable Object ----
+
+app.all("/api/trips/:tripId/trip", (c) => handleTripTraffic(c, c.req.param("tripId"), "/api/trip"));
+app.get("/api/trips/:tripId/audit", (c) =>
+  handleTripTraffic(c, c.req.param("tripId"), "/api/trip/audit"),
+);
+app.all("/api/trips/:tripId/backups", (c) =>
+  handleTripTraffic(c, c.req.param("tripId"), "/api/trip/backups"),
+);
+app.all("/api/trips/:tripId/backups/*", (c) => {
+  const suffix = new URL(c.req.url).pathname.split("/backups/")[1] ?? "";
+  return handleTripTraffic(c, c.req.param("tripId"), `/api/trip/backups/${suffix}`);
+});
+
+// Legacy alias: the pre-multi-tenant client talked to /api/trip* with no trip
+// id. Kept until the frontend is fully re-routed (Phase 3), then deleted.
+app.all("/api/trip", (c) => handleTripTraffic(c, LEGACY_TRIP_ID, "/api/trip"));
+app.all("/api/trip/*", (c) =>
+  handleTripTraffic(c, LEGACY_TRIP_ID, new URL(c.req.url).pathname),
+);
+
+// Reads and WebSocket upgrades are open on public trips and member/agent-only
+// on private ones; writes are gated by credential: member session (everything;
+// destructive bulk ops owner-only), agent bearer token (AGENT_OPS + whole-trip
+// PUT + backup list/create), anonymous (PUBLIC_OPS on public trips only). We
+// peek the op from a clone so the original body still reaches the DO.
+async function handleTripTraffic(
+  c: Context<{ Bindings: Env }>,
+  tripId: string,
+  doPath: string,
+): Promise<Response> {
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+
+  const req = c.req.raw;
+  const { user, member } = await sessionMember(c, tripId);
+  const agent = member ? null : await agentUser(c, tripId);
+
+  // The audit trail is member-only to read; never expose it to visitors or agents.
+  if (req.method === "GET" && doPath === "/api/trip/audit") {
+    if (!member) return c.json({ error: "forbidden" }, 403);
+    return forward(c, tripId, doPath);
+  }
+
+  // Backups include full trip snapshots and restore/delete actions. Members
+  // list/create; restore/delete are owner-only. Agents may only list and
+  // create on the collection path (SKILL.md tells them to snapshot before a
+  // bulk PUT).
+  if (doPath === "/api/trip/backups" || doPath.startsWith("/api/trip/backups/")) {
+    const destructive = doPath !== "/api/trip/backups";
+    if (member) {
+      if (destructive && member.role !== "owner") return c.json({ error: "forbidden" }, 403);
+      return forward(c, tripId, doPath, sessionActor(member));
+    }
+    if (agent && !destructive && (req.method === "GET" || req.method === "POST")) {
+      return forward(c, tripId, doPath, agentActor(agent));
     }
     return c.json({ error: "forbidden" }, 403);
   }
 
-  // Whole-trip replacement (rev-checked in the DO). Requires session or token —
-  // once the DO answers PUT, an ungated PUT would be anonymous full write.
-  if (req.method === "PUT" && path === "/api/trip") {
-    const user = await memberUser(c, LEGACY_TRIP_ID);
-    if (user) return forwardWithActor(c, req, sessionActor(user));
-    const agent = await agentUser(c, LEGACY_TRIP_ID);
-    if (agent) return forwardWithActor(c, req, agentActor(agent));
+  // Whole-trip replacement (rev-checked in the DO). Requires membership or an
+  // agent token — once the DO answers PUT, an ungated PUT would be anonymous
+  // full write.
+  if (req.method === "PUT" && doPath === "/api/trip") {
+    if (member) return forward(c, tripId, doPath, sessionActor(member));
+    if (agent) return forward(c, tripId, doPath, agentActor(agent));
     return c.json({ error: "unauthorized" }, 401);
   }
 
@@ -140,34 +403,54 @@ async function forwardTrip(c: Context<{ Bindings: Env }>): Promise<Response> {
       .clone()
       .json()
       .catch(() => null)) as TripOp | null;
-    const user = await memberUser(c, LEGACY_TRIP_ID);
-    if (user) return forwardWithActor(c, req, sessionActor(user));
-    const agent = await agentUser(c, LEGACY_TRIP_ID);
+    if (member) {
+      if (op && OWNER_OPS.has(op.type) && member.role !== "owner") {
+        return c.json({ error: "owner_only" }, 403);
+      }
+      return forward(c, tripId, doPath, sessionActor(member));
+    }
     if (agent) {
       if (!op || !AGENT_OPS.has(op.type)) return c.json({ error: "op_not_allowed" }, 403);
-      return forwardWithActor(c, req, agentActor(agent));
+      return forward(c, tripId, doPath, agentActor(agent));
     }
-    if (!op || !PUBLIC_OPS.has(op.type)) return c.json({ error: "forbidden" }, 403);
+    if (trip.visibility !== "public" || !op || !PUBLIC_OPS.has(op.type)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
     // Stamp the verified actor onto the request the DO records in its audit log.
     // We always `set` (never trust an inbound x-actor-* header), so a client
     // cannot forge an operator; unauthenticated public ops record as `public`.
-    return forwardWithActor(c, req, null);
+    return forward(c, tripId, doPath, null);
   }
 
-  return stub(c.env).fetch(req);
+  // Plain reads + WebSocket upgrades.
+  if (trip.visibility === "private" && !member && !agent) {
+    return c.json({ error: user ? "forbidden" : "unauthorized" }, user ? 403 : 401);
+  }
+  return forward(c, tripId, doPath);
 }
 
-function forwardWithActor(c: Context<{ Bindings: Env }>, req: Request, actor: Actor | null) {
-  const headers = new Headers(req.headers);
-  headers.set("x-actor-id", actor?.id ?? "");
-  headers.set("x-actor-login", actor?.login ?? "public");
-  headers.set("x-actor-email", actor?.email ?? "");
-  headers.set("x-actor-ip", c.req.header("cf-connecting-ip") ?? "");
-  return stub(c.env).fetch(new Request(req, { headers }));
-}
-
-function stub(env: Env) {
-  return env.AX26.getByName(LEGACY_TRIP_ID);
+// Rewrite the request onto the DO's canonical /api/trip* path and hand it to
+// the trip's Durable Object. `actor` undefined = plain pass-through (reads,
+// websocket upgrades); null = anonymous public write; otherwise stamped.
+function forward(
+  c: Context<{ Bindings: Env }>,
+  tripId: string,
+  doPath: string,
+  actor?: Actor | null,
+): Promise<Response> {
+  const req = c.req.raw;
+  const url = new URL(req.url);
+  url.pathname = doPath;
+  let out = new Request(url, req);
+  if (actor !== undefined) {
+    const headers = new Headers(req.headers);
+    headers.set("x-actor-id", actor?.id ?? "");
+    headers.set("x-actor-login", actor?.login ?? "public");
+    headers.set("x-actor-email", actor?.email ?? "");
+    headers.set("x-actor-ip", c.req.header("cf-connecting-ip") ?? "");
+    out = new Request(out, { headers });
+  }
+  return c.env.AX26.getByName(tripId).fetch(out);
 }
 
 export default app;

@@ -1,7 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import { tripData } from "../src/trip/tripData";
-import type { Trip } from "../src/trip/types";
-import { applyOp, type TripOp } from "../src/trip/ops";
+import { LEGACY_TRIP_ID } from "../src/trip/legacy";
+import type { Trip, TripMember } from "../src/trip/types";
+import { applyOp, emptyTrip, type TripOp } from "../src/trip/ops";
 import type { TripBackup } from "../src/trip/types";
 import type { Env } from "./env";
 
@@ -98,7 +99,9 @@ function opTarget(op: TripOp): string | null {
 }
 
 export class AX26DurableObject extends DurableObject<Env> {
-  private trip!: Trip;
+  // null = this DO has never been initialized (a fresh name that /internal/init
+  // hasn't reached yet, or one wiped by /internal/destroy).
+  private trip: Trip | null = null;
   private rev = 0;
   private sql: SqlStorage;
 
@@ -107,36 +110,22 @@ export class AX26DurableObject extends DurableObject<Env> {
     this.sql = ctx.storage.sql;
     // blockConcurrencyWhile：构造期把存储里的状态读进内存，期间不接请求
     ctx.blockConcurrencyWhile(async () => {
-      // 单行 JSON 表：dashboard 的 Query 面板能 `SELECT * FROM state` 看到可读数据
-      this.sql.exec(
-        "CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK (id = 1), rev INTEGER NOT NULL, trip TEXT NOT NULL)",
-      );
-      // Audit trail: one row per applied write. Separate table from `state`, so a
-      // `reset` op wipes the trip but never the history. Append-only apart from
-      // the retention prune in recordAudit, which caps the table at AUDIT_RETENTION
-      // rows so storage stays bounded.
-      this.sql.exec(
-        "CREATE TABLE IF NOT EXISTS audit (seq INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, rev INTEGER NOT NULL, op TEXT NOT NULL, target TEXT, actorId INTEGER, actorLogin TEXT NOT NULL, actorEmail TEXT, ip TEXT, detail TEXT NOT NULL)",
-      );
-      // Manual point-in-time snapshots. Unlike `audit`, backups are not pruned:
-      // they are explicit restore points, so an admin should delete them only
-      // deliberately.
-      this.sql.exec(
-        "CREATE TABLE IF NOT EXISTS backups (id TEXT PRIMARY KEY, at TEXT NOT NULL, rev INTEGER NOT NULL, label TEXT, actorLogin TEXT NOT NULL, trip TEXT NOT NULL)",
-      );
-      this.sql.exec("CREATE INDEX IF NOT EXISTS backups_at_idx ON backups (at DESC)");
+      this.ensureTables();
       const row = this.sql
         .exec<{ rev: number; trip: string }>("SELECT rev, trip FROM state WHERE id = 1")
         .toArray()[0];
       if (row) {
         this.rev = row.rev;
         this.trip = JSON.parse(row.trip) as Trip;
-      } else {
-        // 迁移：把旧的 KV-API 状态搬进 SQL 表；从没写过就用 tripData 种子
+      } else if (this.ctx.id.name === LEGACY_TRIP_ID) {
+        // Only the legacy DO self-seeds (its data predates /internal/init):
+        // migrate the old KV-API state into the SQL table, or fall back to the
+        // curated tripData seed. Every other name waits for an explicit init.
         this.trip = (await ctx.storage.get<Trip>("trip")) ?? structuredClone(tripData);
         this.rev = (await ctx.storage.get<number>("rev")) ?? 0;
         this.persist();
       }
+      if (!this.trip) return;
       // Backfill state persisted before suggestions/expenses existed so reads never see undefined.
       const before = JSON.stringify(this.trip);
       this.trip.suggestions ??= [];
@@ -147,6 +136,30 @@ export class AX26DurableObject extends DurableObject<Env> {
     });
   }
 
+  // Called from the constructor and again from init(): destroy() drops every
+  // SQL table via storage.deleteAll, so a re-created trip on the same name must
+  // rebuild them before its first persist.
+  private ensureTables(): void {
+    // 单行 JSON 表：dashboard 的 Query 面板能 `SELECT * FROM state` 看到可读数据
+    this.sql.exec(
+      "CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK (id = 1), rev INTEGER NOT NULL, trip TEXT NOT NULL)",
+    );
+    // Audit trail: one row per applied write. Separate table from `state`, so a
+    // `reset` op wipes the trip but never the history. Append-only apart from
+    // the retention prune in recordAudit, which caps the table at AUDIT_RETENTION
+    // rows so storage stays bounded.
+    this.sql.exec(
+      "CREATE TABLE IF NOT EXISTS audit (seq INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, rev INTEGER NOT NULL, op TEXT NOT NULL, target TEXT, actorId INTEGER, actorLogin TEXT NOT NULL, actorEmail TEXT, ip TEXT, detail TEXT NOT NULL)",
+    );
+    // Manual point-in-time snapshots. Unlike `audit`, backups are not pruned:
+    // they are explicit restore points, so an admin should delete them only
+    // deliberately.
+    this.sql.exec(
+      "CREATE TABLE IF NOT EXISTS backups (id TEXT PRIMARY KEY, at TEXT NOT NULL, rev INTEGER NOT NULL, label TEXT, actorLogin TEXT NOT NULL, trip TEXT NOT NULL)",
+    );
+    this.sql.exec("CREATE INDEX IF NOT EXISTS backups_at_idx ON backups (at DESC)");
+  }
+
   private persist(): void {
     this.sql.exec(
       "INSERT INTO state (id, rev, trip) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET rev = excluded.rev, trip = excluded.trip",
@@ -155,8 +168,26 @@ export class AX26DurableObject extends DurableObject<Env> {
     );
   }
 
+  private static uninitialized(): Response {
+    return Response.json({ error: "uninitialized" }, { status: 404 });
+  }
+
   async fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
+
+    // Worker-internal control endpoints. Unreachable from outside: the worker
+    // only ever forwards (rewritten) /api/trip* paths; /internal/* requests are
+    // constructed by the worker itself (trip create/patch/roster/delete).
+    if (url.pathname.startsWith("/internal/")) {
+      if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+      if (url.pathname === "/internal/init") return this.init(req);
+      if (url.pathname === "/internal/members") return this.setMembers(req);
+      if (url.pathname === "/internal/meta") return this.setMeta(req);
+      if (url.pathname === "/internal/destroy") return this.destroy();
+      return new Response("Not Found", { status: 404 });
+    }
+
+    if (!this.trip) return AX26DurableObject.uninitialized();
 
     if (req.headers.get("Upgrade") === "websocket") {
       const [client, server] = Object.values(new WebSocketPair());
@@ -209,7 +240,9 @@ export class AX26DurableObject extends DurableObject<Env> {
         );
       }
       const at = new Date().toISOString();
-      this.trip = { ...body.trip, updatedAt: at };
+      // The roster is registry-owned (synced from D1), never writable through a
+      // whole-trip PUT — re-impose the current one over whatever the body says.
+      this.trip = { ...body.trip, members: this.trip.members, updatedAt: at };
       scrubPassUrls(this.trip);
       this.rev += 1;
       this.persist();
@@ -243,6 +276,109 @@ export class AX26DurableObject extends DurableObject<Env> {
     }
 
     return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
+  }
+
+  // Persist the empty skeleton for a freshly created trip. Idempotent: a retry
+  // for the same trip id answers the current snapshot; a different id is a
+  // hard conflict (two registry rows must never share a DO).
+  private async init(req: Request): Promise<Response> {
+    const body = (await req.json().catch(() => null)) as {
+      tripId?: unknown;
+      title?: unknown;
+      dates?: { start?: unknown; end?: unknown };
+      timezone?: unknown;
+    } | null;
+    if (!body || typeof body.tripId !== "string" || typeof body.title !== "string") {
+      return Response.json({ error: "bad_request" }, { status: 400 });
+    }
+    if (this.trip) {
+      if (this.trip.id === body.tripId) {
+        return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
+      }
+      return Response.json({ error: "already_initialized" }, { status: 409 });
+    }
+    this.ensureTables();
+    this.trip = emptyTrip({
+      id: body.tripId,
+      title: body.title,
+      dates: {
+        start: typeof body.dates?.start === "string" ? body.dates.start : "",
+        end: typeof body.dates?.end === "string" ? body.dates.end : "",
+      },
+      timezone: typeof body.timezone === "string" ? body.timezone : "America/Los_Angeles",
+    });
+    this.rev = 0;
+    this.persist();
+    this.recordAuditAction(req, "init", null, { tripId: body.tripId, title: body.title });
+    return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
+  }
+
+  // Replace the roster (synced from the D1 registry on every membership change).
+  private async setMembers(req: Request): Promise<Response> {
+    if (!this.trip) return AX26DurableObject.uninitialized();
+    const body = (await req.json().catch(() => null)) as { members?: TripMember[] } | null;
+    if (!body || !Array.isArray(body.members)) {
+      return Response.json({ error: "bad_request" }, { status: 400 });
+    }
+    const at = new Date().toISOString();
+    this.trip = { ...this.trip, members: body.members, updatedAt: at };
+    this.rev += 1;
+    this.persist();
+    this.recordAuditAction(req, "setMembers", null, { count: body.members.length }, at);
+    this.broadcast({ type: "update", rev: this.rev, trip: this.trip });
+    return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
+  }
+
+  // Mirror registry metadata edits (title/dates/timezone) into the document so
+  // the masthead everyone renders never drifts from what settings shows.
+  private async setMeta(req: Request): Promise<Response> {
+    if (!this.trip) return AX26DurableObject.uninitialized();
+    const body = (await req.json().catch(() => null)) as {
+      title?: unknown;
+      dates?: { start?: unknown; end?: unknown };
+      timezone?: unknown;
+    } | null;
+    if (!body) return Response.json({ error: "bad_request" }, { status: 400 });
+    const at = new Date().toISOString();
+    this.trip = {
+      ...this.trip,
+      title: typeof body.title === "string" && body.title ? body.title : this.trip.title,
+      dates: {
+        start:
+          typeof body.dates?.start === "string" ? body.dates.start : this.trip.dates.start,
+        end: typeof body.dates?.end === "string" ? body.dates.end : this.trip.dates.end,
+      },
+      base: {
+        ...this.trip.base,
+        timezone:
+          typeof body.timezone === "string" && body.timezone
+            ? body.timezone
+            : this.trip.base.timezone,
+      },
+      updatedAt: at,
+    };
+    this.rev += 1;
+    this.persist();
+    this.recordAuditAction(req, "setMeta", null, body, at);
+    this.broadcast({ type: "update", rev: this.rev, trip: this.trip });
+    return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
+  }
+
+  // Wipe everything (trip deleted from the registry). deleteAll on a
+  // SQLite-backed DO drops the SQL tables too; live sockets are closed so
+  // clients stop rendering a trip that no longer exists.
+  private async destroy(): Promise<Response> {
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.close(1001, "trip_deleted");
+      } catch {
+        // Already closed; nothing to do.
+      }
+    }
+    await this.ctx.storage.deleteAll();
+    this.trip = null;
+    this.rev = 0;
+    return Response.json({ ok: true });
   }
 
   private listBackups(): Response {

@@ -129,6 +129,19 @@ export type Expense = {
   items?: ExpenseItem[];
 };
 
+// One person on the trip roster. `id` is the member key every Expense.payer /
+// split share references ('you'/'spr' on the legacy trip, the better-auth user
+// id everywhere else). `userId` is absent for seeded members who have never
+// signed in. Maintained by the worker (synced from the D1 registry on every
+// membership change) — never edited through trip ops.
+export type TripMember = {
+  id: string;
+  userId?: string;
+  name: string;
+  avatarUrl?: string;
+  color?: string;
+};
+
 export type Trip = {
   id: string;
   title: string;
@@ -147,5 +160,7 @@ export type Trip = {
   documents: TripDocument[];
   suggestions: TripSuggestion[];
   expenses: Expense[];
+  // Absent on state persisted before multi-tenancy; the worker backfills it.
+  members?: TripMember[];
   updatedAt: string;
 };

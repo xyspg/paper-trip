@@ -3,6 +3,8 @@
   "name": "ax26",
   "main": "worker/index.ts",
   "compatibility_date": "2026-06-02",
+  // better-auth needs node:crypto (and friends) at runtime.
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api", "/api/*"],
