@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { Plus, Globe, Lock, Crown } from "lucide-react"
-import { signInWithGitHub, useAdminUser } from "../admin/auth"
+import { useAdminUser } from "../admin/auth"
 import { useTrips } from "../trip/hooks"
 import { BaseWebProvider } from "../admin/baseweb"
 import { CreateTripModal } from "../components/CreateTripModal"
+import { LandingPage } from "./LandingPage"
 import type { TripMeta } from "../trip/api"
 
 const fmtRange = (t: TripMeta): string => {
@@ -18,8 +19,9 @@ const fmtRange = (t: TripMeta): string => {
   return `${s ? short(s) : "?"} – ${e ? short(e) : "?"}`
 }
 
-// The trips workbench at `/`: your trips + create, or a landing card when
-// signed out. Same paper masthead grammar as the trip pages.
+// `/`: marketing landing when signed out, the trips workbench when signed in.
+// This route opts out of RootLayout's shell (the landing is full-bleed), so
+// the signed-in dashboard carries its own copy of the page frame.
 export function DashboardPage() {
   const { data: user, isLoading } = useAdminUser()
   const { data: trips, isLoading: tripsLoading } = useTrips(Boolean(user))
@@ -28,40 +30,31 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="grid place-items-center py-24">
+      <div className="grid place-items-center min-h-svh bg-paper">
         <span className="w-8 h-8 rounded-full border-4 border-[#ebe9e3] border-t-[#3f6f5b] animate-[spin_0.7s_linear_infinite]" />
       </div>
     )
   }
 
+  if (!user) return <LandingPage />
+
   return (
-    <div className="font-sans text-[#1c1b19]">
+    <main className="min-h-svh p-[clamp(14px,3vw,40px)] overflow-x-clip bg-paper text-ink font-sans leading-normal">
+      <div className="w-[min(1040px,100%)] mx-auto">
       <header className="pb-[30px] border-b border-[#ebe9e3]">
         <span className="inline-flex gap-[9px] items-center font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3f6f5b]">
           <span className="w-[7px] h-[7px] rounded-full bg-[#3f6f5b]" />
           行程工作台 · Trips
         </span>
         <h1 className="mt-3.5 font-sans font-extrabold tracking-[-0.03em] leading-[0.98] text-[clamp(38px,7vw,60px)]">
-          {user ? "我的行程" : "行程作战表"}
+          我的行程
         </h1>
         <p className="mt-4 max-w-[54ch] font-cjk text-[14.5px] leading-[1.8] text-[#76726a]">
-          {user
-            ? "创建行程、邀请同行人，时间线 / 预订 / 账目全套视图，每个行程一份。"
-            : "和朋友一起规划旅程：时间线、预订信息、分账账目，实时同步。用 GitHub 登录即可开始。"}
+          创建行程、邀请同行人，时间线 / 预订 / 账目全套视图，每个行程一份。
         </p>
-        {!user && (
-          <button
-            type="button"
-            className="mt-6 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[13.5px] cursor-pointer hover:bg-black"
-            onClick={() => signInWithGitHub("/")}
-          >
-            用 GitHub 登录
-          </button>
-        )}
       </header>
 
-      {user && (
-        <section className="mt-[26px]">
+      <section className="mt-[26px]">
           <div className="flex items-center gap-3 mb-4">
             <span className="font-grotesk text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9b988f]">
               {trips ? `${trips.length} 个行程` : "加载中"}
@@ -132,21 +125,19 @@ export function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
-      )}
+      </section>
 
-      {user && (
-        <BaseWebProvider>
-          <CreateTripModal
-            isOpen={createOpen}
-            onClose={() => setCreateOpen(false)}
-            onCreated={(trip) => {
-              setCreateOpen(false)
-              void navigate({ to: "/t/$tripId/admin/itinerary", params: { tripId: trip.id } })
-            }}
-          />
-        </BaseWebProvider>
-      )}
-    </div>
+      <BaseWebProvider>
+        <CreateTripModal
+          isOpen={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(trip) => {
+            setCreateOpen(false)
+            void navigate({ to: "/t/$tripId/admin/itinerary", params: { tripId: trip.id } })
+          }}
+        />
+      </BaseWebProvider>
+      </div>
+    </main>
   )
 }
