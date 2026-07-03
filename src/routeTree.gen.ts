@@ -15,6 +15,7 @@ import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TTripIdRouteImport } from './routes/t.$tripId'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as TTripIdIndexRouteImport } from './routes/t.$tripId.index'
 import { Route as TTripIdTimelineRouteImport } from './routes/t.$tripId.timeline'
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
 const TTripIdRoute = TTripIdRouteImport.update({
   id: '/t/$tripId',
   path: '/t/$tripId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSplatRoute = AdminSplatRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
   '/admin/$': typeof AdminSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/t/$tripId': typeof TTripIdRouteWithChildren
   '/t/$tripId/admin': typeof TTripIdAdminRouteWithChildren
   '/t/$tripId/bookings': typeof TTripIdBookingsRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
   '/admin/$': typeof AdminSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/t/$tripId/bookings': typeof TTripIdBookingsRoute
   '/t/$tripId/ledger': typeof TTripIdLedgerRoute
   '/t/$tripId/timeline': typeof TTripIdTimelineRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
   '/admin/$': typeof AdminSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/t/$tripId': typeof TTripIdRouteWithChildren
   '/t/$tripId/admin': typeof TTripIdAdminRouteWithChildren
   '/t/$tripId/bookings': typeof TTripIdBookingsRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/timeline'
     | '/admin/$'
+    | '/invite/$token'
     | '/t/$tripId'
     | '/t/$tripId/admin'
     | '/t/$tripId/bookings'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/timeline'
     | '/admin/$'
+    | '/invite/$token'
     | '/t/$tripId/bookings'
     | '/t/$tripId/ledger'
     | '/t/$tripId/timeline'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/timeline'
     | '/admin/$'
+    | '/invite/$token'
     | '/t/$tripId'
     | '/t/$tripId/admin'
     | '/t/$tripId/bookings'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   BookingsRoute: typeof BookingsRoute
   LedgerRoute: typeof LedgerRoute
   TimelineRoute: typeof TimelineRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   TTripIdRoute: typeof TTripIdRouteWithChildren
 }
 
@@ -326,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/t/$tripId'
       fullPath: '/t/$tripId'
       preLoaderRoute: typeof TTripIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/$': {
@@ -499,6 +519,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookingsRoute: BookingsRoute,
   LedgerRoute: LedgerRoute,
   TimelineRoute: TimelineRoute,
+  InviteTokenRoute: InviteTokenRoute,
   TTripIdRoute: TTripIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport

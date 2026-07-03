@@ -119,6 +119,67 @@ export const removeMember = async (tripId: string, userId: string): Promise<void
   if (!res.ok) throw new Error(`DELETE member failed: ${res.status}`);
 };
 
+// ---- invites ----
+
+export type InviteInfo = {
+  id: string;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+};
+
+export type CreatedInvite = {
+  invite: InviteInfo;
+  // Present only in this response — the server stores just a hash.
+  acceptUrl: string;
+  emailSent: boolean;
+  emailError: string | null;
+};
+
+export const createInvite = async (tripId: string, email: string): Promise<CreatedInvite> => {
+  const res = await fetch(`${trips(tripId)}/invites`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(`POST invites failed: ${res.status}`);
+  return (await res.json()) as CreatedInvite;
+};
+
+export const fetchInvites = async (tripId: string): Promise<InviteInfo[]> => {
+  const res = await fetch(`${trips(tripId)}/invites`);
+  if (!res.ok) throw new Error(`GET invites failed: ${res.status}`);
+  const { invites } = (await res.json()) as { invites: InviteInfo[] };
+  return invites;
+};
+
+export const revokeInvite = async (tripId: string, id: string): Promise<void> => {
+  const res = await fetch(`${trips(tripId)}/invites/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`DELETE invite failed: ${res.status}`);
+};
+
+export type InvitePreview = {
+  status: "valid" | "used" | "expired" | "invalid";
+  tripTitle?: string;
+  inviterName?: string;
+};
+
+export const fetchInvitePreview = async (token: string): Promise<InvitePreview> => {
+  const res = await fetch(`/api/invites/${encodeURIComponent(token)}`);
+  if (!res.ok) throw new Error(`GET invite preview failed: ${res.status}`);
+  return (await res.json()) as InvitePreview;
+};
+
+export const acceptInvite = async (token: string): Promise<{ tripId: string }> => {
+  const res = await fetch(`/api/invites/${encodeURIComponent(token)}/accept`, { method: "POST" });
+  const data = (await res.json().catch(() => ({}))) as { tripId?: string; error?: string };
+  if (!res.ok) throw new Error(data.error ?? `accept failed: ${res.status}`);
+  return { tripId: data.tripId ?? "" };
+};
+
 export const fetchTrip = async (tripId: string): Promise<TripSnapshot> => {
   const res = await fetch(`${trips(tripId)}/trip`);
   if (!res.ok) throw new TripAccessError(res.status);

@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMountEffect } from "../useMountEffect";
 import {
   createBackup,
+  createInvite,
   createTrip,
   deleteBackup,
   deleteTrip,
   fetchAudit,
   fetchBackups,
   fetchCreditCards,
+  fetchInvites,
   fetchMembers,
   fetchTrip,
   fetchTripMeta,
@@ -15,6 +17,7 @@ import {
   patchTrip,
   removeMember,
   restoreBackup,
+  revokeInvite,
   sendOp,
   tripWsUrl,
   type NewTripInput,
@@ -96,6 +99,33 @@ export const useRemoveMember = (tripId: string) => {
   return useMutation({
     mutationFn: (userId: string) => removeMember(tripId, userId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey(tripId) }),
+  });
+};
+
+export const invitesKey = (tripId: string) => ["invites", tripId] as const;
+
+export const useInvites = (tripId: string, enabled = true) =>
+  useQuery({
+    queryKey: invitesKey(tripId),
+    queryFn: () => fetchInvites(tripId),
+    enabled,
+    retry: false,
+    staleTime: 30_000,
+  });
+
+export const useCreateInvite = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => createInvite(tripId, email),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: invitesKey(tripId) }),
+  });
+};
+
+export const useRevokeInvite = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => revokeInvite(tripId, id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: invitesKey(tripId) }),
   });
 };
 

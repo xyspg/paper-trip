@@ -10,19 +10,28 @@ import {
   addMembership,
   claimMemberships,
   countMembers,
+  createInviteRow,
   createTrip,
+  deleteInvite,
   deleteTrip,
+  getInviteByHash,
   getMembership,
   getTrip,
+  hashInviteToken,
   listClaims,
+  listInvites,
   listMembers,
   listTripsForUser,
+  markInviteAccepted,
   memberUser,
   removeMembership,
   sessionMember,
   syncRoster,
   updateTrip,
 } from "./registry";
+import type { InviteRow } from "./registry";
+import { sendInviteEmail } from "./email";
+import { bytesToB64url } from "./agentToken";
 import type { Member, TripRow, TripVisibility } from "./registry";
 import { sessionUser } from "./auth";
 import receipt from "./receipt";
@@ -327,6 +336,134 @@ app.delete("/api/trips/:tripId/members/:userId", async (c) => {
   await removeMembership(c.env.DB, tripId, targetId);
   await syncRoster(c.env, tripId);
   return c.json({ ok: true, members: await countMembers(c.env.DB, tripId) });
+});
+
+// ---- invites (owner sends; the emailed token is a bearer credential) ----
+
+// The origin invite links point at. APP_ORIGIN wins in production; behind
+// Portless/Vite the worker sees an internal host, so fall back to the
+// forwarded headers the proxy sets.
+function publicOrigin(c: Context<{ Bindings: Env }>): string {
+  if (c.env.APP_ORIGIN) return c.env.APP_ORIGIN;
+  const host = c.req.header("x-forwarded-host") ?? c.req.header("host");
+  const proto = c.req.header("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : new URL(c.req.url).origin;
+}
+
+const inviteInfo = (row: InviteRow) => ({
+  id: row.id,
+  email: row.email,
+  createdAt: row.created_at,
+  expiresAt: row.expires_at,
+  expired: row.expires_at < new Date().toISOString(),
+});
+
+app.post("/api/trips/:tripId/invites", async (c) => {
+  const tripId = c.req.param("tripId");
+  const trip = await getTrip(c.env.DB, tripId);
+  if (!trip) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+
+  const body = (await c.req.json().catch(() => null)) as { email?: unknown } | null;
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (!email || email.length > 254 || !email.includes("@")) {
+    return c.json({ error: "bad_email" }, 400);
+  }
+
+  const token = bytesToB64url(crypto.getRandomValues(new Uint8Array(32)));
+  const id = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 7 * 86400_000).toISOString();
+  await createInviteRow(c.env.DB, {
+    id,
+    tripId,
+    email,
+    tokenHash: await hashInviteToken(token),
+    invitedBy: member.id,
+    expiresAt,
+  });
+
+  // The raw token exists only in this response (and the email); D1 keeps the
+  // hash. If mail fails the owner still gets a copyable accept link.
+  const acceptUrl = `${publicOrigin(c)}/invite/${token}`;
+  const mail = await sendInviteEmail(c.env, {
+    to: email,
+    tripTitle: trip.title,
+    inviterName: member.name?.trim() || member.login,
+    acceptUrl,
+  });
+
+  return c.json(
+    {
+      invite: { id, email, createdAt: new Date().toISOString(), expiresAt, expired: false },
+      acceptUrl,
+      emailSent: mail.sent,
+      emailError: mail.error ?? null,
+    },
+    201,
+  );
+});
+
+app.get("/api/trips/:tripId/invites", async (c) => {
+  const tripId = c.req.param("tripId");
+  if (!(await getTrip(c.env.DB, tripId))) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+  const invites = await listInvites(c.env.DB, tripId);
+  return c.json({ invites: invites.map(inviteInfo) });
+});
+
+app.delete("/api/trips/:tripId/invites/:id", async (c) => {
+  const tripId = c.req.param("tripId");
+  if (!(await getTrip(c.env.DB, tripId))) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
+  const removed = await deleteInvite(c.env.DB, tripId, c.req.param("id"));
+  if (!removed) return c.json({ error: "not_found" }, 404);
+  return c.json({ ok: true });
+});
+
+// Preview for the /invite/:token landing page. The token itself is the
+// capability, so this is public; it exposes only the trip title + inviter.
+app.get("/api/invites/:token", async (c) => {
+  const row = await getInviteByHash(c.env.DB, await hashInviteToken(c.req.param("token")));
+  if (!row) return c.json({ status: "invalid" });
+  const status = row.accepted_by
+    ? "used"
+    : row.expires_at < new Date().toISOString()
+      ? "expired"
+      : "valid";
+  return c.json({
+    status,
+    tripTitle: row.trip_title,
+    inviterName: row.inviter_name ?? "行程创建者",
+  });
+});
+
+app.post("/api/invites/:token/accept", async (c) => {
+  const user = await sessionUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const row = await getInviteByHash(c.env.DB, await hashInviteToken(c.req.param("token")));
+  if (!row) return c.json({ error: "invalid" }, 404);
+
+  // Already on the roster (e.g. double-click, or invited twice): idempotent ok.
+  if (await getMembership(c.env.DB, row.trip_id, user.id)) {
+    return c.json({ ok: true, tripId: row.trip_id });
+  }
+  if (row.accepted_by) return c.json({ error: "used" }, 409);
+  if (row.expires_at < new Date().toISOString()) return c.json({ error: "expired" }, 410);
+
+  const count = await countMembers(c.env.DB, row.trip_id);
+  await addMembership(c.env.DB, {
+    tripId: row.trip_id,
+    userId: user.id,
+    role: "member",
+    memberKey: user.id,
+    color: MEMBER_COLORS[count % MEMBER_COLORS.length],
+  });
+  await markInviteAccepted(c.env.DB, row.id, user.id);
+  await syncRoster(c.env, row.trip_id);
+  return c.json({ ok: true, tripId: row.trip_id });
 });
 
 // ---- trip content: forwarded to the trip's Durable Object ----

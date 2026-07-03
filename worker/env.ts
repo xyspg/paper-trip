@@ -10,6 +10,9 @@ export interface Env {
   BETTER_AUTH_URL?: string;
   // Public origin for links we build ourselves (invite emails).
   APP_ORIGIN?: string;
+  // Resend: invite mail. EMAIL_FROM must be on a domain verified with Resend.
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
   // GitHub OAuth app whose callback is /api/auth/callback/github (better-auth).
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;

@@ -231,6 +231,93 @@ export async function syncRoster(env: Env, tripId: string): Promise<void> {
   );
 }
 
+// ---- invites (bearer-link semantics: the emailed token IS the credential;
+// the email address is delivery only, never authorization) ----
+
+export type InviteRow = {
+  id: string;
+  trip_id: string;
+  email: string;
+  invited_by: string;
+  created_at: string;
+  expires_at: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
+};
+
+// Only the SHA-256 of the token is stored; a D1 leak can't mint invitations.
+export async function hashInviteToken(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const bytes = new Uint8Array(digest);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+export async function createInviteRow(
+  db: D1Database,
+  invite: {
+    id: string;
+    tripId: string;
+    email: string;
+    tokenHash: string;
+    invitedBy: string;
+    expiresAt: string;
+  },
+): Promise<void> {
+  await db
+    .prepare(
+      "INSERT INTO trip_invites (id, trip_id, email, token_hash, invited_by, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+    )
+    .bind(invite.id, invite.tripId, invite.email, invite.tokenHash, invite.invitedBy, invite.expiresAt)
+    .run();
+}
+
+// Open (not yet accepted) invites, newest first. Expired ones stay listed so
+// the owner can see and revoke them.
+export async function listInvites(db: D1Database, tripId: string): Promise<InviteRow[]> {
+  const rows = await db
+    .prepare(
+      "SELECT id, trip_id, email, invited_by, created_at, expires_at, accepted_by, accepted_at FROM trip_invites WHERE trip_id = ?1 AND accepted_by IS NULL ORDER BY created_at DESC",
+    )
+    .bind(tripId)
+    .all<InviteRow>();
+  return rows.results;
+}
+
+export function getInviteByHash(
+  db: D1Database,
+  tokenHash: string,
+): Promise<(InviteRow & { trip_title: string; inviter_name: string | null }) | null> {
+  return db
+    .prepare(
+      'SELECT i.id, i.trip_id, i.email, i.invited_by, i.created_at, i.expires_at, i.accepted_by, i.accepted_at, t.title AS trip_title, COALESCE(u.name, u.login) AS inviter_name FROM trip_invites i JOIN trips t ON t.id = i.trip_id LEFT JOIN "user" u ON u.id = i.invited_by WHERE i.token_hash = ?1',
+    )
+    .bind(tokenHash)
+    .first<InviteRow & { trip_title: string; inviter_name: string | null }>();
+}
+
+export async function deleteInvite(db: D1Database, tripId: string, id: string): Promise<boolean> {
+  const res = await db
+    .prepare("DELETE FROM trip_invites WHERE trip_id = ?1 AND id = ?2")
+    .bind(tripId, id)
+    .run();
+  return (res.meta.changes ?? 0) > 0;
+}
+
+export async function markInviteAccepted(
+  db: D1Database,
+  id: string,
+  userId: string,
+): Promise<void> {
+  await db
+    .prepare(
+      "UPDATE trip_invites SET accepted_by = ?2, accepted_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?1",
+    )
+    .bind(id, userId)
+    .run();
+}
+
 // Promote member_claims rows (memberships provisioned by OAuth account id, for
 // people who had never signed in) into real trip_members rows. Idempotent;
 // returns the trip ids that gained a membership so callers can re-read and
