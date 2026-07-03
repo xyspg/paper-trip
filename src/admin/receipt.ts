@@ -64,9 +64,9 @@ async function prepareImage(file: File): Promise<{ data: string; mimeType: strin
   }
 }
 
-export async function parseReceipt(file: File): Promise<ParsedReceipt> {
+export async function parseReceipt(tripId: string, file: File): Promise<ParsedReceipt> {
   const { data, mimeType } = await prepareImage(file)
-  const res = await fetch("/api/receipt/parse", {
+  const res = await fetch(`/api/trips/${encodeURIComponent(tripId)}/receipt/parse`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ image: data, mimeType }),

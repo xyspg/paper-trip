@@ -47,7 +47,7 @@ const isAA = (who: string[], travelerIds: string[]) =>
 type Phase = "pick" | "loading" | "review" | "error"
 
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
-  const { travelers } = useAdmin()
+  const { tripId, travelers } = useAdmin()
   const travelerIds = travelers.map((m) => m.id)
   const fileRef = useRef<HTMLInputElement>(null)
   const [phase, setPhase] = useState<Phase>("pick")
@@ -72,7 +72,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     setPhase("loading")
     setError("")
     try {
-      const r = await parseReceipt(file)
+      const r = await parseReceipt(tripId, file)
       // Clamp to >= 0: this row is tax/tip/service fee, never negative. A model
       // misread where the printed total comes in under the line-item sum would
       // otherwise yield a negative "tax" and an amount below the dishes shown.

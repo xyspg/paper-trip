@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 
-import { LEGACY_TRIP_ID, memberUser } from "./registry";
+import { memberUser } from "./registry";
 import type { Env } from "./env";
 
-// Receipt OCR/parse for the admin split view. The browser uploads a downscaled
-// JPEG; we hand it to Gemini with a strict JSON schema and return the structured
-// line items. Membership-gated so the key and quota stay protected.
+// Receipt OCR/parse for the admin split view, mounted per trip
+// (/api/trips/:tripId/receipt). The browser uploads a downscaled JPEG; we hand
+// it to Gemini with a strict JSON schema and return the structured line items.
+// Membership-gated so the key and quota stay protected.
 
 const MODEL = "gemini-3.1-flash-lite";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -60,7 +61,9 @@ type ParsedReceipt = {
 const receipt = new Hono<{ Bindings: Env }>();
 
 receipt.post("/parse", async (c) => {
-  const user = await memberUser(c, LEGACY_TRIP_ID);
+  // Param typed loose here: the sub-app is mounted at /api/trips/:tripId/receipt.
+  const tripId = c.req.param("tripId") ?? "";
+  const user = tripId ? await memberUser(c, tripId) : null;
   if (!user) return c.json({ error: "forbidden" }, 403);
 
   const key = c.env.GEMINI_API_KEY;

@@ -108,13 +108,17 @@ app.get("/api", (c) => c.text("ok"));
 // sign-out, …). Sessions live in D1 + an httpOnly cookie it manages.
 app.on(["GET", "POST"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
-app.route("/api/receipt", receipt);
+app.route("/api/trips/:tripId/receipt", receipt);
 
-// Mint an expiring bearer token for a local agent (the /admin/agent flow).
-// Membership-gated; signed with AGENT_TOKEN_SECRET (never the session secret).
-app.post("/api/agent/token", async (c) => {
-  const user = await memberUser(c, LEGACY_TRIP_ID);
-  if (!user) return c.json({ error: "forbidden" }, 403);
+// Mint an expiring bearer token for a local agent (the …/admin/agent flow),
+// scoped to one trip. Owner-only; signed with AGENT_TOKEN_SECRET (never the
+// session secret). Verification re-checks membership live, so removing the
+// minter from the trip revokes every token they issued for it.
+app.post("/api/trips/:tripId/agent-token", async (c) => {
+  const tripId = c.req.param("tripId");
+  if (!(await getTrip(c.env.DB, tripId))) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
   const secret = c.env.AGENT_TOKEN_SECRET;
   if (!secret) return c.json({ error: "config" }, 500);
   const body = await c.req
@@ -123,7 +127,7 @@ app.post("/api/agent/token", async (c) => {
   const ttlDays = Math.min(365, Math.max(1, Math.round(body.ttlDays ?? 90)));
   const exp = Math.floor(Date.now() / 1000) + ttlDays * 86400;
   const token = await signAgentToken(
-    { kind: "agent", sub: user.id, login: user.login, tripId: LEGACY_TRIP_ID, exp },
+    { kind: "agent", sub: member.id, login: member.login, tripId, exp },
     secret,
   );
   return c.json({ token, exp });
@@ -479,13 +483,6 @@ app.all("/api/trips/:tripId/backups/*", (c) => {
   const suffix = new URL(c.req.url).pathname.split("/backups/")[1] ?? "";
   return handleTripTraffic(c, c.req.param("tripId"), `/api/trip/backups/${suffix}`);
 });
-
-// Legacy alias: the pre-multi-tenant client talked to /api/trip* with no trip
-// id. Kept until the frontend is fully re-routed (Phase 3), then deleted.
-app.all("/api/trip", (c) => handleTripTraffic(c, LEGACY_TRIP_ID, "/api/trip"));
-app.all("/api/trip/*", (c) =>
-  handleTripTraffic(c, LEGACY_TRIP_ID, new URL(c.req.url).pathname),
-);
 
 // Reads and WebSocket upgrades are open on public trips and member/agent-only
 // on private ones; writes are gated by credential: member session (everything;

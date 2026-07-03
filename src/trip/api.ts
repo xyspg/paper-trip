@@ -259,14 +259,18 @@ export const restoreBackup = async (
 
 export type AgentTokenGrant = { token: string; exp: number };
 
-// Mint an expiring bearer token for a local agent (member session required).
-export const mintAgentToken = async (ttlDays?: number): Promise<AgentTokenGrant> => {
-  const res = await fetch("/api/agent/token", {
+// Mint an expiring bearer token for a local agent, scoped to one trip (owner
+// session required).
+export const mintAgentToken = async (
+  tripId: string,
+  ttlDays?: number,
+): Promise<AgentTokenGrant> => {
+  const res = await fetch(`${trips(tripId)}/agent-token`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ ttlDays }),
   });
-  if (!res.ok) throw new Error(`POST /api/agent/token failed: ${res.status}`);
+  if (!res.ok) throw new Error(`POST agent-token failed: ${res.status}`);
   return (await res.json()) as AgentTokenGrant;
 };
 
