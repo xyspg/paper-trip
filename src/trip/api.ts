@@ -49,8 +49,9 @@ export const fetchTrips = async (): Promise<TripMeta[]> => {
 
 export type NewTripInput = {
   title: string;
-  startDate?: string;
-  endDate?: string;
+  // For PATCH, an explicit null clears the stored date; undefined keeps it.
+  startDate?: string | null;
+  endDate?: string | null;
   timezone?: string;
   visibility?: TripVisibility;
 };

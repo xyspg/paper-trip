@@ -53,8 +53,14 @@ function inviteHtml({
   inviterName: string;
   acceptUrl: string;
 }): string {
+  // Quote-escaping included: acceptUrl lands inside an href attribute, and its
+  // origin can derive from forwarded headers when APP_ORIGIN is unset.
   const esc = (s: string) =>
-    s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    s
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
   return `<!doctype html>
 <html>
   <body style="margin:0;padding:32px 16px;background:#fafaf8;font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans SC',sans-serif;color:#1c1b19;">
@@ -70,7 +76,7 @@ function inviteHtml({
           <b style="color:#1c1b19;">「${esc(tripTitle)}」</b>：
           共享时间线、预订信息和分账账目，实时同步。
         </p>
-        <a href="${acceptUrl}"
+        <a href="${esc(acceptUrl)}"
            style="display:block;margin:22px 0 0;padding:13px 0;border-radius:10px;background:#1c1b19;color:#fafaf8;text-align:center;text-decoration:none;font-weight:600;font-size:14px;">
           用 GitHub 登录并加入
         </a>

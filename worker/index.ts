@@ -7,6 +7,7 @@ import type { AgentClaims } from "./agentToken";
 import {
   LEGACY_TRIP_ID,
   MEMBER_COLORS,
+  actorOf,
   addMembership,
   claimMemberships,
   countMembers,
@@ -18,6 +19,7 @@ import {
   getMembership,
   getTrip,
   hashInviteToken,
+  internalHeaders,
   listClaims,
   listInvites,
   listMembers,
@@ -31,7 +33,7 @@ import {
 } from "./registry";
 import type { InviteRow } from "./registry";
 import { sendInviteEmail } from "./email";
-import { bytesToB64url } from "./agentToken";
+import { bytesToB64url } from "./b64";
 import type { Member, TripRow, TripVisibility } from "./registry";
 import { sessionUser } from "./auth";
 import receipt from "./receipt";
@@ -157,7 +159,7 @@ app.get("/api/trips", async (c) => {
   // Promote any pending seed/invite claims first so a first-ever sign-in
   // already sees the trips waiting for them.
   const claimed = await claimMemberships(c.env.DB, user.id);
-  await Promise.all(claimed.map((id) => syncRoster(c.env, id)));
+  await Promise.all(claimed.map((id) => syncRoster(c.env, id, actorOf(user))));
   const trips = await listTripsForUser(c.env.DB, user.id);
   return c.json({ trips: trips.map((t) => ({ ...tripMeta(t), role: t.role })) });
 });
@@ -206,7 +208,7 @@ app.post("/api/trips", async (c) => {
   const init = await c.env.AX26.getByName(id).fetch(
     new Request("https://do/internal/init", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: internalHeaders(actorOf(user)),
       body: JSON.stringify({
         tripId: id,
         title,
@@ -220,7 +222,7 @@ app.post("/api/trips", async (c) => {
     await deleteTrip(c.env.DB, id);
     return c.json({ error: "init_failed" }, 500);
   }
-  await syncRoster(c.env, id);
+  await syncRoster(c.env, id, actorOf(user));
   const trip = await getTrip(c.env.DB, id);
   return c.json({ trip: trip ? { ...tripMeta(trip), role: "owner" as const } : null }, 201);
 });
@@ -252,27 +254,39 @@ app.patch("/api/trips/:tripId", async (c) => {
   } | null;
   if (!body) return c.json({ error: "bad_request" }, 400);
 
+  // Dates: absent key = keep, explicit null = clear, valid "YYYY-MM-DD" = set.
+  const patchDate = (v: unknown): string | null | undefined =>
+    v === null ? null : (asDate(v) ?? undefined);
   const patch = {
     title:
       typeof body.title === "string" && body.title.trim()
         ? body.title.trim().slice(0, 120)
         : undefined,
     visibility: asVisibility(body.visibility) ?? undefined,
-    startDate: asDate(body.startDate) ?? undefined,
-    endDate: asDate(body.endDate) ?? undefined,
+    startDate: patchDate(body.startDate),
+    endDate: patchDate(body.endDate),
     timezone: typeof body.timezone === "string" && body.timezone ? body.timezone : undefined,
   };
   await updateTrip(c.env.DB, tripId, patch);
 
-  // Mirror document-visible metadata into the DO so mastheads update live.
-  if (patch.title || patch.startDate || patch.endDate || patch.timezone) {
+  // Mirror document-visible metadata into the DO so mastheads update live
+  // (cleared dates become "" in the document).
+  if (
+    patch.title !== undefined ||
+    patch.startDate !== undefined ||
+    patch.endDate !== undefined ||
+    patch.timezone !== undefined
+  ) {
     await c.env.AX26.getByName(tripId).fetch(
       new Request("https://do/internal/meta", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: internalHeaders(actorOf(member)),
         body: JSON.stringify({
           title: patch.title,
-          dates: { start: patch.startDate, end: patch.endDate },
+          dates: {
+            start: patch.startDate === null ? "" : patch.startDate,
+            end: patch.endDate === null ? "" : patch.endDate,
+          },
           timezone: patch.timezone,
         }),
       }),
@@ -338,7 +352,7 @@ app.delete("/api/trips/:tripId/members/:userId", async (c) => {
   if (!target) return c.json({ error: "not_found" }, 404);
   if (target.role === "owner") return c.json({ error: "cannot_remove_owner" }, 403);
   await removeMembership(c.env.DB, tripId, targetId);
-  await syncRoster(c.env, tripId);
+  await syncRoster(c.env, tripId, actorOf(member));
   return c.json({ ok: true, members: await countMembers(c.env.DB, tripId) });
 });
 
@@ -466,7 +480,7 @@ app.post("/api/invites/:token/accept", async (c) => {
     color: MEMBER_COLORS[count % MEMBER_COLORS.length],
   });
   await markInviteAccepted(c.env.DB, row.id, user.id);
-  await syncRoster(c.env, row.trip_id);
+  await syncRoster(c.env, row.trip_id, actorOf(user));
   return c.json({ ok: true, tripId: row.trip_id });
 });
 
@@ -494,11 +508,13 @@ async function handleTripTraffic(
   tripId: string,
   doPath: string,
 ): Promise<Response> {
-  const trip = await getTrip(c.env.DB, tripId);
-  if (!trip) return c.json({ error: "not_found" }, 404);
-
+  // Trip row and session/membership are independent lookups; overlap them.
   const req = c.req.raw;
-  const { user, member } = await sessionMember(c, tripId);
+  const [trip, { user, member }] = await Promise.all([
+    getTrip(c.env.DB, tripId),
+    sessionMember(c, tripId),
+  ]);
+  if (!trip) return c.json({ error: "not_found" }, 404);
   const agent = member ? null : await agentUser(c, tripId);
 
   // The audit trail is member-only to read; never expose it to visitors or agents.
@@ -575,16 +591,21 @@ function forward(
   const req = c.req.raw;
   const url = new URL(req.url);
   url.pathname = doPath;
-  let out = new Request(url, req);
-  if (actor !== undefined) {
-    const headers = new Headers(req.headers);
+  const headers = new Headers(req.headers);
+  if (actor === undefined) {
+    // Pass-through (reads, websocket upgrades): nothing down this path writes
+    // audit rows today, but never let a client-supplied x-actor-* survive.
+    headers.delete("x-actor-id");
+    headers.delete("x-actor-login");
+    headers.delete("x-actor-email");
+    headers.delete("x-actor-ip");
+  } else {
     headers.set("x-actor-id", actor?.id ?? "");
     headers.set("x-actor-login", actor?.login ?? "public");
     headers.set("x-actor-email", actor?.email ?? "");
     headers.set("x-actor-ip", c.req.header("cf-connecting-ip") ?? "");
-    out = new Request(out, { headers });
   }
-  return c.env.AX26.getByName(tripId).fetch(out);
+  return c.env.AX26.getByName(tripId).fetch(new Request(new Request(url, req), { headers }));
 }
 
 export default app;

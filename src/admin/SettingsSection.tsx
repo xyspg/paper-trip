@@ -46,8 +46,9 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
     try {
       await patchTrip.mutateAsync({
         title: title.trim(),
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        // Empty input = clear the stored date (null); undefined would keep it.
+        startDate: startDate || null,
+        endDate: endDate || null,
         timezone: timezone.trim() || undefined,
       })
       toast("已保存行程设置")

@@ -34,8 +34,19 @@ const auditKey = (tripId: string) => ["audit", tripId] as const;
 export const tripsKey = ["trips"] as const;
 export const tripMetaKey = (tripId: string) => ["trip-meta", tripId] as const;
 
-export const useTrip = (tripId: string) =>
-  useQuery({ queryKey: tripKey(tripId), queryFn: () => fetchTrip(tripId) });
+export const useTrip = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: tripKey(tripId),
+    // Same rev guard as the websocket/op paths: an initial GET that resolves
+    // after a newer WS update must not roll the cache backwards.
+    queryFn: async () => {
+      const fresh = await fetchTrip(tripId);
+      const cached = queryClient.getQueryData<TripSnapshot>(tripKey(tripId));
+      return cached && cached.rev > fresh.rev ? cached : fresh;
+    },
+  });
+};
 
 // Registry metadata (title/visibility/dates/my role). retry: false — a 401/403
 // is an access verdict, not a transient failure.
@@ -242,16 +253,8 @@ export const useTripLiveSync = (tripId: string) => {
 
       const current = queryClient.getQueryData<TripSnapshot>(tripKey(tripId));
 
-      if (!current) {
-        // First data for this trip (e.g. the WS snapshot beat the HTTP fetch).
-        queryClient.setQueryData<TripSnapshot>(tripKey(tripId), {
-          rev: message.rev,
-          trip: message.trip,
-        });
-        return;
-      }
-
-      if (message.rev > current.rev) {
+      // Absent cache (WS snapshot beat the HTTP fetch) or a newer rev: adopt it.
+      if (!current || message.rev > current.rev) {
         queryClient.setQueryData<TripSnapshot>(tripKey(tripId), {
           rev: message.rev,
           trip: message.trip,

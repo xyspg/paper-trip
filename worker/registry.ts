@@ -2,6 +2,7 @@ import type { Context } from "hono";
 
 import { sessionUser } from "./auth";
 import type { SessionUser } from "./auth";
+import { bytesToB64url } from "./b64";
 import type { Env } from "./env";
 import type { TripMember } from "../src/trip/types";
 
@@ -52,8 +53,9 @@ export type ClaimRow = {
 
 export type Member = SessionUser & { role: TripRole; memberKey: string };
 
-// Roster swatches handed out round-robin as members join a trip.
-export const MEMBER_COLORS = ["#3f6f5b", "#5b7a99", "#b08648", "#7a5c84", "#c2553f"];
+// Roster swatches handed out round-robin as members join a trip (shared with
+// the client fallback so both sides always agree).
+export { MEMBER_COLORS } from "../src/trip/roster";
 
 export function getTrip(db: D1Database, id: string): Promise<TripRow | null> {
   return db
@@ -105,6 +107,8 @@ export async function createTrip(
     .run();
 }
 
+// undefined = keep the stored value; null (dates only) = clear it. Built as a
+// dynamic SET list because COALESCE can't express "set to NULL".
 export async function updateTrip(
   db: D1Database,
   id: string,
@@ -116,18 +120,21 @@ export async function updateTrip(
     timezone?: string;
   },
 ): Promise<void> {
+  const sets: string[] = [];
+  const binds: (string | null)[] = [];
+  const add = (column: string, value: string | null) => {
+    sets.push(`${column} = ?${binds.length + 2}`);
+    binds.push(value);
+  };
+  if (patch.title !== undefined) add("title", patch.title);
+  if (patch.visibility !== undefined) add("visibility", patch.visibility);
+  if (patch.startDate !== undefined) add("start_date", patch.startDate);
+  if (patch.endDate !== undefined) add("end_date", patch.endDate);
+  if (patch.timezone !== undefined) add("timezone", patch.timezone);
+  if (sets.length === 0) return;
   await db
-    .prepare(
-      "UPDATE trips SET title = COALESCE(?2, title), visibility = COALESCE(?3, visibility), start_date = COALESCE(?4, start_date), end_date = COALESCE(?5, end_date), timezone = COALESCE(?6, timezone) WHERE id = ?1",
-    )
-    .bind(
-      id,
-      patch.title ?? null,
-      patch.visibility ?? null,
-      patch.startDate ?? null,
-      patch.endDate ?? null,
-      patch.timezone ?? null,
-    )
+    .prepare(`UPDATE trips SET ${sets.join(", ")} WHERE id = ?1`)
+    .bind(id, ...binds)
     .run();
 }
 
@@ -200,10 +207,33 @@ export async function countMembers(db: D1Database, tripId: string): Promise<numb
   return row?.n ?? 0;
 }
 
+// Who a worker-internal DO call acts for, so its audit rows carry a verified
+// identity instead of the "public" fallback.
+export type InternalActor = { id: string; login: string; email: string };
+
+export function internalHeaders(actor?: InternalActor): HeadersInit {
+  return {
+    "content-type": "application/json",
+    "x-actor-id": actor?.id ?? "",
+    "x-actor-login": actor?.login ?? "system",
+    "x-actor-email": actor?.email ?? "",
+  };
+}
+
+export const actorOf = (u: SessionUser): InternalActor => ({
+  id: u.id,
+  login: u.login,
+  email: u.email,
+});
+
 // Push the current roster (real members + unclaimed seed placeholders) into
 // the trip's DO, where it lives as trip.members. Call after every membership
 // change so the document all clients render never drifts from the registry.
-export async function syncRoster(env: Env, tripId: string): Promise<void> {
+export async function syncRoster(
+  env: Env,
+  tripId: string,
+  actor?: InternalActor,
+): Promise<void> {
   const [members, claims] = await Promise.all([
     listMembers(env.DB, tripId),
     listClaims(env.DB, tripId),
@@ -225,7 +255,7 @@ export async function syncRoster(env: Env, tripId: string): Promise<void> {
   await env.AX26.getByName(tripId).fetch(
     new Request("https://do/internal/members", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: internalHeaders(actor),
       body: JSON.stringify({ members: roster }),
     }),
   );
@@ -248,10 +278,7 @@ export type InviteRow = {
 // Only the SHA-256 of the token is stored; a D1 leak can't mint invitations.
 export async function hashInviteToken(token: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-  const bytes = new Uint8Array(digest);
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  return bytesToB64url(new Uint8Array(digest));
 }
 
 export async function createInviteRow(
@@ -323,6 +350,11 @@ export async function markInviteAccepted(
 // returns the trip ids that gained a membership so callers can re-read and
 // re-sync those rosters.
 export async function claimMemberships(db: D1Database, userId: string): Promise<string[]> {
+  // Steady-state fast path: claims exist only around seeding/provisioning, so
+  // one cheap probe usually replaces the per-account scans below.
+  const anyClaims = await db.prepare("SELECT 1 FROM member_claims LIMIT 1").first();
+  if (!anyClaims) return [];
+
   const accounts = await db
     .prepare('SELECT "providerId", "accountId" FROM account WHERE "userId" = ?1')
     .bind(userId)
@@ -370,7 +402,7 @@ export async function sessionMember(
   if (!membership) {
     const claimed = await claimMemberships(c.env.DB, user.id);
     if (claimed.length > 0) {
-      await Promise.all(claimed.map((id) => syncRoster(c.env, id)));
+      await Promise.all(claimed.map((id) => syncRoster(c.env, id, actorOf(user))));
       membership = await getMembership(c.env.DB, tripId, user.id);
     }
   }

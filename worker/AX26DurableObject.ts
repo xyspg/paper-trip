@@ -440,7 +440,13 @@ export class AX26DurableObject extends DurableObject<Env> {
     if (!row) return Response.json({ error: "not_found" }, { status: 404 });
 
     const at = new Date().toISOString();
-    this.trip = { ...(JSON.parse(row.trip) as Trip), updatedAt: at };
+    // The roster is registry-owned: restoring must not revive the member list
+    // frozen inside the snapshot (same rule as the whole-trip PUT above).
+    this.trip = {
+      ...(JSON.parse(row.trip) as Trip),
+      members: this.trip?.members,
+      updatedAt: at,
+    };
     // Backups taken before the parking-pass proxy still embed the secret URL.
     scrubPassUrls(this.trip);
     this.rev += 1;

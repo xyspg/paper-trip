@@ -1,7 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { LEGACY_TRIP_ID } from "../trip/legacy";
 
-// Deep admin bookmarks (/admin/split, /admin/audit, …) keep their section.
+// Exists so /admin/<section> matches at all; the parent /admin beforeLoad
+// (which sees the full pathname) redirects first, so this is only a fallback.
 export const Route = createFileRoute("/admin/$")({
   beforeLoad: ({ params }) => {
     throw redirect({
