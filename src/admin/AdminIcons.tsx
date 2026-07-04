@@ -64,6 +64,13 @@ export const Icons = {
       <circle cx="12" cy="12.5" r="3.2" />
     </Svg>
   ),
+  image: (p: IconProps) => (
+    <Svg {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9" r="1.6" />
+      <path d="M21 15.5 16 11l-8 8" />
+    </Svg>
+  ),
   sparkle: (p: IconProps) => (
     <Svg {...p} d="M12 3l1.8 4.9L18.5 9.5l-4.7 1.6L12 16l-1.8-4.9L5.5 9.5l4.7-1.6ZM18.5 15l.8 2.1 2.2.7-2.2.7-.8 2.1-.8-2.1-2.2-.7 2.2-.7Z" />
   ),
