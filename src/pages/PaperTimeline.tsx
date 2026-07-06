@@ -44,12 +44,34 @@ const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
 
 const PAPER_BOLD = "font-bold text-[#1c1b19]"
 
-// The trip runs on LA time. Archive by LA's calendar date, not the device's,
-// so a day isn't archived while it is still that evening in LA (e.g. a phone
-// on NYC time flips to 7/4 at 9pm LA time on 7/3). en-CA formats as YYYY-MM-DD,
-// matching the trip's ISO date keys for plain string comparison.
-const todayInLA = () =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date())
+// Archive by the trip's own calendar date, not the device's, so a day isn't
+// archived while it is still that evening at the destination (e.g. a phone on
+// NYC time flips to 7/4 at 9pm LA time on 7/3). en-CA formats as YYYY-MM-DD,
+// matching the trip's ISO date keys for plain string comparison. Falls back to
+// the device date if the stored zone is invalid.
+const todayIn = (timeZone: string) => {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date())
+  } catch {
+    return new Intl.DateTimeFormat("en-CA").format(new Date())
+  }
+}
+
+// Short label for a stop that carries its own timezone ("EDT", "GMT+9"),
+// resolved on that stop's date so DST is right. Null when it matches the
+// trip default or the zone string is invalid.
+const zoneTag = (item: TripItem, defaultTimezone: string): string | null => {
+  if (!item.timezone || item.timezone === defaultTimezone) return null
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", { timeZone: item.timezone, timeZoneName: "short" })
+        .formatToParts(new Date(`${item.date}T12:00:00`))
+        .find((p) => p.type === "timeZoneName")?.value ?? null
+    )
+  } catch {
+    return null
+  }
+}
 
 export function PaperTimeline({
   trip,
@@ -71,7 +93,7 @@ export function PaperTimeline({
   // bottom; the rest stay inline. Manual header toggles are stored as sparse
   // overrides so the date-derived defaults (archived → collapsed) still apply
   // to days the user never touched, even after server data replaces the trip.
-  const today = todayInLA()
+  const today = todayIn(trip.base.timezone)
   const activeDates = orderedDates.filter((date) => date >= today)
   const archivedDates = orderedDates.filter((date) => date < today)
   const [dayOverrides, setDayOverrides] = useState<Record<string, boolean>>({})
@@ -84,6 +106,7 @@ export function PaperTimeline({
     <DaySection
       key={date}
       tripId={trip.id}
+      defaultTimezone={trip.base.timezone}
       date={date}
       dayNumber={orderedDates.indexOf(date) + 1}
       items={trip.items.filter((item) => item.date === date)}
@@ -212,6 +235,7 @@ export function PaperTimeline({
 
 function DaySection({
   tripId,
+  defaultTimezone,
   date,
   dayNumber,
   items,
@@ -221,6 +245,7 @@ function DaySection({
   onToggle,
 }: {
   tripId: string
+  defaultTimezone: string
   date: string
   dayNumber: number
   items: TripItem[]
@@ -271,6 +296,7 @@ function DaySection({
             <Ticket
               key={item.id}
               tripId={tripId}
+              zone={zoneTag(item, defaultTimezone)}
               item={item}
               stopNumber={stopNumbers.get(item.id) ?? 0}
               onCycleStatus={onCycleStatus}
@@ -298,11 +324,13 @@ function Stat({ k, v, sub, accent }: { k: string; v: string; sub: string; accent
 
 function Ticket({
   tripId,
+  zone,
   item,
   stopNumber,
   onCycleStatus,
 }: {
   tripId: string
+  zone: string | null
   item: TripItem
   stopNumber: number
   onCycleStatus: (item: TripItem) => void
@@ -325,6 +353,11 @@ function Ticket({
             className={`font-grotesk font-bold leading-[0.95] tracking-[-0.01em] ${compact ? "text-[20px]" : "text-[clamp(22px,3.4vw,26px)]"}`}
           >
             {item.time}
+            {zone && (
+              <span className="block mt-1 font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] text-[#b08648]">
+                {zone} 当地
+              </span>
+            )}
           </div>
           <span
             className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] rounded-full py-1 px-2.5 border max-[620px]:ml-auto"

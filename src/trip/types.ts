@@ -14,6 +14,10 @@ export type TripItem = {
   id: string;
   date: string;
   time: string;
+  // Wall-clock times read in the trip's default timezone (base.timezone). A
+  // stop in another zone (e.g. the NYC leg of a coast-to-coast trip) carries
+  // its own IANA zone here; the timeline labels it (e.g. "EDT").
+  timezone?: string;
   title: string;
   category: "flight" | "food" | "event" | "hotel" | "drive" | "errand";
   location: string;

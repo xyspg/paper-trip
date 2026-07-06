@@ -97,7 +97,8 @@ GET  /api/trips/<tripId>/backups   → list (restore/delete are human-only)
 type TripItem = {
   id: string                 // kebab-case slug, e.g. "dinner-kagaya"
   date: string               // "2026-07-03" — in the trip's own timezone (trip.base.timezone)
-  time: string               // "18:30" 24h
+  time: string               // "18:30" 24h — wall clock at the stop itself
+  timezone?: string          // IANA zone, ONLY when this stop is not in trip.base.timezone (cross-timezone trips)
   title: string
   category: "flight" | "food" | "event" | "hotel" | "drive" | "errand"
   location: string           // venue name
@@ -136,7 +137,9 @@ document shapes: read them from the live GET instead of guessing.
    If the user's screenshot/message doesn't say it, leave the field out or ask.
 4. A restaurant booking becomes: `addItem` with `category: "food"`,
    `status: "locked"`, the reservation time, and the confirmation code if given.
-5. Times are local to the trip's timezone (`trip.base.timezone`). Dates must
-   fall inside `trip.dates`.
+5. Times are wall-clock local to the stop. Stops in the trip's default zone
+   (`trip.base.timezone`) omit `timezone`; a stop in another zone (e.g. the
+   NYC leg of a coast-to-coast trip) sets its own IANA `timezone` so the
+   timeline can label it. Dates must fall inside `trip.dates`.
 6. Don't touch `trip.suggestions` entries you didn't create; don't delete
    items/expenses unless the user asked.

@@ -17,6 +17,9 @@ import { useDeleteTrip, usePatchTrip } from "../trip/hooks"
 import { useTripAccess } from "../components/TripLayout"
 import type { TripVisibility } from "../trip/api"
 
+// The browser's full IANA zone list, computed once at module load.
+const timezoneOptions: string[] = Intl.supportedValuesOf("timeZone")
+
 // Owner-only trip settings: registry metadata (title/dates/timezone), the
 // public/private switch, and the delete danger zone. The worker mirrors
 // metadata edits into the DO so every masthead updates live.
@@ -128,14 +131,24 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
         </div>
 
         <label className="flex flex-col gap-[7px]">
-          <span className={FIELD_LABEL}>时区</span>
-          <input
-            className={FIELD_INPUT}
+          <span className={FIELD_LABEL}>默认时区</span>
+          <select
+            className={`${FIELD_INPUT} cursor-pointer appearance-none [-webkit-appearance:none]`}
             value={timezone}
-            autoComplete="off"
-            placeholder="America/Los_Angeles"
             onChange={(e) => setTimezone(e.target.value)}
-          />
+          >
+            {/* Keep whatever the registry holds selectable even if this
+                browser's ICU list doesn't include it. */}
+            {!timezoneOptions.includes(timezone) && <option value={timezone}>{timezone}</option>}
+            {timezoneOptions.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
+          <span className="font-cjk text-[11.5px] text-[#9b988f]">
+            用于“今天”的判定和日程归档；跨时区的停靠点可以带自己的时区。
+          </span>
         </label>
 
         <div>

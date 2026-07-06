@@ -28,7 +28,6 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
   const [title, setTitle] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [timezone, setTimezone] = useState("America/Los_Angeles")
   const [visibility, setVisibility] = useState<TripVisibility>("private")
   const [error, setError] = useState("")
 
@@ -43,7 +42,10 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
         title: title.trim(),
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        timezone: timezone.trim() || undefined,
+        // No timezone question at creation: default to wherever the creator
+        // is right now; the owner can refine it in settings, and stops that
+        // cross timezones carry their own (item.timezone).
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
         visibility,
       })
       onCreated(trip)
@@ -88,17 +90,6 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-          />
-        </label>
-
-        <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>时区</span>
-          <input
-            className={FIELD_INPUT}
-            value={timezone}
-            autoComplete="off"
-            placeholder="America/Los_Angeles"
-            onChange={(e) => setTimezone(e.target.value)}
           />
         </label>
 
