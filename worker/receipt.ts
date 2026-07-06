@@ -37,6 +37,7 @@ const RESPONSE_SCHEMA = {
     tax: { type: "NUMBER" },
     tip: { type: "NUMBER" },
     total: { type: "NUMBER" },
+    suggestedTips: { type: "ARRAY", items: { type: "NUMBER" } },
   },
   required: ["items", "total"],
 } as const;
@@ -46,6 +47,7 @@ const PROMPT = [
   "Read the receipt image and extract every ordered line item (dish or product).",
   "For each item return: name (keep the original language, including Chinese), quantity (default 1), and price = the line-item TOTAL for that row (quantity * unit price).",
   "Also return subtotal, tax, tip (0 if none), and total when printed.",
+  "If the receipt prints suggested tip / gratuity options, return their percentages as numbers in suggestedTips (e.g. [18, 20, 22]); otherwise return an empty array.",
   "All money values are plain numbers with no currency symbols or thousands separators.",
   "Do not invent items, do not include subtotal/tax/total as line items, and ignore non-purchase text (server name, table, address).",
 ].join(" ");
@@ -59,6 +61,7 @@ type ParsedReceipt = {
   tax?: number;
   tip?: number;
   total: number;
+  suggestedTips?: number[];
 };
 
 const receipt = new Hono<{ Bindings: Env }>();
@@ -127,6 +130,18 @@ receipt.post("/parse", async (c) => {
     .filter((it) => it.name.length > 0);
 
   const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : undefined);
+  // Printed suggested-gratuity percentages: plausible percents only, deduped,
+  // ascending, at most four (some receipts print each option twice).
+  const suggestedTips = [
+    ...new Set(
+      (Array.isArray(parsed.suggestedTips) ? parsed.suggestedTips : [])
+        .map(Number)
+        .filter((n) => Number.isFinite(n) && n > 0 && n <= 100)
+        .map((n) => Math.round(n)),
+    ),
+  ]
+    .sort((a, b) => a - b)
+    .slice(0, 4);
   return c.json({
     merchant: typeof parsed.merchant === "string" ? parsed.merchant.trim() : "",
     currency: typeof parsed.currency === "string" ? parsed.currency.trim() : "",
@@ -135,6 +150,7 @@ receipt.post("/parse", async (c) => {
     tax: num(parsed.tax),
     tip: num(parsed.tip),
     total: num(parsed.total),
+    suggestedTips,
   });
 });
 

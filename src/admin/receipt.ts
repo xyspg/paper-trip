@@ -19,6 +19,9 @@ export type ParsedReceipt = {
   tax?: number
   tip?: number
   total?: number
+  // Printed suggested-gratuity percentages (e.g. [18, 20, 22]), when the
+  // receipt shows them.
+  suggestedTips?: number[]
 }
 
 // Longest edge we send upstream. Receipts stay legible well below the original
