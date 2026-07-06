@@ -252,7 +252,7 @@ export async function syncRoster(
       color: cl.color ?? undefined,
     })),
   ];
-  await env.AX26.getByName(tripId).fetch(
+  await env.TRIPS.getByName(tripId).fetch(
     new Request("https://do/internal/members", {
       method: "POST",
       headers: internalHeaders(actor),

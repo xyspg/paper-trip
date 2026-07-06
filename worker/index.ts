@@ -40,7 +40,7 @@ import receipt from "./receipt";
 import type { Env } from "./env";
 import type { TripOp } from "../src/trip/ops";
 
-export { AX26DurableObject } from "./AX26DurableObject";
+export { TripDurableObject } from "./TripDurableObject";
 
 // Ops a public visitor may run on a PUBLIC trip without signing in: toggling a
 // stop's status and submitting a comment. Private trips accept nothing
@@ -205,7 +205,7 @@ app.post("/api/trips", async (c) => {
     memberKey: user.id,
     color: MEMBER_COLORS[0],
   });
-  const init = await c.env.AX26.getByName(id).fetch(
+  const init = await c.env.TRIPS.getByName(id).fetch(
     new Request("https://do/internal/init", {
       method: "POST",
       headers: internalHeaders(actorOf(user)),
@@ -277,7 +277,7 @@ app.patch("/api/trips/:tripId", async (c) => {
     patch.endDate !== undefined ||
     patch.timezone !== undefined
   ) {
-    await c.env.AX26.getByName(tripId).fetch(
+    await c.env.TRIPS.getByName(tripId).fetch(
       new Request("https://do/internal/meta", {
         method: "POST",
         headers: internalHeaders(actorOf(member)),
@@ -305,7 +305,7 @@ app.delete("/api/trips/:tripId", async (c) => {
   // Registry row first (the trip disappears from lists even if the DO wipe
   // needs a retry), then the DO's storage.
   await deleteTrip(c.env.DB, tripId);
-  await c.env.AX26.getByName(tripId).fetch(
+  await c.env.TRIPS.getByName(tripId).fetch(
     new Request("https://do/internal/destroy", { method: "POST" }),
   );
   return c.json({ ok: true });
@@ -605,7 +605,7 @@ function forward(
     headers.set("x-actor-email", actor?.email ?? "");
     headers.set("x-actor-ip", c.req.header("cf-connecting-ip") ?? "");
   }
-  return c.env.AX26.getByName(tripId).fetch(new Request(new Request(url, req), { headers }));
+  return c.env.TRIPS.getByName(tripId).fetch(new Request(new Request(url, req), { headers }));
 }
 
 export default app;

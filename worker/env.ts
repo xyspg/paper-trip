@@ -1,7 +1,7 @@
-import type { AX26DurableObject } from "./AX26DurableObject";
+import type { TripDurableObject } from "./TripDurableObject";
 
 export interface Env {
-  AX26: DurableObjectNamespace<AX26DurableObject>;
+  TRIPS: DurableObjectNamespace<TripDurableObject>;
   // D1: better-auth tables (user/session/account/verification) plus the
   // multi-tenant registry (trips/members/invites — see worker/registry.ts).
   DB: D1Database;

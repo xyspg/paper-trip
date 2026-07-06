@@ -94,7 +94,7 @@ export function BackupSection({ toast }: Props) {
     if (!tripSnap) return
     const stamp = new Date().toISOString().replaceAll(":", "-")
     downloadText(
-      `ax26-trip-rev-${tripSnap.rev}-${stamp}.json`,
+      `papertrip-rev-${tripSnap.rev}-${stamp}.json`,
       JSON.stringify(tripSnap, null, 2),
       "application/json",
     )

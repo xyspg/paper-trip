@@ -98,7 +98,7 @@ function opTarget(op: TripOp): string | null {
   }
 }
 
-export class AX26DurableObject extends DurableObject<Env> {
+export class TripDurableObject extends DurableObject<Env> {
   // null = this DO has never been initialized (a fresh name that /internal/init
   // hasn't reached yet, or one wiped by /internal/destroy).
   private trip: Trip | null = null;
@@ -187,7 +187,7 @@ export class AX26DurableObject extends DurableObject<Env> {
       return new Response("Not Found", { status: 404 });
     }
 
-    if (!this.trip) return AX26DurableObject.uninitialized();
+    if (!this.trip) return TripDurableObject.uninitialized();
 
     if (req.headers.get("Upgrade") === "websocket") {
       const [client, server] = Object.values(new WebSocketPair());
@@ -315,7 +315,7 @@ export class AX26DurableObject extends DurableObject<Env> {
 
   // Replace the roster (synced from the D1 registry on every membership change).
   private async setMembers(req: Request): Promise<Response> {
-    if (!this.trip) return AX26DurableObject.uninitialized();
+    if (!this.trip) return TripDurableObject.uninitialized();
     const body = (await req.json().catch(() => null)) as { members?: TripMember[] } | null;
     if (!body || !Array.isArray(body.members)) {
       return Response.json({ error: "bad_request" }, { status: 400 });
@@ -332,7 +332,7 @@ export class AX26DurableObject extends DurableObject<Env> {
   // Mirror registry metadata edits (title/dates/timezone) into the document so
   // the masthead everyone renders never drifts from what settings shows.
   private async setMeta(req: Request): Promise<Response> {
-    if (!this.trip) return AX26DurableObject.uninitialized();
+    if (!this.trip) return TripDurableObject.uninitialized();
     const body = (await req.json().catch(() => null)) as {
       title?: unknown;
       dates?: { start?: unknown; end?: unknown };

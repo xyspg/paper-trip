@@ -1,9 +1,9 @@
 ---
-name: ax26-trip
-description: Read and edit one ax26 trip (itinerary stops, checklists, suggestions, expense ledger) through the HTTP API using a trip-scoped bearer token.
+name: papertrip
+description: Read and edit one Papertrip trip (itinerary stops, checklists, suggestions, expense ledger) through the HTTP API using a trip-scoped bearer token.
 ---
 
-# ax26 Trip API
+# Papertrip Trip API
 
 You are operating on a shared multi-tenant trip-planning app. Each trip is one
 JSON document: itinerary items, checklists, documents, suggestions, and an
@@ -12,7 +12,7 @@ browsers immediately and lands in an audit log under your token's identity.
 
 ## Setup
 
-- **API base**: the origin you fetched this file from (e.g. `https://ax26.example.com`).
+- **API base**: the origin you fetched this file from (e.g. `https://papertrip.example.com`).
 - **Trip id**: given by the user alongside the token. All paths below live
   under `/api/trips/<tripId>`.
 - **Auth**: every request needs `Authorization: Bearer <token>` — the `axa_...`
