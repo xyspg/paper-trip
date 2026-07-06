@@ -21,6 +21,8 @@ export interface Env {
   AGENT_TOKEN_SECRET?: string;
   // Google Gemini key for the admin receipt scanner, from .env.local via wrangler.
   GEMINI_API_KEY?: string;
+  // Gemini model id for the receipt scanner; a public var set in wrangler.jsonc.
+  GEMINI_MODEL?: string;
   // JSON map of reservationId → full provider pass URL. Pass links are
   // capability URLs (whoever holds one can edit/cancel the reservation), so
   // they live only in this secret and are served via /api/parking-pass/:rid

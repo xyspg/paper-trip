@@ -8,8 +8,11 @@ import type { Env } from "./env";
 // it to Gemini with a strict JSON schema and return the structured line items.
 // Membership-gated so the key and quota stay protected.
 
-const MODEL = "gemini-3.1-flash-lite";
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// Model id comes from the GEMINI_MODEL public var (wrangler.jsonc), with a
+// fallback so the scanner still works if it's unset.
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";
+const endpointFor = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 // OpenAPI-subset schema Gemini enforces on its JSON output. Prices are line
 // totals (quantity * unit) in the receipt's own currency, no symbols.
@@ -77,7 +80,8 @@ receipt.post("/parse", async (c) => {
   if (!data) return c.json({ error: "no_image" }, 400);
   const mimeType = body?.mimeType || "image/jpeg";
 
-  const res = await fetch(ENDPOINT, {
+  const endpoint = endpointFor(c.env.GEMINI_MODEL || DEFAULT_MODEL);
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({

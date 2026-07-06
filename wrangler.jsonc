@@ -29,9 +29,10 @@
       "migrations_dir": "migrations",
     },
   ],
-   "vars": {
+  "vars": {
     "BETTER_AUTH_URL": "https://papertrip.xyspg.moe",
     "APP_ORIGIN": "https://papertrip.xyspg.moe",
     "EMAIL_FROM": "PaperTrip <noreply@xyspg.moe>",
+    "GEMINI_MODEL": "gemini-3.5-flash",
   },
 }

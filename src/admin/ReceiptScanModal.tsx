@@ -49,7 +49,12 @@ type Phase = "pick" | "loading" | "review" | "error"
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const { tripId, travelers } = useAdmin()
   const travelerIds = travelers.map((m) => m.id)
-  const fileRef = useRef<HTMLInputElement>(null)
+  // Two inputs so the user picks the source instead of iOS forcing the camera:
+  // the album input omits `capture` (opens the photo library / file picker),
+  // the camera input sets `capture="environment"` to jump straight to the rear
+  // camera. Same onChange handler for both.
+  const albumRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
   const [phase, setPhase] = useState<Phase>("pick")
   const [error, setError] = useState("")
 
@@ -63,7 +68,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   // Bumped on "recompute" so the uncontrolled amount inputs remount fresh.
   const [recalc, setRecalc] = useState(0)
 
-  const pickFile = () => fileRef.current?.click()
+  const pickAlbum = () => albumRef.current?.click()
+  const pickCamera = () => cameraRef.current?.click()
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -180,8 +186,9 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
   return (
     <div className="flex flex-col max-h-[88vh]">
+      <input ref={albumRef} type="file" accept="image/*" hidden onChange={onFile} />
       <input
-        ref={fileRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
         capture="environment"
@@ -196,8 +203,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           icon={<Icons.camera sw={1.8} />}
           title="拍下餐厅小票"
           body="iOS 27 同款 AI 识别"
-          action="拍照 / 选择照片"
-          onAction={pickFile}
+          actions={[
+            { label: "从相册选择", icon: <Icons.image sw={2.4} />, onAction: pickAlbum, primary: true },
+            { label: "拍照", icon: <Icons.camera sw={2.4} />, onAction: pickCamera },
+          ]}
         />
       )}
 
@@ -215,8 +224,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           icon={<Icons.x sw={2.2} />}
           title="识别失败"
           body={error}
-          action="重新拍照"
-          onAction={pickFile}
+          actions={[
+            { label: "从相册选择", icon: <Icons.image sw={2.4} />, onAction: pickAlbum, primary: true },
+            { label: "重新拍照", icon: <Icons.camera sw={2.4} />, onAction: pickCamera },
+          ]}
         />
       )}
 
@@ -416,9 +427,13 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           </div>
 
           <ModalFooter>
-            <button type="button" className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={pickFile}>
+            <button type="button" className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={pickAlbum}>
+              <Icons.image sw={2.4} />
+              相册
+            </button>
+            <button type="button" className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={pickCamera}>
               <Icons.camera sw={2.4} />
-              重新拍照
+              拍照
             </button>
             <span className="ml-auto" />
             <button type="button" className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`} disabled={!canSubmit} onClick={submit}>
@@ -439,15 +454,13 @@ function ScanState({
   icon,
   title,
   body,
-  action,
-  onAction,
+  actions,
 }: {
   tone?: "accent" | "alert"
   icon: ReactNode
   title: string
   body: string
-  action: string
-  onAction: () => void
+  actions: { label: string; icon: ReactNode; onAction: () => void; primary?: boolean }[]
 }) {
   return (
     <div className="flex flex-col items-center text-center gap-3 px-7 py-10">
@@ -458,10 +471,19 @@ function ScanState({
       </div>
       <div className="font-sans font-bold text-[19px]">{title}</div>
       <div className="font-cjk text-[13px] leading-[1.6] text-[#76726a] max-w-[320px]">{body}</div>
-      <button type="button" className={`${BTN} ${BTN_INK} mt-1.5 [&_svg]:size-3.5`} onClick={onAction}>
-        <Icons.camera sw={2.4} />
-        {action}
-      </button>
+      <div className="flex flex-wrap items-center justify-center gap-2 mt-1.5">
+        {actions.map((a) => (
+          <button
+            key={a.label}
+            type="button"
+            className={`${BTN} ${a.primary ? BTN_INK : BTN_GHOST} [&_svg]:size-3.5`}
+            onClick={a.onAction}
+          >
+            {a.icon}
+            {a.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
