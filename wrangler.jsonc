@@ -20,7 +20,13 @@
       },
     ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TripDurableObject"] }],
+  // The deployed worker is the renamed ax26 worker: its DO namespace was
+  // created at v1 as AX26DurableObject, so the class rename must ship as a
+  // rename migration (which also keeps the legacy trip's stored data).
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["AX26DurableObject"] },
+    { "tag": "v2", "renamed_classes": [{ "from": "AX26DurableObject", "to": "TripDurableObject" }] },
+  ],
   "d1_databases": [
     {
       "binding": "DB",
