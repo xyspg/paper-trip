@@ -1,7 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { AlertTriangle, Archive, ChevronDown, Clock, DollarSign, ExternalLink, Hash, Lock, MapPin, Repeat2, Route } from "lucide-react"
-import { openAdminLogin, useAdminUser } from "../admin/auth"
+import { signInWithGitHub, useAdminUser } from "../admin/auth"
 import { AddressLink } from "../components/AddressLink"
 import { SuggestBox } from "../components/SuggestBox"
 import { cardRecs } from "../trip/cardRecs"
@@ -19,7 +18,7 @@ type PaperTimelineProps = {
   trip: Trip
   orderedDates: string[]
   stopNumbers: Map<string, number>
-  nextItem: TripItem
+  nextItem?: TripItem
   nextPlan: string
   parkingCount: number
   dateRange: string
@@ -45,12 +44,34 @@ const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
 
 const PAPER_BOLD = "font-bold text-[#1c1b19]"
 
-// The trip runs on LA time. Archive by LA's calendar date, not the device's,
-// so a day isn't archived while it is still that evening in LA (e.g. a phone
-// on NYC time flips to 7/4 at 9pm LA time on 7/3). en-CA formats as YYYY-MM-DD,
-// matching the trip's ISO date keys for plain string comparison.
-const todayInLA = () =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date())
+// Archive by the trip's own calendar date, not the device's, so a day isn't
+// archived while it is still that evening at the destination (e.g. a phone on
+// NYC time flips to 7/4 at 9pm LA time on 7/3). en-CA formats as YYYY-MM-DD,
+// matching the trip's ISO date keys for plain string comparison. Falls back to
+// the device date if the stored zone is invalid.
+const todayIn = (timeZone: string) => {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date())
+  } catch {
+    return new Intl.DateTimeFormat("en-CA").format(new Date())
+  }
+}
+
+// Short label for a stop that carries its own timezone ("EDT", "GMT+9"),
+// resolved on that stop's date so DST is right. Null when it matches the
+// trip default or the zone string is invalid.
+const zoneTag = (item: TripItem, defaultTimezone: string): string | null => {
+  if (!item.timezone || item.timezone === defaultTimezone) return null
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", { timeZone: item.timezone, timeZoneName: "short" })
+        .formatToParts(new Date(`${item.date}T12:00:00`))
+        .find((p) => p.type === "timeZoneName")?.value ?? null
+    )
+  } catch {
+    return null
+  }
+}
 
 export function PaperTimeline({
   trip,
@@ -65,13 +86,14 @@ export function PaperTimeline({
   const titleWords = trip.title.trim().split(/\s+/)
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined
   const titleLead = titleWords.join(" ")
-  const nextStatus = statusMeta[nextItem.status]
+  // Fresh trips have no items yet; the next-action row simply doesn't render.
+  const nextStatus = nextItem ? statusMeta[nextItem.status] : undefined
 
   // Days before today (LA time) are archived into a collapsed section at the
   // bottom; the rest stay inline. Manual header toggles are stored as sparse
   // overrides so the date-derived defaults (archived → collapsed) still apply
   // to days the user never touched, even after server data replaces the trip.
-  const today = todayInLA()
+  const today = todayIn(trip.base.timezone)
   const activeDates = orderedDates.filter((date) => date >= today)
   const archivedDates = orderedDates.filter((date) => date < today)
   const [dayOverrides, setDayOverrides] = useState<Record<string, boolean>>({})
@@ -83,6 +105,8 @@ export function PaperTimeline({
   const renderDay = (date: string) => (
     <DaySection
       key={date}
+      tripId={trip.id}
+      defaultTimezone={trip.base.timezone}
       date={date}
       dayNumber={orderedDates.indexOf(date) + 1}
       items={trip.items.filter((item) => item.date === date)}
@@ -117,27 +141,44 @@ export function PaperTimeline({
       </header>
 
       {/* NEXT ACTION */}
-      <section
-        className="flex gap-[18px] items-center flex-wrap mt-[22px] py-[18px] px-[22px] bg-white border border-[#ebe9e3] rounded-[14px]"
-        aria-label="下一步行动"
-      >
-        <span className="font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-white bg-[#3f6f5b] rounded-full py-[5px] px-3">
-          下一步行动
-        </span>
-        <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">{nextItem.time}</span>
-        <div>
-          <div className="font-cjk font-bold text-[17px]">{nextItem.title}</div>
-          <div className="mt-[3px] font-cjk text-[12.5px] text-[#76726a]">
-            {nextPlan} · {nextStatus.label}
-          </div>
-        </div>
-        <span
-          className="ml-auto font-grotesk text-[10.5px] font-semibold tracking-[0.04em] rounded-full py-[5px] px-3 border"
-          style={{ color: nextStatus.color, borderColor: nextStatus.border, background: nextStatus.bg }}
+      {nextItem && nextStatus && (
+        <section
+          className="flex gap-[18px] items-center flex-wrap mt-[22px] py-[18px] px-[22px] bg-white border border-[#ebe9e3] rounded-[14px]"
+          aria-label="下一步行动"
         >
-          {nextStatus.label}
-        </span>
-      </section>
+          <span className="font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-white bg-[#3f6f5b] rounded-full py-[5px] px-3">
+            下一步行动
+          </span>
+          <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">{nextItem.time}</span>
+          <div>
+            <div className="font-cjk font-bold text-[17px]">{nextItem.title}</div>
+            <div className="mt-[3px] font-cjk text-[12.5px] text-[#76726a]">
+              {nextPlan} · {nextStatus.label}
+            </div>
+          </div>
+          <span
+            className="ml-auto font-grotesk text-[10.5px] font-semibold tracking-[0.04em] rounded-full py-[5px] px-3 border"
+            style={{ color: nextStatus.color, borderColor: nextStatus.border, background: nextStatus.bg }}
+          >
+            {nextStatus.label}
+          </span>
+        </section>
+      )}
+
+      {/* EMPTY STATE — a brand-new trip with no stops yet */}
+      {trip.items.length === 0 && (
+        <section className="grid place-items-center mt-[22px] py-16 px-6 bg-white border border-[#ebe9e3] rounded-[14px] text-center">
+          <div>
+            <div className="font-grotesk text-[11px] tracking-[0.16em] uppercase text-[#3f6f5b]">
+              Empty Timeline
+            </div>
+            <div className="mt-2 font-sans font-bold text-[20px] tracking-tight">还没有停靠点</div>
+            <p className="mt-2 font-cjk text-[13px] text-[#76726a] leading-relaxed">
+              在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* DAY SECTIONS */}
       {activeDates.map(renderDay)}
@@ -193,6 +234,8 @@ export function PaperTimeline({
 }
 
 function DaySection({
+  tripId,
+  defaultTimezone,
   date,
   dayNumber,
   items,
@@ -201,6 +244,8 @@ function DaySection({
   collapsed,
   onToggle,
 }: {
+  tripId: string
+  defaultTimezone: string
   date: string
   dayNumber: number
   items: TripItem[]
@@ -250,6 +295,8 @@ function DaySection({
           {items.map((item) => (
             <Ticket
               key={item.id}
+              tripId={tripId}
+              zone={zoneTag(item, defaultTimezone)}
               item={item}
               stopNumber={stopNumbers.get(item.id) ?? 0}
               onCycleStatus={onCycleStatus}
@@ -276,10 +323,14 @@ function Stat({ k, v, sub, accent }: { k: string; v: string; sub: string; accent
 }
 
 function Ticket({
+  tripId,
+  zone,
   item,
   stopNumber,
   onCycleStatus,
 }: {
+  tripId: string
+  zone: string | null
   item: TripItem
   stopNumber: number
   onCycleStatus: (item: TripItem) => void
@@ -302,6 +353,11 @@ function Ticket({
             className={`font-grotesk font-bold leading-[0.95] tracking-[-0.01em] ${compact ? "text-[20px]" : "text-[clamp(22px,3.4vw,26px)]"}`}
           >
             {item.time}
+            {zone && (
+              <span className="block mt-1 font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] text-[#b08648]">
+                {zone} 当地
+              </span>
+            )}
           </div>
           <span
             className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] rounded-full py-1 px-2.5 border max-[620px]:ml-auto"
@@ -347,7 +403,7 @@ function Ticket({
           {cardRec && <PayWith rec={cardRec} accent={category.color} />}
 
           <div className="mt-3 flex">
-            <SuggestBox itemId={item.id} itemTitle={item.title} />
+            <SuggestBox tripId={tripId} itemId={item.id} itemTitle={item.title} />
           </div>
         </div>
       </div>
@@ -468,7 +524,6 @@ function ParkingPanel({ item }: { item: TripItem }) {
 // cancel the reservation), so it stays server-side: signed-in admins follow the
 // /api/parking-pass redirect, everyone else is offered the GitHub login first.
 function ParkingPassButton({ reservationId, provider }: { reservationId: string; provider: string }) {
-  const queryClient = useQueryClient()
   const { data: user } = useAdminUser()
   const className =
     "inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] border-0 bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] cursor-pointer hover:bg-[#3f6f5b]"
@@ -488,7 +543,7 @@ function ParkingPassButton({ reservationId, provider }: { reservationId: string;
       type="button"
       className={className}
       title="使用 GitHub 登录后打开"
-      onClick={() => openAdminLogin(queryClient)}
+      onClick={() => signInWithGitHub(window.location.pathname)}
     >
       {provider} Pass · 登录打开
       <Lock size={14} strokeWidth={2.4} />

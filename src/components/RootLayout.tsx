@@ -5,8 +5,11 @@ export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   // The admin backend renders its own full-bleed chrome (topbar + sidebar), so it
-  // opts out of the shared page shell and nav.
-  if (pathname.startsWith("/admin")) {
+  // opts out of the shared page shell and nav. Matches both the legacy /admin
+  // bookmarks (redirects) and the trip-scoped /t/:tripId/admin console.
+  // `/` also opts out: the signed-out landing page is full-bleed with its own
+  // nav, and the signed-in dashboard brings its own copy of this shell.
+  if (pathname === "/" || /(^|\/)admin(\/|$)/.test(pathname)) {
     return <Outlet />;
   }
 

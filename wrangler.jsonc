@@ -1,8 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ax26",
+  "name": "papertrip",
   "main": "worker/index.ts",
   "compatibility_date": "2026-06-02",
+  // better-auth needs node:crypto (and friends) at runtime.
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api", "/api/*"],
@@ -10,16 +12,27 @@
   "observability": {
     "enabled": true,
   },
-  "vars": {
-    "GEMINI_MODEL": "gemini-3.5-flash",
-  },
   "durable_objects": {
     "bindings": [
       {
-        "name": "AX26",
-        "class_name": "AX26DurableObject",
+        "name": "TRIPS",
+        "class_name": "TripDurableObject",
       },
     ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AX26DurableObject"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TripDurableObject"] }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "papertrip",
+      "database_id": "08d77f32-e19b-46ad-806f-0f0e545f65c3",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://papertrip.xyspg.moe",
+    "APP_ORIGIN": "https://papertrip.xyspg.moe",
+    "EMAIL_FROM": "PaperTrip <noreply@xyspg.moe>",
+    "GEMINI_MODEL": "gemini-3.5-flash",
+  },
 }

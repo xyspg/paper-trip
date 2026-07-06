@@ -40,7 +40,10 @@ export type Stop = {
 // here so admin modules keep importing the type from one place.
 export type { Expense } from "../trip/types";
 
-// ---- People in the planning group ----
+// ---- Legacy-trip roster fallback ----
+// Real rosters live on the synced trip (trip.members, see src/trip/roster.ts);
+// this pair remains only as the legacy trip's first-frame fallback before its
+// snapshot arrives.
 export const MEMBERS: AdminMember[] = [
   {
     id: "you",
@@ -63,14 +66,6 @@ export const MEMBERS: AdminMember[] = [
     avatarUrl: "https://github.com/sapphire-rapids.png",
   },
 ];
-
-export const memberById = (id: string): AdminMember =>
-  MEMBERS.find((m) => m.id === id) ?? MEMBERS[0];
-export const TRAVELERS: AdminMember[] = MEMBERS.filter((m) => m.traveler);
-
-// The two travelers' ids, derived once. Shared by the split/receipt math instead
-// of being re-derived (`TRAVELERS.map((m) => m.id)`) in each consumer.
-export const TRAVELER_IDS: string[] = TRAVELERS.map((m) => m.id);
 
 // ---- Category palette (shared with itinerary page) ----
 // Editorial paper hues (slate / ochre / alert / plum / accent). Literal hex so

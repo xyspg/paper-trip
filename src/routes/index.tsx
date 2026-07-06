@@ -1,5 +1,6 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { DashboardPage } from "../pages/DashboardPage";
 
 export const Route = createFileRoute("/")({
-  component: () => <Navigate to="/timeline" replace />,
+  component: DashboardPage,
 });

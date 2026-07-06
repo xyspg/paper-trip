@@ -12,6 +12,7 @@ import {
   SectionHead,
 } from "./adminUi"
 import type { ToastFn } from "./useAdminToasts"
+import { useAdmin } from "./AdminContext"
 
 type Props = {
   toast: ToastFn
@@ -23,6 +24,7 @@ const TTL_OPTIONS = [7, 30, 90] as const
 // token is shown only while this section stays mounted — we intentionally never
 // persist it client-side; regenerating is cheap and old tokens live until exp.
 export function AgentSection({ toast }: Props) {
+  const { tripId } = useAdmin()
   const [ttlDays, setTtlDays] = useState<number>(90)
   const [grant, setGrant] = useState<AgentTokenGrant | null>(null)
   const [busy, setBusy] = useState(false)
@@ -32,6 +34,7 @@ export function AgentSection({ toast }: Props) {
     ? [
         `Read ${origin}/SKILL.md and follow it to manage my trip.`,
         `API base: ${origin}`,
+        `Trip id: ${tripId}`,
         `Token: ${grant.token}`,
       ].join("\n")
     : ""
@@ -39,10 +42,10 @@ export function AgentSection({ toast }: Props) {
   const generate = async () => {
     setBusy(true)
     try {
-      setGrant(await mintAgentToken(ttlDays))
+      setGrant(await mintAgentToken(tripId, ttlDays))
       toast("已生成 agent token")
     } catch {
-      toast("生成失败，请重试", "warn")
+      toast("生成失败（仅行程创建者可签发 token）", "warn")
     } finally {
       setBusy(false)
     }

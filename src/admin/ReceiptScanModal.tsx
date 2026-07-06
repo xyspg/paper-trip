@@ -1,7 +1,8 @@
 import { useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { AdminModal } from "./AdminModal"
-import { fmtMoney, round2, TRAVELER_IDS, TRAVELERS, uid } from "./adminData"
+import { fmtMoney, round2, uid } from "./adminData"
+import { useAdmin } from "./AdminContext"
 import { Avatar } from "./Avatar"
 import { Icons } from "./AdminIcons"
 import {
@@ -37,7 +38,8 @@ const sumPrices = (rows: { price: number }[]) => rows.reduce((s, r) => s + r.pri
 
 // Everyone selected (or nobody, which falls back to everyone) means an even AA
 // split, stored as `who: undefined` so the renderers skip redundant chips.
-const isAA = (who: string[]) => who.length === 0 || who.length === TRAVELER_IDS.length
+const isAA = (who: string[], travelerIds: string[]) =>
+  who.length === 0 || who.length === travelerIds.length
 
 // "pick" waits for a photo, "loading" is the OCR round-trip, "review" is the
 // editable split, "error" shows a retry. One inner component per open keeps the
@@ -45,6 +47,8 @@ const isAA = (who: string[]) => who.length === 0 || who.length === TRAVELER_IDS.
 type Phase = "pick" | "loading" | "review" | "error"
 
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
+  const { tripId, travelers } = useAdmin()
+  const travelerIds = travelers.map((m) => m.id)
   // Two inputs so the user picks the source instead of iOS forcing the camera:
   // the album input omits `capture` (opens the photo library / file picker),
   // the camera input sets `capture="environment"` to jump straight to the rear
@@ -56,9 +60,18 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
   const [merchant, setMerchant] = useState("")
   const [rows, setRows] = useState<Row[]>([])
-  // Tax + tip + any gap between the line items and the printed total, applied on
-  // top of the per-dish split and spread proportionally.
-  const [extra, setExtra] = useState(0)
+  // Tax (+ service fees) and tip are tracked separately — tipping is a choice
+  // you make at the table, tax isn't. Both are spread proportionally on top of
+  // the per-dish split. Tip is entered one of three ways: a percentage of the
+  // dish subtotal (chips come from the receipt's printed suggestions when the
+  // OCR finds them), a flat amount, or "round the final total up to X" — the
+  // cash case, where the tip is whatever the round number absorbs.
+  const [tax, setTax] = useState(0)
+  const [tipMode, setTipMode] = useState<"percent" | "amount" | "total">("percent")
+  const [tipPct, setTipPct] = useState<number | null>(null)
+  const [tipAmount, setTipAmount] = useState(0)
+  const [totalTarget, setTotalTarget] = useState<number | null>(null)
+  const [suggestedPcts, setSuggestedPcts] = useState<number[]>([15, 18, 20])
   // Manual per-traveler overrides; absent id = use the computed amount.
   const [manual, setManual] = useState<Record<string, number>>({})
   // Bumped on "recompute" so the uncontrolled amount inputs remount fresh.
@@ -74,13 +87,17 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     setPhase("loading")
     setError("")
     try {
-      const r = await parseReceipt(file)
-      // Clamp to >= 0: this row is tax/tip/service fee, never negative. A model
-      // misread where the printed total comes in under the line-item sum would
-      // otherwise yield a negative "tax" and an amount below the dishes shown.
-      const gap = typeof r.total === "number"
-        ? Math.max(0, r.total - sumPrices(r.items))
-        : (r.tax ?? 0) + (r.tip ?? 0)
+      const r = await parseReceipt(tripId, file)
+      // Tax defaults to the printed line; when the OCR missed it, fall back to
+      // the gap between the printed total and the dishes (minus any printed
+      // tip). Clamped to >= 0: a misread total below the line-item sum would
+      // otherwise yield a negative tax.
+      const printedTip = r.tip ?? 0
+      const taxGuess =
+        r.tax ??
+        (typeof r.total === "number"
+          ? Math.max(0, r.total - sumPrices(r.items) - printedTip)
+          : 0)
       setMerchant(r.merchant || "餐厅收据")
       setRows(
         r.items.map((it) => ({
@@ -88,10 +105,17 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           name: it.name,
           quantity: it.quantity,
           price: it.price,
-          who: [...TRAVELER_IDS], // default AA
+          who: [...travelerIds], // default AA
         })),
       )
-      setExtra(round2(gap))
+      setTax(round2(Math.max(0, taxGuess)))
+      if (r.suggestedTips?.length) setSuggestedPcts(r.suggestedTips)
+      // A tip already printed on the receipt (service charge, pre-added
+      // gratuity) starts in amount mode; otherwise wait for a percent pick.
+      setTipMode(printedTip > 0 ? "amount" : "percent")
+      setTipAmount(printedTip > 0 ? round2(printedTip) : 0)
+      setTipPct(null)
+      setTotalTarget(null)
       setManual({})
       setPhase("review")
     } catch (err) {
@@ -119,13 +143,37 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const addRow = () =>
     setRows((prev) => [
       ...prev,
-      { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...TRAVELER_IDS] },
+      { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...travelerIds] },
     ])
 
-  const auto = deriveShares(rows, TRAVELER_IDS, extra)
-  const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0
-  const grandTotal = round2(TRAVELER_IDS.reduce((s, id) => s + finalOf(id), 0))
   const lineSubtotal = round2(sumPrices(rows))
+  // Pre-tip bill: what the round-up targets are measured against.
+  const preTip = round2(lineSubtotal + tax)
+  const tip =
+    tipMode === "percent"
+      ? tipPct
+        ? round2((lineSubtotal * tipPct) / 100)
+        : 0
+      : tipMode === "amount"
+        ? tipAmount
+        : Math.max(0, round2((totalTarget ?? preTip) - preTip))
+  const extra = round2(tax + tip)
+  // Round-number cash targets: next dollar, next $5, next $10 above the
+  // pre-tip bill (deduped — e.g. $106.22 → 107 / 110 / 120).
+  const roundTargets = [
+    ...new Set([
+      Math.ceil(preTip),
+      Math.ceil(preTip / 5) * 5,
+      Math.ceil(preTip / 10) * 10,
+      Math.ceil(preTip / 10) * 10 + 10,
+    ]),
+  ]
+    .filter((n) => n > 0)
+    .slice(0, 3)
+
+  const auto = deriveShares(rows, travelerIds, extra)
+  const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0
+  const grandTotal = round2(travelerIds.reduce((s, id) => s + finalOf(id), 0))
   const hasOverride = Object.keys(manual).length > 0
 
   const setManualAmount = (id: string, raw: string) => {
@@ -158,15 +206,15 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
   const submit = () => {
     if (!canSubmit) return
-    const shares = Object.fromEntries(TRAVELER_IDS.map((id) => [id, finalOf(id)]))
-    const { payer, split } = splitToExpense({ mode: "amount", shares })
+    const shares = Object.fromEntries(travelerIds.map((id) => [id, finalOf(id)]))
+    const { payer, split } = splitToExpense({ mode: "amount", shares }, travelerIds)
     const items: ExpenseItem[] = cleanRows.map((r) => {
-      const who = r.who.filter((id) => TRAVELER_IDS.includes(id))
+      const who = r.who.filter((id) => travelerIds.includes(id))
       return {
         name: r.name.trim() || "未命名",
         quantity: r.quantity,
         price: round2(r.price),
-        who: isAA(who) ? undefined : who,
+        who: isAA(who, travelerIds) ? undefined : who,
       }
     })
     onSubmit({
@@ -247,7 +295,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               <span className={FIELD_LABEL}>菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）</span>
               <div className="flex flex-col gap-[9px]">
                 {rows.map((row) => {
-                  const rowIsAA = isAA(row.who)
+                  const rowIsAA = isAA(row.who, travelerIds)
                   return (
                     <div className="border border-[#ebe9e3] rounded-xl bg-white px-3 py-2.5" key={row.id}>
                       <div className="flex items-center gap-[7px]">
@@ -309,7 +357,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         </button>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-[9px]">
-                        {TRAVELERS.map((m) => (
+                        {travelers.map((m) => (
                           <button
                             type="button"
                             key={m.id}
@@ -339,29 +387,146 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </div>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-              <span className={FIELD_LABEL}>税费 / 小费 / 服务费（按比例分摊）</span>
+              <span className={FIELD_LABEL}>税费 / 服务费（按比例分摊）</span>
               <div className="inline-flex items-center gap-1 max-w-[180px]">
                 <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
                 <input
-                  key={`extra-${recalc}`}
+                  key={`tax-${recalc}-${tax}`}
                   className={FIELD_INPUT}
                   type="number"
                   inputMode="decimal"
                   step="0.01"
-                  defaultValue={extra || ""}
+                  defaultValue={tax || ""}
                   autoComplete="off"
                   data-1p-ignore
                   data-lpignore="true"
                   placeholder="0.00"
                   onBlur={(e) => {
                     const n = parseFloat(e.target.value)
-                    setExtra(Number.isFinite(n) ? Math.max(0, round2(n)) : 0)
+                    setTax(Number.isFinite(n) ? Math.max(0, round2(n)) : 0)
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur()
                   }}
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+              <span className={FIELD_LABEL}>小费（按比例分摊）</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {suggestedPcts.map((p) => {
+                  const on = tipMode === "percent" && tipPct === p
+                  return (
+                    <button
+                      type="button"
+                      key={p}
+                      className={`font-grotesk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${on ? CHIP_ON : CHIP_OFF}`}
+                      onClick={() => {
+                        // Re-tapping the active percent turns the tip off.
+                        setTipMode("percent")
+                        setTipPct(on ? null : p)
+                      }}
+                    >
+                      {p}%
+                    </button>
+                  )
+                })}
+                <button
+                  type="button"
+                  className={`font-cjk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${tipMode === "amount" ? CHIP_ON : CHIP_OFF}`}
+                  onClick={() => setTipMode("amount")}
+                >
+                  金额
+                </button>
+                <button
+                  type="button"
+                  className={`font-cjk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${tipMode === "total" ? CHIP_ON : CHIP_OFF}`}
+                  onClick={() => setTipMode("total")}
+                >
+                  凑整
+                </button>
+              </div>
+
+              {tipMode === "percent" && tipPct != null && (
+                <span className="font-cjk text-[12px] text-[#76726a]">
+                  按菜品小计 {tipPct}% = {fmtMoney(tip)}
+                </span>
+              )}
+
+              {tipMode === "amount" && (
+                <div className="inline-flex items-center gap-1 max-w-[180px]">
+                  <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                  <input
+                    key={`tip-${recalc}-${tipAmount}`}
+                    className={FIELD_INPUT}
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    defaultValue={tipAmount || ""}
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    placeholder="0.00"
+                    onBlur={(e) => {
+                      const n = parseFloat(e.target.value)
+                      setTipAmount(Number.isFinite(n) ? Math.max(0, round2(n)) : 0)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur()
+                    }}
+                  />
+                </div>
+              )}
+
+              {tipMode === "total" && (
+                <>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {roundTargets.map((n) => {
+                      const on = totalTarget === n
+                      return (
+                        <button
+                          type="button"
+                          key={n}
+                          className={`font-grotesk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${on ? CHIP_ON : CHIP_OFF}`}
+                          onClick={() => setTotalTarget(n)}
+                        >
+                          付 ${n}
+                        </button>
+                      )
+                    })}
+                    <span className="inline-flex items-center gap-1 max-w-[140px]">
+                      <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                      <input
+                        key={`target-${recalc}-${totalTarget}`}
+                        className={FIELD_INPUT}
+                        type="number"
+                        inputMode="decimal"
+                        step="1"
+                        defaultValue={totalTarget ?? ""}
+                        autoComplete="off"
+                        data-1p-ignore
+                        data-lpignore="true"
+                        placeholder="最终付了多少"
+                        onBlur={(e) => {
+                          const n = parseFloat(e.target.value)
+                          setTotalTarget(Number.isFinite(n) && n > 0 ? round2(n) : null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur()
+                        }}
+                      />
+                    </span>
+                  </div>
+                  <span className="font-cjk text-[12px] text-[#76726a]">
+                    {totalTarget == null
+                      ? `税后合计 ${fmtMoney(preTip)}，选一个凑整数或直接填实付金额`
+                      : totalTarget < preTip
+                        ? `低于税后合计 ${fmtMoney(preTip)}，小费按 $0 计`
+                        : `付 ${fmtMoney(totalTarget)} → 小费 ${fmtMoney(tip)}`}
+                  </span>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
@@ -375,7 +540,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                {TRAVELERS.map((m) => (
+                {travelers.map((m) => (
                   <div className="flex items-center justify-between gap-2.5 px-3 py-2 border border-[#ebe9e3] rounded-xl bg-white" key={m.id}>
                     <span className="inline-flex items-center gap-2 font-cjk font-semibold text-sm text-[#1c1b19]">
                       <Avatar m={m} size="xs" />
@@ -412,8 +577,16 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                 <span className="font-sans font-semibold">{fmtMoney(lineSubtotal)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
-                <span>税费 / 小费</span>
-                <span className="font-sans font-semibold">{fmtMoney(extra)}</span>
+                <span>税费 / 服务费</span>
+                <span className="font-sans font-semibold">{fmtMoney(tax)}</span>
+              </div>
+              <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
+                <span>
+                  小费
+                  {tipMode === "percent" && tipPct != null && ` · ${tipPct}%`}
+                  {tipMode === "total" && totalTarget != null && ` · 凑整到 ${fmtMoney(totalTarget)}`}
+                </span>
+                <span className="font-sans font-semibold">{fmtMoney(tip)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-bold text-base text-[#1c1b19] mt-1 pt-2 border-t border-dashed border-[#ebe9e3]">
                 <span>合计</span>

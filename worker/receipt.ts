@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 
-import { sessionUser } from "./auth";
+import { memberUser } from "./registry";
 import type { Env } from "./env";
 
-// Receipt OCR/parse for the admin split view. The browser uploads a downscaled
-// JPEG; we hand it to Gemini with a strict JSON schema and return the structured
-// line items. Admin-gated (only a valid session, which is only ever issued to
-// the one allowed GitHub email) so the key and quota stay protected.
+// Receipt OCR/parse for the admin split view, mounted per trip
+// (/api/trips/:tripId/receipt). The browser uploads a downscaled JPEG; we hand
+// it to Gemini with a strict JSON schema and return the structured line items.
+// Membership-gated so the key and quota stay protected.
 
 // Model id comes from the GEMINI_MODEL public var (wrangler.jsonc), with a
 // fallback so the scanner still works if it's unset.
@@ -37,6 +37,7 @@ const RESPONSE_SCHEMA = {
     tax: { type: "NUMBER" },
     tip: { type: "NUMBER" },
     total: { type: "NUMBER" },
+    suggestedTips: { type: "ARRAY", items: { type: "NUMBER" } },
   },
   required: ["items", "total"],
 } as const;
@@ -46,6 +47,7 @@ const PROMPT = [
   "Read the receipt image and extract every ordered line item (dish or product).",
   "For each item return: name (keep the original language, including Chinese), quantity (default 1), and price = the line-item TOTAL for that row (quantity * unit price).",
   "Also return subtotal, tax, tip (0 if none), and total when printed.",
+  "If the receipt prints suggested tip / gratuity options, return their percentages as numbers in suggestedTips (e.g. [18, 20, 22]); otherwise return an empty array.",
   "All money values are plain numbers with no currency symbols or thousands separators.",
   "Do not invent items, do not include subtotal/tax/total as line items, and ignore non-purchase text (server name, table, address).",
 ].join(" ");
@@ -59,12 +61,15 @@ type ParsedReceipt = {
   tax?: number;
   tip?: number;
   total: number;
+  suggestedTips?: number[];
 };
 
 const receipt = new Hono<{ Bindings: Env }>();
 
 receipt.post("/parse", async (c) => {
-  const user = await sessionUser(c);
+  // Param typed loose here: the sub-app is mounted at /api/trips/:tripId/receipt.
+  const tripId = c.req.param("tripId") ?? "";
+  const user = tripId ? await memberUser(c, tripId) : null;
   if (!user) return c.json({ error: "forbidden" }, 403);
 
   const key = c.env.GEMINI_API_KEY;
@@ -125,6 +130,18 @@ receipt.post("/parse", async (c) => {
     .filter((it) => it.name.length > 0);
 
   const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : undefined);
+  // Printed suggested-gratuity percentages: plausible percents only, deduped,
+  // ascending, at most four (some receipts print each option twice).
+  const suggestedTips = [
+    ...new Set(
+      (Array.isArray(parsed.suggestedTips) ? parsed.suggestedTips : [])
+        .map(Number)
+        .filter((n) => Number.isFinite(n) && n > 0 && n <= 100)
+        .map((n) => Math.round(n)),
+    ),
+  ]
+    .sort((a, b) => a - b)
+    .slice(0, 4);
   return c.json({
     merchant: typeof parsed.merchant === "string" ? parsed.merchant.trim() : "",
     currency: typeof parsed.currency === "string" ? parsed.currency.trim() : "",
@@ -133,6 +150,7 @@ receipt.post("/parse", async (c) => {
     tax: num(parsed.tax),
     tip: num(parsed.tip),
     total: num(parsed.total),
+    suggestedTips,
   });
 });
 

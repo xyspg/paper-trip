@@ -14,13 +14,23 @@ import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminSuggestionsRouteImport } from './routes/admin.suggestions'
-import { Route as AdminSplitRouteImport } from './routes/admin.split'
-import { Route as AdminItineraryRouteImport } from './routes/admin.itinerary'
-import { Route as AdminBackupsRouteImport } from './routes/admin.backups'
-import { Route as AdminAuditRouteImport } from './routes/admin.audit'
-import { Route as AdminAgentRouteImport } from './routes/admin.agent'
+import { Route as TTripIdRouteImport } from './routes/t.$tripId'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AdminSplatRouteImport } from './routes/admin.$'
+import { Route as TTripIdIndexRouteImport } from './routes/t.$tripId.index'
+import { Route as TTripIdTimelineRouteImport } from './routes/t.$tripId.timeline'
+import { Route as TTripIdLedgerRouteImport } from './routes/t.$tripId.ledger'
+import { Route as TTripIdBookingsRouteImport } from './routes/t.$tripId.bookings'
+import { Route as TTripIdAdminRouteImport } from './routes/t.$tripId.admin'
+import { Route as TTripIdAdminIndexRouteImport } from './routes/t.$tripId.admin.index'
+import { Route as TTripIdAdminSuggestionsRouteImport } from './routes/t.$tripId.admin.suggestions'
+import { Route as TTripIdAdminSplitRouteImport } from './routes/t.$tripId.admin.split'
+import { Route as TTripIdAdminSettingsRouteImport } from './routes/t.$tripId.admin.settings'
+import { Route as TTripIdAdminMembersRouteImport } from './routes/t.$tripId.admin.members'
+import { Route as TTripIdAdminItineraryRouteImport } from './routes/t.$tripId.admin.itinerary'
+import { Route as TTripIdAdminBackupsRouteImport } from './routes/t.$tripId.admin.backups'
+import { Route as TTripIdAdminAuditRouteImport } from './routes/t.$tripId.admin.audit'
+import { Route as TTripIdAdminAgentRouteImport } from './routes/t.$tripId.admin.agent'
 
 const TimelineRoute = TimelineRouteImport.update({
   id: '/timeline',
@@ -47,40 +57,90 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
+const TTripIdRoute = TTripIdRouteImport.update({
+  id: '/t/$tripId',
+  path: '/t/$tripId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSplatRoute = AdminSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => AdminRoute,
+} as any)
+const TTripIdIndexRoute = TTripIdIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdRoute,
 } as any)
-const AdminSuggestionsRoute = AdminSuggestionsRouteImport.update({
+const TTripIdTimelineRoute = TTripIdTimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => TTripIdRoute,
+} as any)
+const TTripIdLedgerRoute = TTripIdLedgerRouteImport.update({
+  id: '/ledger',
+  path: '/ledger',
+  getParentRoute: () => TTripIdRoute,
+} as any)
+const TTripIdBookingsRoute = TTripIdBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => TTripIdRoute,
+} as any)
+const TTripIdAdminRoute = TTripIdAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => TTripIdRoute,
+} as any)
+const TTripIdAdminIndexRoute = TTripIdAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TTripIdAdminRoute,
+} as any)
+const TTripIdAdminSuggestionsRoute = TTripIdAdminSuggestionsRouteImport.update({
   id: '/suggestions',
   path: '/suggestions',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdAdminRoute,
 } as any)
-const AdminSplitRoute = AdminSplitRouteImport.update({
+const TTripIdAdminSplitRoute = TTripIdAdminSplitRouteImport.update({
   id: '/split',
   path: '/split',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdAdminRoute,
 } as any)
-const AdminItineraryRoute = AdminItineraryRouteImport.update({
+const TTripIdAdminSettingsRoute = TTripIdAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => TTripIdAdminRoute,
+} as any)
+const TTripIdAdminMembersRoute = TTripIdAdminMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => TTripIdAdminRoute,
+} as any)
+const TTripIdAdminItineraryRoute = TTripIdAdminItineraryRouteImport.update({
   id: '/itinerary',
   path: '/itinerary',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdAdminRoute,
 } as any)
-const AdminBackupsRoute = AdminBackupsRouteImport.update({
+const TTripIdAdminBackupsRoute = TTripIdAdminBackupsRouteImport.update({
   id: '/backups',
   path: '/backups',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdAdminRoute,
 } as any)
-const AdminAuditRoute = AdminAuditRouteImport.update({
+const TTripIdAdminAuditRoute = TTripIdAdminAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdAdminRoute,
 } as any)
-const AdminAgentRoute = AdminAgentRouteImport.update({
+const TTripIdAdminAgentRoute = TTripIdAdminAgentRouteImport.update({
   id: '/agent',
   path: '/agent',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => TTripIdAdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -89,26 +149,45 @@ export interface FileRoutesByFullPath {
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
-  '/admin/agent': typeof AdminAgentRoute
-  '/admin/audit': typeof AdminAuditRoute
-  '/admin/backups': typeof AdminBackupsRoute
-  '/admin/itinerary': typeof AdminItineraryRoute
-  '/admin/split': typeof AdminSplitRoute
-  '/admin/suggestions': typeof AdminSuggestionsRoute
-  '/admin/': typeof AdminIndexRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/t/$tripId': typeof TTripIdRouteWithChildren
+  '/t/$tripId/admin': typeof TTripIdAdminRouteWithChildren
+  '/t/$tripId/bookings': typeof TTripIdBookingsRoute
+  '/t/$tripId/ledger': typeof TTripIdLedgerRoute
+  '/t/$tripId/timeline': typeof TTripIdTimelineRoute
+  '/t/$tripId/': typeof TTripIdIndexRoute
+  '/t/$tripId/admin/agent': typeof TTripIdAdminAgentRoute
+  '/t/$tripId/admin/audit': typeof TTripIdAdminAuditRoute
+  '/t/$tripId/admin/backups': typeof TTripIdAdminBackupsRoute
+  '/t/$tripId/admin/itinerary': typeof TTripIdAdminItineraryRoute
+  '/t/$tripId/admin/members': typeof TTripIdAdminMembersRoute
+  '/t/$tripId/admin/settings': typeof TTripIdAdminSettingsRoute
+  '/t/$tripId/admin/split': typeof TTripIdAdminSplitRoute
+  '/t/$tripId/admin/suggestions': typeof TTripIdAdminSuggestionsRoute
+  '/t/$tripId/admin/': typeof TTripIdAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
-  '/admin/agent': typeof AdminAgentRoute
-  '/admin/audit': typeof AdminAuditRoute
-  '/admin/backups': typeof AdminBackupsRoute
-  '/admin/itinerary': typeof AdminItineraryRoute
-  '/admin/split': typeof AdminSplitRoute
-  '/admin/suggestions': typeof AdminSuggestionsRoute
-  '/admin': typeof AdminIndexRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/t/$tripId/bookings': typeof TTripIdBookingsRoute
+  '/t/$tripId/ledger': typeof TTripIdLedgerRoute
+  '/t/$tripId/timeline': typeof TTripIdTimelineRoute
+  '/t/$tripId': typeof TTripIdIndexRoute
+  '/t/$tripId/admin/agent': typeof TTripIdAdminAgentRoute
+  '/t/$tripId/admin/audit': typeof TTripIdAdminAuditRoute
+  '/t/$tripId/admin/backups': typeof TTripIdAdminBackupsRoute
+  '/t/$tripId/admin/itinerary': typeof TTripIdAdminItineraryRoute
+  '/t/$tripId/admin/members': typeof TTripIdAdminMembersRoute
+  '/t/$tripId/admin/settings': typeof TTripIdAdminSettingsRoute
+  '/t/$tripId/admin/split': typeof TTripIdAdminSplitRoute
+  '/t/$tripId/admin/suggestions': typeof TTripIdAdminSuggestionsRoute
+  '/t/$tripId/admin': typeof TTripIdAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,13 +196,23 @@ export interface FileRoutesById {
   '/bookings': typeof BookingsRoute
   '/ledger': typeof LedgerRoute
   '/timeline': typeof TimelineRoute
-  '/admin/agent': typeof AdminAgentRoute
-  '/admin/audit': typeof AdminAuditRoute
-  '/admin/backups': typeof AdminBackupsRoute
-  '/admin/itinerary': typeof AdminItineraryRoute
-  '/admin/split': typeof AdminSplitRoute
-  '/admin/suggestions': typeof AdminSuggestionsRoute
-  '/admin/': typeof AdminIndexRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/t/$tripId': typeof TTripIdRouteWithChildren
+  '/t/$tripId/admin': typeof TTripIdAdminRouteWithChildren
+  '/t/$tripId/bookings': typeof TTripIdBookingsRoute
+  '/t/$tripId/ledger': typeof TTripIdLedgerRoute
+  '/t/$tripId/timeline': typeof TTripIdTimelineRoute
+  '/t/$tripId/': typeof TTripIdIndexRoute
+  '/t/$tripId/admin/agent': typeof TTripIdAdminAgentRoute
+  '/t/$tripId/admin/audit': typeof TTripIdAdminAuditRoute
+  '/t/$tripId/admin/backups': typeof TTripIdAdminBackupsRoute
+  '/t/$tripId/admin/itinerary': typeof TTripIdAdminItineraryRoute
+  '/t/$tripId/admin/members': typeof TTripIdAdminMembersRoute
+  '/t/$tripId/admin/settings': typeof TTripIdAdminSettingsRoute
+  '/t/$tripId/admin/split': typeof TTripIdAdminSplitRoute
+  '/t/$tripId/admin/suggestions': typeof TTripIdAdminSuggestionsRoute
+  '/t/$tripId/admin/': typeof TTripIdAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,26 +222,45 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/ledger'
     | '/timeline'
-    | '/admin/agent'
-    | '/admin/audit'
-    | '/admin/backups'
-    | '/admin/itinerary'
-    | '/admin/split'
-    | '/admin/suggestions'
-    | '/admin/'
+    | '/admin/$'
+    | '/invite/$token'
+    | '/t/$tripId'
+    | '/t/$tripId/admin'
+    | '/t/$tripId/bookings'
+    | '/t/$tripId/ledger'
+    | '/t/$tripId/timeline'
+    | '/t/$tripId/'
+    | '/t/$tripId/admin/agent'
+    | '/t/$tripId/admin/audit'
+    | '/t/$tripId/admin/backups'
+    | '/t/$tripId/admin/itinerary'
+    | '/t/$tripId/admin/members'
+    | '/t/$tripId/admin/settings'
+    | '/t/$tripId/admin/split'
+    | '/t/$tripId/admin/suggestions'
+    | '/t/$tripId/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/bookings'
     | '/ledger'
     | '/timeline'
-    | '/admin/agent'
-    | '/admin/audit'
-    | '/admin/backups'
-    | '/admin/itinerary'
-    | '/admin/split'
-    | '/admin/suggestions'
-    | '/admin'
+    | '/admin/$'
+    | '/invite/$token'
+    | '/t/$tripId/bookings'
+    | '/t/$tripId/ledger'
+    | '/t/$tripId/timeline'
+    | '/t/$tripId'
+    | '/t/$tripId/admin/agent'
+    | '/t/$tripId/admin/audit'
+    | '/t/$tripId/admin/backups'
+    | '/t/$tripId/admin/itinerary'
+    | '/t/$tripId/admin/members'
+    | '/t/$tripId/admin/settings'
+    | '/t/$tripId/admin/split'
+    | '/t/$tripId/admin/suggestions'
+    | '/t/$tripId/admin'
   id:
     | '__root__'
     | '/'
@@ -160,13 +268,23 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/ledger'
     | '/timeline'
-    | '/admin/agent'
-    | '/admin/audit'
-    | '/admin/backups'
-    | '/admin/itinerary'
-    | '/admin/split'
-    | '/admin/suggestions'
-    | '/admin/'
+    | '/admin/$'
+    | '/invite/$token'
+    | '/t/$tripId'
+    | '/t/$tripId/admin'
+    | '/t/$tripId/bookings'
+    | '/t/$tripId/ledger'
+    | '/t/$tripId/timeline'
+    | '/t/$tripId/'
+    | '/t/$tripId/admin/agent'
+    | '/t/$tripId/admin/audit'
+    | '/t/$tripId/admin/backups'
+    | '/t/$tripId/admin/itinerary'
+    | '/t/$tripId/admin/members'
+    | '/t/$tripId/admin/settings'
+    | '/t/$tripId/admin/split'
+    | '/t/$tripId/admin/suggestions'
+    | '/t/$tripId/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +293,8 @@ export interface RootRouteChildren {
   BookingsRoute: typeof BookingsRoute
   LedgerRoute: typeof LedgerRoute
   TimelineRoute: typeof TimelineRoute
+  InviteTokenRoute: typeof InviteTokenRoute
+  TTripIdRoute: typeof TTripIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -214,79 +334,184 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
+    '/t/$tripId': {
+      id: '/t/$tripId'
+      path: '/t/$tripId'
+      fullPath: '/t/$tripId'
+      preLoaderRoute: typeof TTripIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/$': {
+      id: '/admin/$'
+      path: '/$'
+      fullPath: '/admin/$'
+      preLoaderRoute: typeof AdminSplatRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/t/$tripId/': {
+      id: '/t/$tripId/'
       path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/'
+      preLoaderRoute: typeof TTripIdIndexRouteImport
+      parentRoute: typeof TTripIdRoute
     }
-    '/admin/suggestions': {
-      id: '/admin/suggestions'
+    '/t/$tripId/timeline': {
+      id: '/t/$tripId/timeline'
+      path: '/timeline'
+      fullPath: '/t/$tripId/timeline'
+      preLoaderRoute: typeof TTripIdTimelineRouteImport
+      parentRoute: typeof TTripIdRoute
+    }
+    '/t/$tripId/ledger': {
+      id: '/t/$tripId/ledger'
+      path: '/ledger'
+      fullPath: '/t/$tripId/ledger'
+      preLoaderRoute: typeof TTripIdLedgerRouteImport
+      parentRoute: typeof TTripIdRoute
+    }
+    '/t/$tripId/bookings': {
+      id: '/t/$tripId/bookings'
+      path: '/bookings'
+      fullPath: '/t/$tripId/bookings'
+      preLoaderRoute: typeof TTripIdBookingsRouteImport
+      parentRoute: typeof TTripIdRoute
+    }
+    '/t/$tripId/admin': {
+      id: '/t/$tripId/admin'
+      path: '/admin'
+      fullPath: '/t/$tripId/admin'
+      preLoaderRoute: typeof TTripIdAdminRouteImport
+      parentRoute: typeof TTripIdRoute
+    }
+    '/t/$tripId/admin/': {
+      id: '/t/$tripId/admin/'
+      path: '/'
+      fullPath: '/t/$tripId/admin/'
+      preLoaderRoute: typeof TTripIdAdminIndexRouteImport
+      parentRoute: typeof TTripIdAdminRoute
+    }
+    '/t/$tripId/admin/suggestions': {
+      id: '/t/$tripId/admin/suggestions'
       path: '/suggestions'
-      fullPath: '/admin/suggestions'
-      preLoaderRoute: typeof AdminSuggestionsRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/admin/suggestions'
+      preLoaderRoute: typeof TTripIdAdminSuggestionsRouteImport
+      parentRoute: typeof TTripIdAdminRoute
     }
-    '/admin/split': {
-      id: '/admin/split'
+    '/t/$tripId/admin/split': {
+      id: '/t/$tripId/admin/split'
       path: '/split'
-      fullPath: '/admin/split'
-      preLoaderRoute: typeof AdminSplitRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/admin/split'
+      preLoaderRoute: typeof TTripIdAdminSplitRouteImport
+      parentRoute: typeof TTripIdAdminRoute
     }
-    '/admin/itinerary': {
-      id: '/admin/itinerary'
+    '/t/$tripId/admin/settings': {
+      id: '/t/$tripId/admin/settings'
+      path: '/settings'
+      fullPath: '/t/$tripId/admin/settings'
+      preLoaderRoute: typeof TTripIdAdminSettingsRouteImport
+      parentRoute: typeof TTripIdAdminRoute
+    }
+    '/t/$tripId/admin/members': {
+      id: '/t/$tripId/admin/members'
+      path: '/members'
+      fullPath: '/t/$tripId/admin/members'
+      preLoaderRoute: typeof TTripIdAdminMembersRouteImport
+      parentRoute: typeof TTripIdAdminRoute
+    }
+    '/t/$tripId/admin/itinerary': {
+      id: '/t/$tripId/admin/itinerary'
       path: '/itinerary'
-      fullPath: '/admin/itinerary'
-      preLoaderRoute: typeof AdminItineraryRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/admin/itinerary'
+      preLoaderRoute: typeof TTripIdAdminItineraryRouteImport
+      parentRoute: typeof TTripIdAdminRoute
     }
-    '/admin/backups': {
-      id: '/admin/backups'
+    '/t/$tripId/admin/backups': {
+      id: '/t/$tripId/admin/backups'
       path: '/backups'
-      fullPath: '/admin/backups'
-      preLoaderRoute: typeof AdminBackupsRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/admin/backups'
+      preLoaderRoute: typeof TTripIdAdminBackupsRouteImport
+      parentRoute: typeof TTripIdAdminRoute
     }
-    '/admin/audit': {
-      id: '/admin/audit'
+    '/t/$tripId/admin/audit': {
+      id: '/t/$tripId/admin/audit'
       path: '/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof AdminAuditRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/admin/audit'
+      preLoaderRoute: typeof TTripIdAdminAuditRouteImport
+      parentRoute: typeof TTripIdAdminRoute
     }
-    '/admin/agent': {
-      id: '/admin/agent'
+    '/t/$tripId/admin/agent': {
+      id: '/t/$tripId/admin/agent'
       path: '/agent'
-      fullPath: '/admin/agent'
-      preLoaderRoute: typeof AdminAgentRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/t/$tripId/admin/agent'
+      preLoaderRoute: typeof TTripIdAdminAgentRouteImport
+      parentRoute: typeof TTripIdAdminRoute
     }
   }
 }
 
 interface AdminRouteChildren {
-  AdminAgentRoute: typeof AdminAgentRoute
-  AdminAuditRoute: typeof AdminAuditRoute
-  AdminBackupsRoute: typeof AdminBackupsRoute
-  AdminItineraryRoute: typeof AdminItineraryRoute
-  AdminSplitRoute: typeof AdminSplitRoute
-  AdminSuggestionsRoute: typeof AdminSuggestionsRoute
-  AdminIndexRoute: typeof AdminIndexRoute
+  AdminSplatRoute: typeof AdminSplatRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminAgentRoute: AdminAgentRoute,
-  AdminAuditRoute: AdminAuditRoute,
-  AdminBackupsRoute: AdminBackupsRoute,
-  AdminItineraryRoute: AdminItineraryRoute,
-  AdminSplitRoute: AdminSplitRoute,
-  AdminSuggestionsRoute: AdminSuggestionsRoute,
-  AdminIndexRoute: AdminIndexRoute,
+  AdminSplatRoute: AdminSplatRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface TTripIdAdminRouteChildren {
+  TTripIdAdminAgentRoute: typeof TTripIdAdminAgentRoute
+  TTripIdAdminAuditRoute: typeof TTripIdAdminAuditRoute
+  TTripIdAdminBackupsRoute: typeof TTripIdAdminBackupsRoute
+  TTripIdAdminItineraryRoute: typeof TTripIdAdminItineraryRoute
+  TTripIdAdminMembersRoute: typeof TTripIdAdminMembersRoute
+  TTripIdAdminSettingsRoute: typeof TTripIdAdminSettingsRoute
+  TTripIdAdminSplitRoute: typeof TTripIdAdminSplitRoute
+  TTripIdAdminSuggestionsRoute: typeof TTripIdAdminSuggestionsRoute
+  TTripIdAdminIndexRoute: typeof TTripIdAdminIndexRoute
+}
+
+const TTripIdAdminRouteChildren: TTripIdAdminRouteChildren = {
+  TTripIdAdminAgentRoute: TTripIdAdminAgentRoute,
+  TTripIdAdminAuditRoute: TTripIdAdminAuditRoute,
+  TTripIdAdminBackupsRoute: TTripIdAdminBackupsRoute,
+  TTripIdAdminItineraryRoute: TTripIdAdminItineraryRoute,
+  TTripIdAdminMembersRoute: TTripIdAdminMembersRoute,
+  TTripIdAdminSettingsRoute: TTripIdAdminSettingsRoute,
+  TTripIdAdminSplitRoute: TTripIdAdminSplitRoute,
+  TTripIdAdminSuggestionsRoute: TTripIdAdminSuggestionsRoute,
+  TTripIdAdminIndexRoute: TTripIdAdminIndexRoute,
+}
+
+const TTripIdAdminRouteWithChildren = TTripIdAdminRoute._addFileChildren(
+  TTripIdAdminRouteChildren,
+)
+
+interface TTripIdRouteChildren {
+  TTripIdAdminRoute: typeof TTripIdAdminRouteWithChildren
+  TTripIdBookingsRoute: typeof TTripIdBookingsRoute
+  TTripIdLedgerRoute: typeof TTripIdLedgerRoute
+  TTripIdTimelineRoute: typeof TTripIdTimelineRoute
+  TTripIdIndexRoute: typeof TTripIdIndexRoute
+}
+
+const TTripIdRouteChildren: TTripIdRouteChildren = {
+  TTripIdAdminRoute: TTripIdAdminRouteWithChildren,
+  TTripIdBookingsRoute: TTripIdBookingsRoute,
+  TTripIdLedgerRoute: TTripIdLedgerRoute,
+  TTripIdTimelineRoute: TTripIdTimelineRoute,
+  TTripIdIndexRoute: TTripIdIndexRoute,
+}
+
+const TTripIdRouteWithChildren =
+  TTripIdRoute._addFileChildren(TTripIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -294,6 +519,8 @@ const rootRouteChildren: RootRouteChildren = {
   BookingsRoute: BookingsRoute,
   LedgerRoute: LedgerRoute,
   TimelineRoute: TimelineRoute,
+  InviteTokenRoute: InviteTokenRoute,
+  TTripIdRoute: TTripIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

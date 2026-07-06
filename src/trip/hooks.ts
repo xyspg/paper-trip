@@ -2,64 +2,196 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMountEffect } from "../useMountEffect";
 import {
   createBackup,
+  createInvite,
+  createTrip,
   deleteBackup,
+  deleteTrip,
   fetchAudit,
   fetchBackups,
   fetchCreditCards,
+  fetchInvites,
+  fetchMembers,
   fetchTrip,
+  fetchTripMeta,
+  fetchTrips,
+  patchTrip,
+  removeMember,
   restoreBackup,
+  revokeInvite,
   sendOp,
   tripWsUrl,
+  type NewTripInput,
   type TripSnapshot,
 } from "./api";
 import { applyOp, type TripOp } from "./ops";
 import type { Trip } from "./types";
 
-const tripKey = ["trip"] as const;
-const backupsKey = ["trip-backups"] as const;
+// Every trip-scoped key is namespaced by tripId so switching trips can never
+// bleed one trip's cache into another's.
+const tripKey = (tripId: string) => ["trip", tripId] as const;
+const backupsKey = (tripId: string) => ["trip-backups", tripId] as const;
+const auditKey = (tripId: string) => ["audit", tripId] as const;
+export const tripsKey = ["trips"] as const;
+export const tripMetaKey = (tripId: string) => ["trip-meta", tripId] as const;
 
-export const useTrip = () => useQuery({ queryKey: tripKey, queryFn: fetchTrip });
+export const useTrip = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: tripKey(tripId),
+    // Same rev guard as the websocket/op paths: an initial GET that resolves
+    // after a newer WS update must not roll the cache backwards.
+    queryFn: async () => {
+      const fresh = await fetchTrip(tripId);
+      const cached = queryClient.getQueryData<TripSnapshot>(tripKey(tripId));
+      return cached && cached.rev > fresh.rev ? cached : fresh;
+    },
+  });
+};
 
-// Admin-only audit trail. Gated by `enabled` so it never fires on a public or
-// unauthenticated /admin load (the endpoint 403s for non-admins); `retry: false`
+// Registry metadata (title/visibility/dates/my role). retry: false — a 401/403
+// is an access verdict, not a transient failure.
+export const useTripMeta = (tripId: string) =>
+  useQuery({
+    queryKey: tripMetaKey(tripId),
+    queryFn: () => fetchTripMeta(tripId),
+    retry: false,
+    staleTime: 30_000,
+  });
+
+export const useTrips = (enabled = true) =>
+  useQuery({ queryKey: tripsKey, queryFn: fetchTrips, enabled, retry: false });
+
+export const useCreateTrip = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NewTripInput) => createTrip(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tripsKey }),
+  });
+};
+
+export const usePatchTrip = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: Partial<NewTripInput>) => patchTrip(tripId, patch),
+    onSuccess: (meta) => {
+      // The registry row is the response; the DO document update arrives over
+      // the live websocket on its own.
+      queryClient.setQueryData(tripMetaKey(tripId), meta);
+      queryClient.invalidateQueries({ queryKey: tripsKey });
+    },
+  });
+};
+
+export const useDeleteTrip = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteTrip(tripId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tripsKey });
+      queryClient.removeQueries({ queryKey: tripKey(tripId) });
+      queryClient.removeQueries({ queryKey: tripMetaKey(tripId) });
+    },
+  });
+};
+
+export const membersKey = (tripId: string) => ["members", tripId] as const;
+
+export const useMembers = (tripId: string, enabled = true) =>
+  useQuery({
+    queryKey: membersKey(tripId),
+    queryFn: () => fetchMembers(tripId),
+    enabled,
+    retry: false,
+    staleTime: 30_000,
+  });
+
+export const useRemoveMember = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => removeMember(tripId, userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey(tripId) }),
+  });
+};
+
+export const invitesKey = (tripId: string) => ["invites", tripId] as const;
+
+export const useInvites = (tripId: string, enabled = true) =>
+  useQuery({
+    queryKey: invitesKey(tripId),
+    queryFn: () => fetchInvites(tripId),
+    enabled,
+    retry: false,
+    staleTime: 30_000,
+  });
+
+export const useCreateInvite = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => createInvite(tripId, email),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: invitesKey(tripId) }),
+  });
+};
+
+export const useRevokeInvite = (tripId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => revokeInvite(tripId, id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: invitesKey(tripId) }),
+  });
+};
+
+// Member-only audit trail. Gated by `enabled` so it never fires on a public or
+// unauthenticated /admin load (the endpoint 403s for non-members); `retry: false`
 // because a 403 is authoritative, not a transient error worth re-issuing.
-export const useAudit = (enabled = true) =>
-  useQuery({ queryKey: ["audit"], queryFn: fetchAudit, enabled, retry: false, staleTime: 30_000 });
+export const useAudit = (tripId: string, enabled = true) =>
+  useQuery({
+    queryKey: auditKey(tripId),
+    queryFn: () => fetchAudit(tripId),
+    enabled,
+    retry: false,
+    staleTime: 30_000,
+  });
 
-export const useBackups = (enabled = true) =>
-  useQuery({ queryKey: backupsKey, queryFn: fetchBackups, enabled, retry: false, staleTime: 30_000 });
+export const useBackups = (tripId: string, enabled = true) =>
+  useQuery({
+    queryKey: backupsKey(tripId),
+    queryFn: () => fetchBackups(tripId),
+    enabled,
+    retry: false,
+    staleTime: 30_000,
+  });
 
-export const useCreateBackup = () => {
+export const useCreateBackup = (tripId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: createBackup,
+    mutationFn: (label?: string) => createBackup(tripId, label),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: backupsKey });
-      queryClient.invalidateQueries({ queryKey: ["audit"] });
+      queryClient.invalidateQueries({ queryKey: backupsKey(tripId) });
+      queryClient.invalidateQueries({ queryKey: auditKey(tripId) });
     },
   });
 };
 
-export const useDeleteBackup = () => {
+export const useDeleteBackup = (tripId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteBackup,
+    mutationFn: (id: string) => deleteBackup(tripId, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: backupsKey });
-      queryClient.invalidateQueries({ queryKey: ["audit"] });
+      queryClient.invalidateQueries({ queryKey: backupsKey(tripId) });
+      queryClient.invalidateQueries({ queryKey: auditKey(tripId) });
     },
   });
 };
 
-export const useRestoreBackup = () => {
+export const useRestoreBackup = (tripId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: restoreBackup,
+    mutationFn: (id: string) => restoreBackup(tripId, id),
     onSuccess: (snapshot) => {
       // Restore only bumps rev + writes one audit row; the backups list is
       // unchanged, so don't invalidate it (avoids a redundant refetch).
-      queryClient.setQueryData<TripSnapshot>(tripKey, snapshot);
-      queryClient.invalidateQueries({ queryKey: ["audit"] });
+      queryClient.setQueryData<TripSnapshot>(tripKey(tripId), snapshot);
+      queryClient.invalidateQueries({ queryKey: auditKey(tripId) });
     },
   });
 };
@@ -76,16 +208,17 @@ export const useCardImage = (): ((name?: string) => string | undefined) => {
   return (name) => (name ? data?.find((card) => card.name === name)?.imageUrl : undefined);
 };
 
-export const useTripOp = () => {
+export const useTripOp = (tripId: string) => {
   const queryClient = useQueryClient();
+  const key = tripKey(tripId);
 
   return useMutation({
-    mutationFn: sendOp,
+    mutationFn: (op: TripOp) => sendOp(tripId, op),
     onMutate: async (op: TripOp) => {
-      await queryClient.cancelQueries({ queryKey: tripKey });
-      const prev = queryClient.getQueryData<TripSnapshot>(tripKey);
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<TripSnapshot>(key);
       if (prev) {
-        queryClient.setQueryData<TripSnapshot>(tripKey, {
+        queryClient.setQueryData<TripSnapshot>(key, {
           rev: prev.rev,
           trip: applyOp(prev.trip, op),
         });
@@ -93,13 +226,13 @@ export const useTripOp = () => {
       return { prev };
     },
     onError: (_err, _op, context) => {
-      if (context?.prev) queryClient.setQueryData(tripKey, context.prev);
+      if (context?.prev) queryClient.setQueryData(key, context.prev);
     },
     // Guard against out-of-order responses (e.g. two quick edits whose POSTs
     // resolve in reverse): never let an older server snapshot overwrite a newer
     // one already in the cache.
     onSuccess: (snapshot) =>
-      queryClient.setQueryData<TripSnapshot>(tripKey, (prev) =>
+      queryClient.setQueryData<TripSnapshot>(key, (prev) =>
         prev && prev.rev > snapshot.rev ? prev : snapshot,
       ),
   });
@@ -107,22 +240,25 @@ export const useTripOp = () => {
 
 type ServerMessage = { type: "snapshot" | "update"; rev: number; trip: Trip };
 
-export const useTripLiveSync = () => {
+// Mount-scoped WebSocket sync. tripId is captured at mount; callers that can
+// switch trips must remount (key by tripId) rather than expect a live re-bind.
+export const useTripLiveSync = (tripId: string) => {
   const queryClient = useQueryClient();
 
   useMountEffect(() => {
-    const ws = new WebSocket(tripWsUrl());
+    const ws = new WebSocket(tripWsUrl(tripId));
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerMessage;
 
-      const current = queryClient.getQueryData<TripSnapshot>(tripKey);
+      const current = queryClient.getQueryData<TripSnapshot>(tripKey(tripId));
 
-      if (!current) return;
-
-      if (message.rev > current.rev) {
-        queryClient.setQueryData<TripSnapshot>(tripKey, { rev: message.rev, trip: message.trip });
-
+      // Absent cache (WS snapshot beat the HTTP fetch) or a newer rev: adopt it.
+      if (!current || message.rev > current.rev) {
+        queryClient.setQueryData<TripSnapshot>(tripKey(tripId), {
+          rev: message.rev,
+          trip: message.trip,
+        });
       }
     };
 

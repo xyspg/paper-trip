@@ -14,6 +14,10 @@ export type TripItem = {
   id: string;
   date: string;
   time: string;
+  // Wall-clock times read in the trip's default timezone (base.timezone). A
+  // stop in another zone (e.g. the NYC leg of a coast-to-coast trip) carries
+  // its own IANA zone here; the timeline labels it (e.g. "EDT").
+  timezone?: string;
   title: string;
   category: "flight" | "food" | "event" | "hotel" | "drive" | "errand";
   location: string;
@@ -129,6 +133,19 @@ export type Expense = {
   items?: ExpenseItem[];
 };
 
+// One person on the trip roster. `id` is the member key every Expense.payer /
+// split share references ('you'/'spr' on the legacy trip, the better-auth user
+// id everywhere else). `userId` is absent for seeded members who have never
+// signed in. Maintained by the worker (synced from the D1 registry on every
+// membership change) — never edited through trip ops.
+export type TripMember = {
+  id: string;
+  userId?: string;
+  name: string;
+  avatarUrl?: string;
+  color?: string;
+};
+
 export type Trip = {
   id: string;
   title: string;
@@ -147,5 +164,7 @@ export type Trip = {
   documents: TripDocument[];
   suggestions: TripSuggestion[];
   expenses: Expense[];
+  // Absent on state persisted before multi-tenancy; the worker backfills it.
+  members?: TripMember[];
   updatedAt: string;
 };

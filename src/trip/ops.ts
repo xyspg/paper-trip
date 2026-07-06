@@ -140,9 +140,50 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
       };
 
     case "resetExpenses":
-      return { ...trip, expenses: structuredClone(tripData.expenses) };
+      // The legacy trip resets to its curated seed; every other trip has no
+      // seed — its clean slate is an empty ledger.
+      return {
+        ...trip,
+        expenses: trip.id === tripData.id ? structuredClone(tripData.expenses) : [],
+      };
 
     case "reset":
-      return structuredClone(tripData);
+      // Same split as resetExpenses. Identity, metadata and the roster always
+      // survive a reset — `members` is registry-owned, not trip content.
+      if (trip.id === tripData.id) {
+        return { ...structuredClone(tripData), members: trip.members };
+      }
+      return {
+        ...trip,
+        items: [],
+        checklists: [],
+        documents: [],
+        suggestions: [],
+        expenses: [],
+      };
   }
+}
+
+// The skeleton a freshly created trip starts from (the DO persists this on
+// /internal/init). Content arrays empty; roster arrives via the first sync.
+export function emptyTrip(seed: {
+  id: string;
+  title: string;
+  dates: { start: string; end: string };
+  timezone: string;
+}): Trip {
+  return {
+    id: seed.id,
+    title: seed.title,
+    subtitle: "",
+    dates: { ...seed.dates },
+    base: { hotel: "", car: "", timezone: seed.timezone },
+    items: [],
+    checklists: [],
+    documents: [],
+    suggestions: [],
+    expenses: [],
+    members: [],
+    updatedAt: new Date().toISOString(),
+  };
 }

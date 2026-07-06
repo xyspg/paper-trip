@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CATS, fmtMoney, TRAVELER_IDS, TRAVELERS, uid } from "./adminData";
+import { CATS, fmtMoney, uid } from "./adminData";
 import type { Expense } from "./adminData";
 import { ExpenseModal, buildExpense } from "./AddExpenseModal";
 import type { NewExpenseInput } from "./AddExpenseModal";
@@ -9,6 +9,7 @@ import { Avatar } from "./Avatar";
 import { EXP_ICON, Icons } from "./AdminIcons";
 import { BTN, BTN_GHOST, BTN_INK, Metrics, SectionHead } from "./adminUi";
 import { useConfirm } from "./useConfirm";
+import { useAdmin } from "./AdminContext";
 import { PaymentSplit, splitFromExpense, splitToExpense } from "./PaymentSplit";
 import type { SplitValue } from "./PaymentSplit";
 import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
@@ -33,6 +34,8 @@ export function SplitSection({
   onDelete,
   onReset,
 }: Props) {
+  const { travelers } = useAdmin();
+  const travelerIds = travelers.map((m) => m.id);
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   // The expense currently being edited (null = the modal is in add mode / closed).
@@ -104,16 +107,16 @@ export function SplitSection({
   };
 
   const commitSplit = (e: Expense, v: SplitValue) => {
-    const { payer, split } = splitToExpense(v);
+    const { payer, split } = splitToExpense(v, travelerIds);
     onSetSplit(e.id, payer, split);
   };
 
   const { subtotal, creditTotal, total } = expenseTotals(expenses);
-  const balances = expenseBalances(expenses, TRAVELER_IDS);
+  const balances = expenseBalances(expenses, travelerIds);
 
   // settlement between the two travelers
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
-  const travelerBalances = TRAVELERS.map((m) => ({
+  const travelerBalances = travelers.map((m) => ({
     m,
     paid: balanceById[m.id]?.paid ?? 0,
     bal: balanceById[m.id]?.balance ?? 0,
@@ -208,13 +211,14 @@ export function SplitSection({
                   />
                 </span>
               </div>
-              <ExpenseItems items={e.items} />
+              <ExpenseItems items={e.items} travelers={travelers} />
               <div className="flex items-start gap-x-4 gap-y-2.5 flex-wrap mt-3">
                 <span className="flex flex-col items-start gap-2 w-full">
                   <span className="font-grotesk text-[10px] tracking-[0.1em] uppercase text-[#9b988f]">
                     谁付的
                   </span>
                   <PaymentSplit
+                    travelers={travelers}
                     value={splitFromExpense(e)}
                     onChange={(v) => commitSplit(e, v)}
                     amount={netExpense(e)}

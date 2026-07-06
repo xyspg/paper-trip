@@ -1,28 +1,30 @@
 ---
-name: ax26-trip
-description: Read and edit the Anime Expo 2026 trip (itinerary stops, checklists, suggestions, expense ledger) through the ax26 HTTP API using a bearer token.
+name: papertrip
+description: Read and edit one Papertrip trip (itinerary stops, checklists, suggestions, expense ledger) through the HTTP API using a trip-scoped bearer token.
 ---
 
-# ax26 Trip API
+# Papertrip Trip API
 
-You are operating on a shared trip-planning app for Anime Expo 2026 (Los
-Angeles). One JSON document holds the whole trip: itinerary items, checklists,
-documents, suggestions, and an expense ledger. Humans watch it live — every
-write you make broadcasts to open browsers immediately and lands in an audit
-log under your token's identity.
+You are operating on a shared multi-tenant trip-planning app. Each trip is one
+JSON document: itinerary items, checklists, documents, suggestions, and an
+expense ledger. Humans watch it live — every write you make broadcasts to open
+browsers immediately and lands in an audit log under your token's identity.
 
 ## Setup
 
-- **API base**: the origin you fetched this file from (e.g. `https://ax26.example.com`).
-- **Auth**: every write needs `Authorization: Bearer <token>` — the `axa_...`
-  token the user gave you alongside this file. Reads are public.
-- Tokens expire; a 401/403 on a previously working call means ask the user for
-  a fresh token.
+- **API base**: the origin you fetched this file from (e.g. `https://papertrip.example.com`).
+- **Trip id**: given by the user alongside the token. All paths below live
+  under `/api/trips/<tripId>`.
+- **Auth**: every request needs `Authorization: Bearer <token>` — the `axa_...`
+  token the user gave you. The token is scoped to exactly one trip; it opens
+  nothing else. (Reads work unauthenticated only on public trips.)
+- Tokens expire and are revoked if the minter leaves the trip; a 401/403 on a
+  previously working call means ask the user for a fresh token.
 
 ## Read
 
 ```
-GET /api/trip            → { "rev": number, "trip": Trip }
+GET /api/trips/<tripId>/trip     → { "rev": number, "trip": Trip }
 ```
 
 Always read first. `rev` is the optimistic-lock cursor for PUT.
@@ -30,7 +32,7 @@ Always read first. `rev` is the optimistic-lock cursor for PUT.
 ## Write — single edits (preferred)
 
 ```
-POST /api/trip
+POST /api/trips/<tripId>/trip
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -62,12 +64,12 @@ Notes:
 - `updateItem` / `updateExpense` replace the **whole** object — fetch first and
   preserve fields you are not changing.
 - Anything not listed (bulk resets, backup restore/delete) is refused with 403
-  `{"error":"op_not_allowed"}`; those need a human admin.
+  `{"error":"op_not_allowed"}`; those need a human.
 
 ## Write — bulk restructure
 
 ```
-PUT /api/trip
+PUT /api/trips/<tripId>/trip
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -78,13 +80,15 @@ Content-Type: application/json
 - 409 `{ "error": "stale_rev", rev, trip }` — someone wrote in between. Reapply
   your changes to the returned `trip` and PUT again with the new `rev`.
 - 400 `{ "error": "bad_request" }` — the body must contain the ENTIRE trip
-  (same `id`, all five arrays present), not a fragment.
+  (same `id`, all five arrays present), not a fragment. `trip.members` is
+  registry-owned: whatever you send there is ignored and re-imposed by the
+  server.
 
 **Before any bulk PUT, create a backup:**
 
 ```
-POST /api/trip/backups        body: {"label":"pre-agent <what you're doing>"}
-GET  /api/trip/backups        → list (restore/delete are human-only)
+POST /api/trips/<tripId>/backups   body: {"label":"pre-agent <what you're doing>"}
+GET  /api/trips/<tripId>/backups   → list (restore/delete are human-only)
 ```
 
 ## Types (synced by hand from `src/trip/types.ts` — trust the live GET over this file)
@@ -92,8 +96,9 @@ GET  /api/trip/backups        → list (restore/delete are human-only)
 ```ts
 type TripItem = {
   id: string                 // kebab-case slug, e.g. "dinner-kagaya"
-  date: string               // "2026-07-03" — trip timezone America/Los_Angeles
-  time: string               // "18:30" 24h
+  date: string               // "2026-07-03" — in the trip's own timezone (trip.base.timezone)
+  time: string               // "18:30" 24h — wall clock at the stop itself
+  timezone?: string          // IANA zone, ONLY when this stop is not in trip.base.timezone (cross-timezone trips)
   title: string
   category: "flight" | "food" | "event" | "hotel" | "drive" | "errand"
   location: string           // venue name
@@ -115,14 +120,14 @@ type Expense = {
   sub: string                // one-line detail
   amount: number             // USD
   credit: number             // statement credit offsetting it, usually 0
-  payer: string              // member id
+  payer: string              // member id (trip.members[].id)
   split?: { mode: "percent" | "amount"; shares: Record<string, number> }
   items?: { name: string; quantity: number; price: number; who?: string[] }[]
 }
 ```
 
-Member ids for `payer`/`shares` and checklist/document shapes: read them from
-`GET /api/trip` (`trip.expenses[].payer`, `trip.checklists`) instead of guessing.
+Member ids for `payer`/`shares` come from `trip.members[].id`; checklist and
+document shapes: read them from the live GET instead of guessing.
 
 ## Rules
 
@@ -132,6 +137,9 @@ Member ids for `payer`/`shares` and checklist/document shapes: read them from
    If the user's screenshot/message doesn't say it, leave the field out or ask.
 4. A restaurant booking becomes: `addItem` with `category: "food"`,
    `status: "locked"`, the reservation time, and the confirmation code if given.
-5. Times are local to Los Angeles. Dates must fall inside `trip.dates`.
+5. Times are wall-clock local to the stop. Stops in the trip's default zone
+   (`trip.base.timezone`) omit `timezone`; a stop in another zone (e.g. the
+   NYC leg of a coast-to-coast trip) sets its own IANA `timezone` so the
+   timeline can label it. Dates must fall inside `trip.dates`.
 6. Don't touch `trip.suggestions` entries you didn't create; don't delete
    items/expenses unless the user asked.

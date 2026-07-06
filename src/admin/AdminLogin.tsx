@@ -1,42 +1,24 @@
 import { useState } from "react";
 import { Icons } from "./AdminIcons";
-import { ADMIN_LOGIN_URL } from "./auth";
-
-const ERRORS: Record<string, string> = {
-  forbidden: "该 GitHub 账号无权进入后台。",
-  oauth: "登录校验失败，请重试。",
-  token: "GitHub 授权失败，请重试。",
-  user: "无法读取 GitHub 身份，请重试。",
-  config: "OAuth 未正确配置。",
-};
+import { signInWithGitHub } from "./auth";
 
 const SCOPES = [
   "读取你的 GitHub 身份与头像",
-  "校验你是该行程仓库的协作者",
+  "校验你的行程成员身份",
   "读写行程 / 建议 / 账目内容",
 ];
 
-// GitHub OAuth full-screen login. The button hands off to the Worker, which runs
-// the OAuth round-trip and redirects back to /admin. Calm editorial design.
+// GitHub OAuth full-screen login. The button hands off to better-auth on the
+// Worker, which runs the OAuth round-trip and returns here. Calm editorial design.
 export function AdminLogin() {
   const [busy, setBusy] = useState(false);
   const params = new URLSearchParams(window.location.search);
-  const error = params.get("error");
-  const login = params.get("login");
-
-  // A rejected account is a dead end on GitHub's side: GitHub auto-reuses the
-  // already-authorized session, so clicking "登录" again just loops back here.
-  const forbidden = error === "forbidden";
-  const errMsg =
-    forbidden && login
-      ? `GitHub 账号 @${login} 无权进入后台。`
-      : error
-        ? (ERRORS[error] ?? "登录失败，请重试。")
-        : null;
+  // better-auth reports OAuth failures as ?error=<code> on the callback URL.
+  const errMsg = params.get("error") ? "登录失败，请重试。" : null;
 
   const signIn = () => {
     setBusy(true);
-    window.location.href = ADMIN_LOGIN_URL;
+    signInWithGitHub(window.location.pathname);
   };
 
   return (
@@ -79,7 +61,7 @@ export function AdminLogin() {
             ) : (
               <>
                 <Icons.github />
-                <span>{forbidden ? "换管理员账号重试" : "用 GitHub 登录"}</span>
+                <span>用 GitHub 登录</span>
               </>
             )}
           </button>
@@ -106,15 +88,9 @@ export function AdminLogin() {
             ))}
           </div>
 
-          {forbidden ? (
-            <p className="text-center font-cjk text-[11.5px] text-[#9b988f] mt-5">
-              登录了错误的账号？请先在 github.com 退出该账号，再回来重试。
-            </p>
-          ) : (
-            <p className="text-center font-cjk text-[11.5px] text-[#9b988f] mt-5">
-              仅 <b className="font-mono text-[#76726a]">repo collaborators</b> 可登录
-            </p>
-          )}
+          <p className="text-center font-cjk text-[11.5px] text-[#9b988f] mt-5">
+            仅行程 <b className="font-mono text-[#76726a]">成员</b> 可管理内容
+          </p>
         </div>
       </div>
     </div>

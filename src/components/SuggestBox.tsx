@@ -8,9 +8,17 @@ import type { TripSuggestion } from "../trip/types";
 // Public-side composer: any visitor can leave a comment on a stop. No identity is
 // collected; submissions land in the live trip and surface in the admin queue for
 // review. Existing pending comments are shown so it doesn't feel like a void.
-export function SuggestBox({ itemId, itemTitle }: { itemId: string; itemTitle: string }) {
-  const { data } = useTrip();
-  const op = useTripOp();
+export function SuggestBox({
+  tripId,
+  itemId,
+  itemTitle,
+}: {
+  tripId: string;
+  itemId: string;
+  itemTitle: string;
+}) {
+  const { data } = useTrip(tripId);
+  const op = useTripOp(tripId);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
 

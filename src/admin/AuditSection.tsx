@@ -4,6 +4,7 @@ import type { TripOp } from "../trip/ops";
 import { fmtTime } from "./adminData";
 import { Icons } from "./AdminIcons";
 import { AdminEmptyState, RefreshButton, SectionHead } from "./adminUi";
+import { useAdmin } from "./AdminContext";
 
 // Human-readable label per TripOp type, so the log reads as actions rather than
 // raw op identifiers. Typed to the TripOp union so adding an op fails the build
@@ -54,7 +55,8 @@ function ActorCell({ e }: { e: AuditEntry }) {
 }
 
 export function AuditSection() {
-  const { data: entries, isLoading, isError, refetch, isFetching } = useAudit();
+  const { tripId } = useAdmin();
+  const { data: entries, isLoading, isError, refetch, isFetching } = useAudit(tripId);
 
   return (
     <div>

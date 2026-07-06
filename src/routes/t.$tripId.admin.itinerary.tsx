@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ItinerarySection } from "../admin/ItinerarySection";
 import { useAdmin } from "../admin/AdminContext";
 
-export const Route = createFileRoute("/admin/itinerary")({
+export const Route = createFileRoute("/t/$tripId/admin/itinerary")({
   component: ItineraryRoute,
 });
 
