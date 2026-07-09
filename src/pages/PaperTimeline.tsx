@@ -22,7 +22,6 @@ type PaperTimelineProps = {
   nextPlan: string
   parkingCount: number
   dateRange: string
-  onCycleStatus: (item: TripItem) => void
 }
 
 type Swatch = { color: string; border: string; bg: string }
@@ -81,7 +80,6 @@ export function PaperTimeline({
   nextPlan,
   parkingCount,
   dateRange,
-  onCycleStatus,
 }: PaperTimelineProps) {
   const titleWords = trip.title.trim().split(/\s+/)
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined
@@ -111,7 +109,6 @@ export function PaperTimeline({
       dayNumber={orderedDates.indexOf(date) + 1}
       items={trip.items.filter((item) => item.date === date)}
       stopNumbers={stopNumbers}
-      onCycleStatus={onCycleStatus}
       collapsed={isDayCollapsed(date)}
       onToggle={() => toggleDay(date)}
     />
@@ -240,7 +237,6 @@ function DaySection({
   dayNumber,
   items,
   stopNumbers,
-  onCycleStatus,
   collapsed,
   onToggle,
 }: {
@@ -250,7 +246,6 @@ function DaySection({
   dayNumber: number
   items: TripItem[]
   stopNumbers: Map<string, number>
-  onCycleStatus: (item: TripItem) => void
   collapsed: boolean
   onToggle: () => void
 }) {
@@ -299,7 +294,6 @@ function DaySection({
               zone={zoneTag(item, defaultTimezone)}
               item={item}
               stopNumber={stopNumbers.get(item.id) ?? 0}
-              onCycleStatus={onCycleStatus}
             />
           ))}
         </div>
@@ -327,16 +321,13 @@ function Ticket({
   zone,
   item,
   stopNumber,
-  onCycleStatus,
 }: {
   tripId: string
   zone: string | null
   item: TripItem
   stopNumber: number
-  onCycleStatus: (item: TripItem) => void
 }) {
   const category = categoryMeta[item.category]
-  const status = statusMeta[item.status]
   const plans = itemPlans(item)
   const cardRec = cardRecs[item.id]
   const compact = !item.time.includes(":")
@@ -372,15 +363,6 @@ function Ticket({
             <h2 className="flex-1 min-w-[150px] m-0 font-cjk font-bold text-[18px] leading-[1.25]">
               {item.title}
             </h2>
-            <button
-              type="button"
-              onClick={() => onCycleStatus(item)}
-              title="点击切换状态"
-              className="shrink-0 font-grotesk font-semibold text-[10.5px] tracking-[0.04em] rounded-full py-1 px-[11px] border appearance-none cursor-pointer transition-transform duration-[80ms] active:scale-95"
-              style={{ color: status.color, borderColor: status.border, background: status.bg }}
-            >
-              {status.label}
-            </button>
           </div>
           <div className="mt-[9px] font-cjk font-semibold text-[13.5px]">{item.location}</div>
           <AddressLink
