@@ -1,9 +1,10 @@
 import { ExternalLink, Wallet } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
 import { fmtMoney } from "../admin/adminData";
 import { useAdminUser } from "../admin/auth";
+import { LedgerAutoExport } from "./LedgerAutoExport";
 import type { StatementContext } from "../trip/exportLedgerPdf";
 import { useTripMeta } from "../trip/hooks";
 import { tripTravelers } from "../trip/roster";
@@ -52,15 +53,32 @@ async function exportPdf(trip: Trip, context: StatementContext) {
   }
 }
 
-export function PaperLedger({ trip, rev }: { trip: Trip; rev?: number }) {
+export function PaperLedger({
+  trip,
+  rev,
+  autoExport,
+}: {
+  trip: Trip;
+  rev?: number;
+  autoExport?: boolean;
+}) {
   // Registry metadata + the exporting user feed the statement's multi-tenant
   // header (visibility, role, prepared-by). Both are optional: the statement
   // renders placeholders while they load or for anonymous viewers.
-  const { data: meta } = useTripMeta(trip.id);
-  const { data: adminUser } = useAdminUser();
+  const { data: meta, isPending: metaPending } = useTripMeta(trip.id);
+  const { data: adminUser, isLoading: userLoading } = useAdminUser();
   const preparedBy = adminUser
     ? `${adminUser.name?.trim() || adminUser.login} (@${adminUser.login})`
     : undefined;
+  // Latch the share-link request at mount: the auto-export strips ?export=pdf
+  // from the URL as it starts (so Back from the PDF lands on a clean ledger),
+  // and reading the live search here would unmount the progress chip the
+  // moment that happens.
+  const [autoExportRequested] = useState(() => Boolean(autoExport));
+  // The export itself waits for the live snapshot (rev, so the legacy seed
+  // fallback is never exported) and for the metadata queries to settle, so
+  // the statement carries the full registry context.
+  const autoExportReady = autoExportRequested && rev != null && !metaPending && !userLoading;
   const travelers = tripTravelers(trip);
   const travelerIds = travelers.map((m) => m.id);
   const ledger = trip.expenses;
@@ -307,6 +325,8 @@ export function PaperLedger({ trip, rev }: { trip: Trip; rev?: number }) {
         全部已付 · 两人均摊
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
+
+      {autoExportReady && <LedgerAutoExport trip={trip} context={{ meta, rev, preparedBy }} />}
     </div>
   );
 }

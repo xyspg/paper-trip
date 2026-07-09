@@ -7,6 +7,9 @@ export const Route = createFileRoute("/ledger")({
     throw redirect({
       to: "/t/$tripId/ledger",
       params: { tripId: LEGACY_TRIP_ID },
+      // Keep the query string so the /ledger?export=pdf share link survives
+      // the legacy redirect.
+      search: true,
       replace: true,
     });
   },

@@ -3,7 +3,7 @@ import { tripData } from "../trip/tripData";
 import { isLegacyTrip } from "../trip/legacy";
 import { PaperLedger } from "./PaperLedger";
 
-export function LedgerPage({ tripId }: { tripId: string }) {
+export function LedgerPage({ tripId, autoExport }: { tripId: string; autoExport?: boolean }) {
   const { data } = useTrip(tripId);
   // Legacy trip falls back to the seed while loading, matching the timeline page.
   const trip = data?.trip ?? (isLegacyTrip(tripId) ? tripData : null);
@@ -16,5 +16,5 @@ export function LedgerPage({ tripId }: { tripId: string }) {
   }
   // `rev` is the DO document revision of the snapshot being shown; the PDF
   // export stamps it on the statement (absent while the legacy seed fills in).
-  return <PaperLedger trip={trip} rev={data?.rev} />;
+  return <PaperLedger trip={trip} rev={data?.rev} autoExport={autoExport} />;
 }
