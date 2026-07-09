@@ -54,12 +54,10 @@ export function TimelinePage({ tripId }: { tripId: string }) {
   const stopNumbers = new Map(trip.items.map((item, index) => [item.id, index + 1]));
 
   // 下一步行动按行程自己的时区（trip.base.timezone）的当前时间推导：取第一个尚未
-  // 开始的行程，已经过去的（含前一天）自动跳过。行程全部结束时退回最后一站；
-  // 空行程时 nextItem 为 undefined，PaperTimeline 据此隐藏下一步行动行。
+  // 开始的行程，已经过去的（含前一天）自动跳过。行程全部结束（或空行程）时
+  // nextItem 为 undefined，PaperTimeline 据此隐藏下一步行动行。
   const now = nowIn(trip.base.timezone);
-  const nextItem =
-    trip.items.find((item) => `${item.date} ${item.time}` >= now) ??
-    trip.items[trip.items.length - 1];
+  const nextItem = trip.items.find((item) => `${item.date} ${item.time}` >= now);
   const nextPlan = nextItem
     ? (nextItem.parking?.primary ?? nextItem.notes[0] ?? nextItem.location)
     : "";
