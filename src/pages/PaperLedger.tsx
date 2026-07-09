@@ -1,4 +1,4 @@
-import { ExternalLink, Wallet } from "lucide-react";
+import { Check, ExternalLink, Link2, Wallet } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
@@ -53,6 +53,33 @@ async function exportPdf(trip: Trip, context: StatementContext) {
   }
 }
 
+async function copyPdfLink(tripId: string) {
+  const url = new URL(`/t/${encodeURIComponent(tripId)}/ledger`, window.location.origin);
+  url.searchParams.set("export", "pdf");
+  const text = url.toString();
+
+  // execCommand stays synchronous inside the click gesture, which also works
+  // in embedded browsers that leave navigator.clipboard.writeText pending.
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.readOnly = true;
+  Object.assign(textarea.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "1px",
+    height: "1px",
+    opacity: "0",
+    pointerEvents: "none",
+  });
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+
+  if (!copied) await navigator.clipboard.writeText(text);
+}
+
 export function PaperLedger({
   trip,
   rev,
@@ -75,6 +102,7 @@ export function PaperLedger({
   // and reading the live search here would unmount the progress chip the
   // moment that happens.
   const [autoExportRequested] = useState(() => Boolean(autoExport));
+  const [linkCopied, setLinkCopied] = useState(false);
   // The export itself waits for the live snapshot (rev, so the legacy seed
   // fallback is never exported) and for the metadata queries to settle, so
   // the statement carries the full registry context.
@@ -183,18 +211,43 @@ export function PaperLedger({
 
       {/* LEDGER */}
       <section className="mt-4 overflow-hidden bg-white border border-[#ebe9e3] rounded-[16px]">
-        <div className="flex items-center justify-between py-[13px] px-[18px] bg-[#fdfdfb] border-b border-[#ebe9e3]">
+        <div className="flex items-center justify-between gap-3 py-[13px] px-[18px] bg-[#fdfdfb] border-b border-[#ebe9e3]">
           <span className="font-grotesk font-bold text-[12px] uppercase tracking-[0.14em]">
             花销明细 · Ledger
           </span>
-          <button
-            type="button"
-            onClick={() => exportPdf(trip, { meta, rev, preparedBy })}
-            className="inline-flex items-center gap-1.5 font-grotesk font-semibold text-[11px] uppercase tracking-[0.06em] text-[#3b3833] bg-white border border-[#ebe9e3] rounded-full py-2 px-3.5 cursor-pointer transition-colors hover:border-[#1c1b19]"
-          >
-            <ExternalLink size={13} strokeWidth={2.2} />
-            导出 PDF
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void copyPdfLink(trip.id)
+                  .then(() => {
+                    setLinkCopied(true);
+                    window.setTimeout(() => setLinkCopied(false), 1800);
+                  })
+                  .catch((err) => {
+                    console.error("复制 PDF 链接失败", err);
+                    alert("复制链接失败，请重试");
+                  });
+              }}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-transparent py-2 px-2.5 font-grotesk text-[11px] font-semibold uppercase tracking-[0.04em] text-[#76726a] cursor-pointer transition-colors hover:border-[#ebe9e3] hover:bg-white hover:text-[#1c1b19]"
+              aria-label="复制 PDF 自动导出链接"
+            >
+              {linkCopied ? (
+                <Check size={13} strokeWidth={2.2} />
+              ) : (
+                <Link2 size={13} strokeWidth={2.2} />
+              )}
+              {linkCopied ? "已复制" : "复制链接"}
+            </button>
+            <button
+              type="button"
+              onClick={() => exportPdf(trip, { meta, rev, preparedBy })}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap font-grotesk font-semibold text-[11px] uppercase tracking-[0.06em] text-[#3b3833] bg-white border border-[#ebe9e3] rounded-full py-2 px-3.5 cursor-pointer transition-colors hover:border-[#1c1b19]"
+            >
+              <ExternalLink size={13} strokeWidth={2.2} />
+              导出 PDF
+            </button>
+          </div>
         </div>
 
         <div>

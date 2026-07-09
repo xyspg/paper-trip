@@ -12,10 +12,11 @@ import {
 import type { Trip } from "./types";
 
 // Bank-statement-style PDF export for the public ledger, patterned after a
-// credit-card statement: blue section headings, a gray account-summary panel,
-// a boxed registry-metadata summary, a ruled activity table, and small-print
-// disclosures. Deliberately avoids the page's branded logos, color tags, and
-// avatars. Rendered from an off-screen DOM node into a raster image via
+// credit-card statement: narrow statement stock, repeated service masthead and
+// account footer, asymmetric balance summaries, ruled activity groups, and
+// small-print disclosures. Technical registry metadata is demoted to the trip
+// messages and statement reference instead of presented as a product panel.
+// Rendered from an off-screen DOM node into a raster image via
 // html2canvas, then embedded as a flat image rather than going through
 // jsPDF's own `.html()`/Context2D vector-text path: that path replays text
 // with jsPDF's built-in Helvetica font, which has no CJK glyphs and corrupts
@@ -34,13 +35,13 @@ export type StatementContext = {
   preparedBy?: string;
 };
 
-const INK = "#161616";
-const RULE = "#161616";
-const MUTED = "#555555";
-const ACCENT = "#1c5a96";
-const PANEL = "#ececec";
-const PANEL_RULE = "#ffffff";
-const BOX_RULE = "#9a9a9a";
+const INK = "#111111";
+const RULE = "#111111";
+const MUTED = "#4f4f4f";
+const ACCENT = "#176aa6";
+const PANEL = "#e5e5e5";
+const SOFT_RULE = "#c9c9c9";
+const SITE_HOST = "papertrip.xyspg.moe";
 const STATEMENT_FONT =
   'Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Heiti SC", sans-serif';
 
@@ -61,6 +62,26 @@ function el<K extends keyof HTMLElementTagNameMap>(
 function fmtShortDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : iso;
+}
+
+function fmtMonthYear(iso: string): string {
+  const match = /^(\d{4})-(\d{2})/.exec(iso);
+  if (!match) return iso;
+  const month = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ][Number(match[2]) - 1];
+  return month ? `${month} ${match[1]}` : iso;
 }
 
 // Today's date (YYYY-MM-DD) on the trip's own clock, not the device's or UTC.
@@ -96,116 +117,64 @@ function stampIn(timeZone: string, date = new Date()): string {
 
 // Blue all-caps section heading ("ACCOUNT SUMMARY", "ACCOUNT ACTIVITY", ...).
 function heading(text: string, topMargin = "0px"): HTMLDivElement {
-  return el(
+  const node = el(
     "div",
     {
-      fontSize: "17px",
+      fontSize: "19px",
       fontWeight: "800",
       color: ACCENT,
       textTransform: "uppercase",
-      letterSpacing: "0.01em",
-      margin: `${topMargin} 0 8px`,
+      lineHeight: "1.05",
+      margin: `${topMargin} 0 7px`,
     },
     [text],
   );
-}
-
-// Bold sub-section label with the thick gray underbar ("PURCHASES").
-function sectionLabel(text: string): HTMLDivElement {
-  return el(
-    "div",
-    {
-      fontSize: "11.5px",
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: "0.02em",
-      padding: "0 0 3px",
-      borderBottom: "3px solid #bfbfbf",
-      marginBottom: "2px",
-    },
-    [text],
-  );
+  node.dataset.statementBreak = "";
+  return node;
 }
 
 type KvRow = { label: string; value: string; strong?: boolean };
 
-// Gray label/value panel (the "Account Summary" block): white hairlines
-// between rows, a heavy rule above rows marked `strong`.
-function summaryPanel(rows: KvRow[]): HTMLTableElement {
-  const table = el("table", {
+// Grid rows avoid html2canvas's border-collapse rounding bugs, which can move a
+// shared table border up into the text above it at statement-scale rendering.
+function summaryPanel(rows: KvRow[]): HTMLDivElement {
+  const panel = el("div", {
     width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "12px",
-    background: PANEL,
-  });
-  const tbody = el("tbody");
-  rows.forEach((row) => {
-    const tr = el("tr");
-    const common: Partial<CSSStyleDeclaration> = {
-      padding: "6px 10px",
-      borderBottom: `1px solid ${PANEL_RULE}`,
-      fontWeight: row.strong ? "700" : "400",
-      borderTop: row.strong ? `1.5px solid ${RULE}` : "",
-    };
-    tr.append(el("td", { ...common, textAlign: "left" }, [row.label]));
-    tr.append(el("td", { ...common, textAlign: "right" }, [row.value]));
-    tbody.append(tr);
-  });
-  table.append(tbody);
-  return table;
-}
-
-// Fully boxed label/value table (the registry-summary block): every row is a
-// gray cell ringed by thin dark rules, closed by one oversized total row.
-function boxedPanel(rows: KvRow[], total: { label: string; value: string }): HTMLTableElement {
-  const table = el("table", {
-    width: "100%",
-    borderCollapse: "collapse",
     fontSize: "11.5px",
+    background: PANEL,
+    padding: "7px 0",
   });
-  const tbody = el("tbody");
   rows.forEach((row) => {
-    const tr = el("tr");
-    const common: Partial<CSSStyleDeclaration> = {
-      padding: "5px 8px",
-      border: `1px solid ${BOX_RULE}`,
-      background: PANEL,
-    };
-    tr.append(el("td", { ...common, textAlign: "left" }, [row.label]));
-    tr.append(el("td", { ...common, textAlign: "right", fontWeight: "600" }, [row.value]));
-    tbody.append(tr);
+    if (row.strong) {
+      panel.append(
+        el("div", {
+          height: "1.5px",
+          margin: "5px 0 4px",
+          background: RULE,
+        }),
+      );
+    }
+    panel.append(
+      el(
+        "div",
+        {
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(120px, auto)",
+          columnGap: "14px",
+          alignItems: "baseline",
+          minHeight: "18px",
+          padding: "2px 8px",
+          lineHeight: "1.25",
+          fontWeight: row.strong ? "700" : "400",
+        },
+        [
+          el("div", { minWidth: "0" }, [row.label]),
+          el("div", { minWidth: "0", textAlign: "right", overflowWrap: "anywhere" }, [row.value]),
+        ],
+      ),
+    );
   });
-  const totalRow = el("tr");
-  totalRow.append(
-    el(
-      "td",
-      {
-        padding: "8px",
-        border: `1px solid ${BOX_RULE}`,
-        background: PANEL,
-        fontSize: "13px",
-        fontWeight: "800",
-        color: ACCENT,
-      },
-      [total.label],
-    ),
-    el(
-      "td",
-      {
-        padding: "8px",
-        border: `1px solid ${BOX_RULE}`,
-        background: PANEL,
-        textAlign: "right",
-        fontSize: "19px",
-        fontWeight: "800",
-        color: ACCENT,
-      },
-      [total.value],
-    ),
-  );
-  tbody.append(totalRow);
-  table.append(tbody);
-  return table;
+  return panel;
 }
 
 type Align = "left" | "right";
@@ -214,86 +183,182 @@ function statementTable(
   headers: string[],
   rows: (string | Node)[][],
   align: Align[],
-  footRow?: (string | Node)[],
-): HTMLTableElement {
-  const table = el("table", {
+  columns: string,
+): HTMLDivElement {
+  const table = el("div", {
     width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "12px",
-    marginBottom: "22px",
+    fontSize: "11.5px",
+    marginBottom: "18px",
   });
-
-  const thead = el("thead");
-  const headRow = el("tr");
+  const headRow = el("div", {
+    display: "grid",
+    gridTemplateColumns: columns,
+    alignItems: "end",
+  });
   headers.forEach((h, i) => {
     headRow.append(
       el(
-        "th",
+        "div",
         {
           textAlign: align[i] === "right" ? "right" : "left",
-          padding: "6px 8px",
-          borderBottom: `2px solid ${RULE}`,
+          padding: "4px 6px 5px",
           fontSize: "10.5px",
           fontWeight: "700",
           textTransform: "uppercase",
           letterSpacing: "0.04em",
+          lineHeight: "1.15",
         },
         [h],
       ),
     );
   });
-  thead.append(headRow);
-  table.append(thead);
+  table.append(headRow, el("div", { height: "1.5px", marginBottom: "4px", background: RULE }));
 
-  const tbody = el("tbody");
   rows.forEach((row) => {
-    const tr = el("tr");
+    const gridRow = el("div", {
+      display: "grid",
+      gridTemplateColumns: columns,
+      alignItems: "start",
+      minHeight: "39px",
+      padding: "5px 0",
+      lineHeight: "1.25",
+    });
     row.forEach((cell, i) => {
-      tr.append(
+      gridRow.append(
         el(
-          "td",
+          "div",
           {
             textAlign: align[i] === "right" ? "right" : "left",
-            padding: "8px",
-            borderBottom: "1px solid #d6d6d6",
-            verticalAlign: "top",
+            minWidth: "0",
+            padding: "0 6px",
           },
           [cell],
         ),
       );
     });
-    tbody.append(tr);
+    gridRow.dataset.statementBreak = "";
+    table.append(gridRow);
   });
-  table.append(tbody);
+  return table;
+}
 
-  if (footRow) {
-    const tfoot = el("tfoot");
-    const tr = el("tr");
-    footRow.forEach((cell, i) => {
-      tr.append(
+type ActivityRow = {
+  category: string;
+  description: Node | string;
+  amount: string;
+  detail?: boolean;
+};
+
+function activityTable(groups: { label: string; rows: ActivityRow[] }[]): HTMLDivElement {
+  const columns = "120px minmax(0, 1fr) 110px";
+  const table = el("div", {
+    width: "100%",
+    fontSize: "11.5px",
+    marginBottom: "18px",
+  });
+  const headRow = el("div", {
+    display: "grid",
+    gridTemplateColumns: columns,
+    alignItems: "end",
+  });
+  [
+    { label: "Category", align: "left" },
+    { label: "Merchant Name or Transaction Description", align: "left" },
+    { label: "$ Amount", align: "right" },
+  ].forEach((column) => {
+    headRow.append(
+      el(
+        "div",
+        {
+          padding: "3px 5px 5px",
+          textAlign: column.align,
+          fontSize: "10.5px",
+          fontWeight: "400",
+          lineHeight: "1.15",
+        },
+        [column.label],
+      ),
+    );
+  });
+  table.append(headRow);
+
+  for (const group of groups) {
+    if (group.rows.length === 0) continue;
+    const groupHeading = el(
+      "div",
+      {
+        padding: "7px 0 3px",
+        fontSize: "11.5px",
+        fontWeight: "800",
+        textTransform: "uppercase",
+        lineHeight: "1.15",
+      },
+      [group.label],
+    );
+    groupHeading.dataset.statementBreak = "";
+    table.append(
+      groupHeading,
+      el("div", { height: "4px", marginBottom: "4px", background: SOFT_RULE }),
+    );
+
+    for (const row of group.rows) {
+      const gridRow = el("div", {
+        display: "grid",
+        gridTemplateColumns: columns,
+        alignItems: "start",
+        minHeight: row.detail ? "18px" : "39px",
+        padding: row.detail ? "1px 0" : "5px 0",
+        lineHeight: "1.25",
+      });
+      gridRow.append(
         el(
-          "td",
+          "div",
           {
-            textAlign: align[i] === "right" ? "right" : "left",
-            padding: "9px 8px",
-            borderTop: `2px solid ${RULE}`,
-            fontWeight: "700",
+            minWidth: "0",
+            padding: row.detail ? "0 5px 0 18px" : "0 5px",
+            fontSize: row.detail ? "10px" : "10.5px",
+            color: row.detail ? MUTED : INK,
+            textTransform: row.detail ? "none" : "uppercase",
           },
-          [cell],
+          [row.category],
+        ),
+        el(
+          "div",
+          {
+            minWidth: "0",
+            padding: "0 5px",
+            fontSize: row.detail ? "10px" : "11.5px",
+            color: row.detail ? MUTED : INK,
+          },
+          [row.description],
+        ),
+        el(
+          "div",
+          {
+            minWidth: "0",
+            padding: "0 5px",
+            fontSize: row.detail ? "10px" : "11.5px",
+            color: row.detail ? MUTED : INK,
+            textAlign: "right",
+          },
+          [row.amount],
         ),
       );
-    });
-    tfoot.append(tr);
-    table.append(tfoot);
+      gridRow.dataset.statementBreak = "";
+      table.append(gridRow);
+    }
   }
-
   return table;
 }
 
 function disclosureParagraph(text: string): HTMLDivElement {
-  return el("div", { fontSize: "9.5px", color: "#333333", lineHeight: "1.55", marginTop: "8px" }, [
-    text,
-  ]);
+  const node = el(
+    "div",
+    { fontSize: "9.5px", color: "#333333", lineHeight: "1.4", marginTop: "8px" },
+    [text],
+  );
+  node.dataset.statementBreak = "";
+  return node;
 }
 
 function buildStatement(
@@ -312,44 +377,42 @@ function buildStatement(
   const timezone = trip.base.timezone;
   const today = todayIn(timezone);
   const generatedAt = stampIn(timezone);
-  const siteHost = "papertrip.xyspg.moe";
 
-  // Itemized table rows. Each expense is one summary row; its scanned receipt
-  // items (if any) each become their own short full-width row beneath it,
-  // description indented on the left, price aligned under "Net" on the right,
-  // like a bank-statement line. Keeping every item as a separate <tr> (instead
-  // of one tall cell) is what lets the paginator break cleanly between lines
-  // instead of slicing through a row at the page edge.
-  const itemizedRows: (string | Node)[][] = [];
+  // Activity follows the reference statement's simple three-column structure.
+  // Credits are posted in their own section instead of living in a dedicated
+  // product-looking column, and receipt details sit under their parent charge.
+  const purchaseRows: ActivityRow[] = [];
+  const creditRows: ActivityRow[] = [];
+  const categoryLabels: Record<string, string> = {
+    transit: "Travel",
+    food: "Dining",
+    event: "Event",
+    stay: "Lodging",
+    misc: "Other",
+  };
   for (const item of ledger) {
     const net = netExpense(item);
     const paidBy = expensePaidBy(item, travelerIds);
     const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
     const isSplit = payers.length > 1;
 
-    const itemCell = el("div", {}, [
-      el("div", { fontWeight: "700" }, [item.name]),
-      el("div", { fontSize: "11px", color: MUTED, marginTop: "1px" }, [item.sub]),
-    ]);
-
-    const paidByCell = el(
-      "div",
-      {},
-      payers.map((m) => {
-        const amt = paidBy[m.id] ?? 0;
-        const pct = net > 0 ? Math.round((amt / net) * 100) : 0;
-        return el("div", {}, [isSplit ? `${m.name} ${pct}% (${fmtMoney(amt)})` : m.name]);
-      }),
-    );
-
-    itemizedRows.push([
-      itemCell,
-      item.cat.toUpperCase(),
-      fmtMoney(item.amount),
-      item.credit > 0 ? "-" + fmtMoney(appliedCredit(item)) : "-",
-      payers.length > 0 ? paidByCell : "-",
-      fmtMoney(net),
-    ]);
+    const payerText = payers
+      .map((m) => {
+        const amount = paidBy[m.id] ?? 0;
+        const percent = net > 0 ? Math.round((amount / net) * 100) : 0;
+        return isSplit ? `${m.name} ${percent}%` : m.name;
+      })
+      .join(" / ");
+    purchaseRows.push({
+      category: categoryLabels[item.cat] ?? item.cat,
+      description: el("div", {}, [
+        el("div", { fontWeight: "600" }, [item.name]),
+        el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
+          [item.sub, payerText ? `PAID BY ${payerText}` : ""].filter(Boolean).join("  ·  "),
+        ]),
+      ]),
+      amount: fmtMoney(item.amount),
+    });
 
     if (item.items && item.items.length > 0) {
       for (const li of item.items) {
@@ -361,210 +424,300 @@ function buildStatement(
                 .filter(Boolean)
                 .join(", ")
             : "";
-        const liCell = el("div", { paddingLeft: "16px", fontSize: "11px", color: INK }, [
-          `${qty}${li.name}${sharers ? `  (${sharers})` : ""}`,
-        ]);
-        const priceCell = el("div", { fontSize: "11px", color: INK }, [fmtMoney(li.price)]);
-        itemizedRows.push([liCell, "", "", "", "", priceCell]);
+        purchaseRows.push({
+          category: "",
+          description:
+            `Receipt detail: ${qty}${li.name} · ${fmtMoney(li.price)}` +
+            (sharers ? ` · ${sharers}` : ""),
+          amount: "",
+          detail: true,
+        });
       }
+    }
+
+    const credit = appliedCredit(item);
+    if (credit > 0) {
+      creditRows.push({
+        category: "Credit",
+        description: el("div", {}, [
+          el("div", { fontWeight: "600" }, [`${item.name} statement credit`]),
+          el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
+            "CREDIT APPLIED TO TRIP PURCHASE",
+          ]),
+        ]),
+        amount: "-" + fmtMoney(credit),
+      });
     }
   }
 
-  // Kept off-screen by the zero-size wrapper in exportLedgerPdf, not here:
-  // this node must carry no hiding styles (position/visibility/opacity) of
-  // its own, since html2canvas renders it as laid out.
+  // This node deliberately contains the statement body only. A crisp vector
+  // masthead and footer are added by jsPDF on every page after rasterization.
   const container = el("div", {
     width: "800px",
     background: "#ffffff",
     color: INK,
     fontFamily: STATEMENT_FONT,
-    lineHeight: "1.5",
-    // html2canvas occasionally under-measures the element's true rendered
-    // height by a few px, shaving pixels off the last line; this padding is
-    // a sacrificial margin so that's what clips, not real content.
-    padding: "0 0 24px",
+    lineHeight: "1.3",
+    padding: "0 0 18px",
   });
 
-  // Masthead: wordmark on the left, service pointers on the right, closed by
-  // a heavy rule, the way card statements open.
-  container.append(
-    el("div", { display: "flex", justifyContent: "space-between", alignItems: "flex-start" }, [
-      el("div", {}, [
-        el("div", { display: "flex", alignItems: "center", gap: "8px" }, [
-          (() => {
-            const mark = el("img", { width: "24px", height: "24px", display: "block" });
-            mark.src = "/favicon.png";
-            mark.alt = "";
-            return mark;
-          })(),
-          el("div", { fontSize: "21px", fontWeight: "800", letterSpacing: "0.01em" }, [
-            "PAPERTRIP",
-            el("span", { fontSize: "10px", verticalAlign: "super" }, ["®"]),
-          ]),
+  const bannerFigure = (label: string, value: string, valueSize = "23px") =>
+    el("div", {}, [
+      el("div", { fontSize: "11.5px", fontWeight: "400" }, [label]),
+      el(
+        "div",
+        {
+          fontSize: valueSize,
+          fontWeight: "800",
+          color: ACCENT,
+          lineHeight: "1",
+          marginTop: "1px",
+        },
+        [value],
+      ),
+    ]);
+
+  const statementCycle = el("div", { minWidth: "0" }, [
+    el("div", { background: PANEL, borderLeft: `9px solid ${ACCENT}` }, [
+      el(
+        "div",
+        {
+          padding: "7px 10px",
+          background: ACCENT,
+          color: "#ffffff",
+          textAlign: "center",
+          fontSize: "12px",
+        },
+        [fmtMonthYear(today)],
+      ),
+      el("div", { padding: "11px 12px 12px" }, [
+        el("div", { fontSize: "16px", fontWeight: "700", lineHeight: "1.15" }, [trip.title]),
+        el(
+          "div",
+          { marginTop: "8px", fontSize: "9.5px", color: MUTED, textTransform: "uppercase" },
+          ["Trip Period"],
+        ),
+        el("div", { marginTop: "1px", fontSize: "12px", fontWeight: "600" }, [
+          `${fmtShortDate(trip.dates.start)} - ${fmtShortDate(trip.dates.end)}`,
         ]),
         el(
           "div",
-          {
-            fontSize: "10px",
-            fontWeight: "700",
-            letterSpacing: "0.14em",
-            color: MUTED,
-            marginTop: "4px",
-            textTransform: "uppercase",
-          },
-          ["Trip Expense Statement"],
+          { marginTop: "7px", fontSize: "9.5px", color: MUTED, textTransform: "uppercase" },
+          ["Trip Account"],
+        ),
+        el(
+          "div",
+          { marginTop: "1px", fontSize: "10.5px", fontWeight: "600", wordBreak: "break-all" },
+          [trip.id],
         ),
       ]),
-      el("div", { textAlign: "right", fontSize: "10.5px", lineHeight: "1.5" }, [
-        el("div", { fontWeight: "700" }, ["Manage your trip online at:"]),
-        el("div", { color: MUTED }, [`${siteHost}/t/${trip.id}`]),
-        el("div", { fontWeight: "700", marginTop: "5px" }, ["Statement inquiries:"]),
-        el("div", { color: MUTED }, [`${siteHost}/t/${trip.id}/admin`]),
-      ]),
     ]),
-    el("div", { borderTop: `3px solid ${RULE}`, margin: "12px 0 18px" }),
+  ]);
+
+  const headlineFigures = el("div", { minWidth: "0", display: "grid", gap: "10px" }, [
+    bannerFigure("New Balance", fmtMoney(grand)),
+    bannerFigure("Per Person Due", fmtMoney(each)),
+    bannerFigure("Statement Date", fmtShortDate(today), "18px"),
+  ]);
+
+  const balanceSummary = el("div", { minWidth: "0" }, [
+    heading("Trip Balance Summary"),
+    summaryPanel([
+      { label: "Previous balance", value: fmtMoney(0) },
+      { label: "Purchases", value: "+" + fmtMoney(subtotal) },
+      { label: "Credits", value: "-" + fmtMoney(creditTotal) },
+      { label: "Fees charged", value: fmtMoney(0) },
+      { label: "Interest charged", value: fmtMoney(0) },
+      { label: "Travelers", value: String(travelers.length) },
+    ]),
+    el(
+      "div",
+      {
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr) auto",
+        alignItems: "baseline",
+        gap: "12px",
+        minHeight: "38px",
+        padding: "8px 8px 7px",
+        borderTop: `1.5px solid ${RULE}`,
+        borderBottom: `1.5px solid ${RULE}`,
+        background: PANEL,
+        color: ACCENT,
+        fontWeight: "800",
+      },
+      [
+        el("span", { minWidth: "0", fontSize: "16px", lineHeight: "1.15" }, ["Total trip balance"]),
+        el("span", { fontSize: "20px", lineHeight: "1.15", textAlign: "right" }, [fmtMoney(grand)]),
+      ],
+    ),
+  ]);
+
+  container.append(
+    el(
+      "div",
+      {
+        display: "grid",
+        gridTemplateColumns: "235px 175px minmax(0, 1fr)",
+        columnGap: "24px",
+        alignItems: "start",
+        marginBottom: "18px",
+      },
+      [statementCycle, headlineFigures, balanceSummary],
+    ),
   );
 
-  // Headline figures, statement-banner style.
-  const bannerFigure = (label: string, value: string, valueSize = "24px") =>
-    el("div", {}, [
-      el("div", { fontSize: "12px", fontWeight: "700" }, [label]),
-      el("div", { fontSize: valueSize, fontWeight: "800", color: ACCENT, marginTop: "2px" }, [
-        value,
-      ]),
+  const openBalances = balances.filter((balance) => Math.abs(balance.balance) >= 0.005).length;
+  const noticeLine = (label: string, body: string) =>
+    el("div", { maxWidth: "650px", marginTop: "6px", fontSize: "10.5px", lineHeight: "1.35" }, [
+      el("span", { fontWeight: "700" }, [label]),
+      " ",
+      body,
     ]);
   container.append(
-    el("div", { display: "flex", gap: "48px", marginBottom: "20px" }, [
-      bannerFigure("New Balance", fmtMoney(grand)),
-      bannerFigure("Per Person Due", fmtMoney(each)),
-      bannerFigure("Statement Date", fmtShortDate(today), "20px"),
-    ]),
+    noticeLine(
+      "Settlement Notice:",
+      openBalances === 0
+        ? "All traveler balances are settled."
+        : `${openBalances} traveler balance${openBalances === 1 ? " remains" : "s remain"} open. ` +
+            "See Settlement Summary for the amount each traveler owes or is owed.",
+    ),
+    noticeLine(
+      "Statement Notice:",
+      `This snapshot was prepared on ${generatedAt} (${timezone}). Changes posted after that time are not shown.`,
+    ),
   );
 
-  // Two-column band: account summary on the left, the multi-tenant registry
-  // summary on the right. This band always fits on page one, so the paginator
-  // never has to cut inside the side-by-side tables.
+  const message = (children: (Node | string)[]) =>
+    el("div", { marginTop: "7px", fontSize: "10.5px", lineHeight: "1.4" }, children);
   container.append(
-    el("div", { display: "flex", gap: "26px", alignItems: "flex-start", marginBottom: "24px" }, [
-      el("div", { flex: "1.15" }, [
-        heading("Account Summary"),
-        summaryPanel([
-          { label: "Trip Account:", value: trip.id, strong: true },
-          {
-            label: "Opening/Closing Date",
-            value: `${fmtShortDate(trip.dates.start)} - ${fmtShortDate(trip.dates.end)}`,
-          },
-          { label: "Purchases", value: "+" + fmtMoney(subtotal) },
-          { label: "Credits Applied", value: "-" + fmtMoney(creditTotal) },
-          { label: "Fees Charged", value: fmtMoney(0) },
-          { label: "Interest Charged", value: fmtMoney(0) },
-          { label: "New Balance", value: fmtMoney(grand), strong: true },
-          { label: "Members Enrolled", value: String(travelers.length) },
-          { label: "Per-Person Share", value: fmtMoney(each) },
-        ]),
-      ]),
-      el("div", { flex: "1" }, [
-        heading("Trip Registry Summary"),
-        boxedPanel(
-          [
-            { label: "Trip ID", value: trip.id },
-            { label: "Visibility", value: meta ? meta.visibility.toUpperCase() : "-" },
-            { label: "Access role", value: meta?.role ? meta.role.toUpperCase() : "GUEST" },
-            { label: "Timezone", value: timezone },
+    el(
+      "div",
+      {
+        display: "grid",
+        gridTemplateColumns: "385px minmax(0, 1fr)",
+        columnGap: "34px",
+        alignItems: "start",
+        margin: "22px 0",
+      },
+      [
+        el("div", { minWidth: "0" }, [
+          heading("Account Summary"),
+          summaryPanel([
+            { label: "Trip Account", value: trip.id },
+            { label: "Previous Balance", value: fmtMoney(0) },
+            { label: "Purchases", value: "+" + fmtMoney(subtotal) },
+            { label: "Credits Applied", value: "-" + fmtMoney(creditTotal) },
+            { label: "Fees Charged", value: fmtMoney(0) },
+            { label: "Interest Charged", value: fmtMoney(0) },
+            { label: "New Balance", value: fmtMoney(grand), strong: true },
             {
-              label: "Registry created",
-              value: meta ? fmtShortDate(meta.createdAt.slice(0, 10)) : "-",
+              label: "Opening/Closing Date",
+              value: `${fmtShortDate(trip.dates.start)} - ${fmtShortDate(trip.dates.end)}`,
             },
-            { label: "Ledger revision", value: rev != null ? String(rev) : "-" },
-            {
-              label: "Last activity",
-              value: stampIn(timezone, new Date(trip.updatedAt)),
-            },
-            { label: "Prepared by", value: preparedBy ?? "Guest session" },
-          ],
-          { label: "Expense lines this statement", value: String(ledger.length) },
-        ),
-        el("div", { fontSize: "10px", color: MUTED, marginTop: "6px", lineHeight: "1.5" }, [
-          "Live trip state is serviced by a dedicated Durable Object per trip; " +
-            "membership and registry records are maintained in the PaperTrip D1 registry.",
+            { label: "Travelers", value: String(travelers.length) },
+            { label: "Per-Person Share", value: fmtMoney(each) },
+          ]),
         ]),
-      ]),
-    ]),
+        el("div", { minWidth: "0" }, [
+          heading("Your Trip Messages"),
+          message([
+            el("span", { fontWeight: "700" }, ["Access: "]),
+            `${meta?.visibility.toUpperCase() ?? "UNAVAILABLE"} trip · ` +
+              `${meta?.role?.toUpperCase() ?? "GUEST"} role. ` +
+              `Prepared for ${preparedBy ?? "guest session"}.`,
+          ]),
+          message([
+            el("span", { fontWeight: "700" }, ["Ledger snapshot: "]),
+            `Revision ${rev ?? "-"}; last trip activity ${stampIn(timezone, new Date(trip.updatedAt))}. ` +
+              `Registry created ${meta ? fmtShortDate(meta.createdAt.slice(0, 10)) : "-"}.`,
+          ]),
+          message([
+            el("span", { fontWeight: "700" }, ["Shared trip record: "]),
+            "Live ledger data, audit history, and backups are kept per trip. Registry, membership, " +
+              "and invitation records are maintained separately for this trip account.",
+          ]),
+          message([
+            el("span", { fontWeight: "700" }, ["Online access: "]),
+            `${SITE_HOST}/t/${trip.id}`,
+          ]),
+        ]),
+      ],
+    ),
   );
 
   container.append(
     heading("Settlement Summary"),
     statementTable(
-      ["Member", "Member Key", "Paid", "Required Share", "Balance", "Disposition"],
+      ["Traveler", "Paid", "Required Share", "Balance", "Status"],
       travelers.map((m) => {
         const b = balanceById[m.id];
         const net = b?.balance ?? 0;
         const settled = Math.abs(net) < 0.005;
         const status = settled ? "SETTLED" : net < 0 ? "OWES" : "IS OWED";
-        const key = m.id.length > 12 ? m.id.slice(0, 12) + "…" : m.id;
         return [
-          m.name,
-          key,
+          el("div", {}, [
+            el("div", { fontWeight: "700" }, [m.name]),
+            el("div", { fontSize: "9.5px", color: MUTED }, [`@${m.handle}`]),
+          ]),
           fmtMoney(b?.paid ?? 0),
           fmtMoney(b?.share ?? each),
           settled ? fmtMoney(0) : (net < 0 ? "-" : "+") + fmtMoney(Math.abs(net)),
           status,
         ];
       }),
-      ["left", "left", "right", "right", "right", "right"],
+      ["left", "right", "right", "right", "right"],
+      "2fr 1fr 1.35fr 1fr 1fr",
     ),
 
     heading("Account Activity"),
-    sectionLabel("Purchases"),
-    statementTable(
-      ["Description", "Category", "Amount", "Credit", "Paid By", "Net"],
-      itemizedRows,
-      ["left", "left", "right", "right", "left", "right"],
-      ["", "", "", "", "Net Total", fmtMoney(grand)],
-    ),
+    activityTable([
+      { label: "Payments and Other Credits", rows: creditRows },
+      { label: "Purchases", rows: purchaseRows },
+    ]),
   );
 
-  // Centered year-to-date totals box.
   const totalsYear = trip.dates.start.slice(0, 4) || today.slice(0, 4);
   const totalsRow = (label: string, value: string) =>
     el(
       "div",
       {
-        display: "flex",
-        justifyContent: "space-between",
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr) auto",
+        alignItems: "baseline",
         gap: "24px",
-        padding: "3px 12px",
-        fontSize: "11.5px",
+        minHeight: "18px",
+        padding: "2px 10px",
+        fontSize: "10.5px",
+        lineHeight: "1.25",
       },
       [el("span", {}, [label]), el("span", { fontWeight: "600" }, [value])],
     );
   container.append(
     el("div", { display: "flex", justifyContent: "center", marginBottom: "6px" }, [
-      el("div", { width: "360px", border: `1.5px solid ${RULE}` }, [
+      el("div", { width: "345px", border: `1px solid ${RULE}` }, [
         el(
           "div",
           {
             textAlign: "center",
-            fontWeight: "700",
-            fontSize: "12px",
+            fontSize: "11px",
             background: PANEL,
-            padding: "4px 12px",
-            borderBottom: `1px solid ${RULE}`,
+            padding: "6px 10px 5px",
+            lineHeight: "1.2",
           },
           [`${totalsYear} Trip Totals to Date`],
         ),
-        el("div", { padding: "5px 0" }, [
+        el("div", { height: "1px", background: RULE }),
+        el("div", { padding: "4px 0" }, [
           totalsRow(`Total charges posted in ${totalsYear}`, fmtMoney(subtotal)),
           totalsRow(`Total credits applied in ${totalsYear}`, "-" + fmtMoney(creditTotal)),
         ]),
       ]),
     ]),
-    el("div", { textAlign: "center", fontSize: "9.5px", color: MUTED, marginBottom: "22px" }, [
+    el("div", { textAlign: "center", fontSize: "9px", color: MUTED, marginBottom: "20px" }, [
       "Totals reflect every expense recorded on this trip's shared ledger.",
     ]),
   );
 
-  // Small-print disclosures.
   const accessSentence =
     meta?.visibility === "private"
       ? "This trip is PRIVATE: access is limited to enrolled members."
@@ -572,50 +725,52 @@ function buildStatement(
         ? "This trip is PUBLIC: anyone holding the link may view it."
         : "Access is governed by the trip's registry visibility record.";
   container.append(
+    heading("Statement Information"),
+    el("div", { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }, [
+      el("div", {}, [
+        el("div", { fontSize: "9.5px", fontWeight: "700" }, ["ABOUT THIS SNAPSHOT"]),
+        disclosureParagraph(
+          `This statement was produced from the live shared ledger of trip "${trip.title}" ` +
+            `(trip ID ${trip.id})${rev != null ? `, document revision ${rev},` : ""} on ` +
+            `${generatedAt} (${timezone}). Figures reflect the ledger at the moment of export; ` +
+            "subsequent edits are not shown.",
+        ),
+        el("div", { marginTop: "9px", fontSize: "9.5px", fontWeight: "700" }, [
+          "SHARES, CREDITS, AND BALANCES",
+        ]),
+        disclosureParagraph(
+          "Per-person shares are computed as an equal split across enrolled travelers unless an " +
+            "expense carries an explicit split override. Applied credits reduce the net amount " +
+            "of the expense they are attached to. All amounts are stated in U.S. dollars.",
+        ),
+      ]),
+      el("div", {}, [
+        el("div", { fontSize: "9.5px", fontWeight: "700" }, ["ACCESS AND RECORDS"]),
+        disclosureParagraph(
+          "Each PaperTrip trip is serviced by a dedicated Durable Object holding its live state, " +
+            "audit log, and backups. Trip registration, membership, and invitations are recorded " +
+            `in the PaperTrip D1 registry. ${accessSentence}`,
+        ),
+        el("div", { marginTop: "9px", fontSize: "9.5px", fontWeight: "700" }, [
+          "IMPORTANT INFORMATION",
+        ]),
+        disclosureParagraph(
+          "Balances shown under Settlement Summary are informational and do not constitute a " +
+            "demand for payment. PaperTrip is not a financial institution; this document is not " +
+            "a bank statement, an invoice, or a receipt.",
+        ),
+      ]),
+    ]),
     el(
       "div",
       {
-        fontSize: "11.5px",
-        fontWeight: "700",
-        textTransform: "uppercase",
-        borderBottom: `1.5px solid ${RULE}`,
-        paddingBottom: "3px",
-      },
-      ["Information About This Statement"],
-    ),
-    disclosureParagraph(
-      `This statement was produced from the live shared ledger of trip "${trip.title}" ` +
-        `(trip ID ${trip.id})${rev != null ? `, document revision ${rev},` : ""} on ` +
-        `${generatedAt} (${timezone}). Figures reflect the ledger at the moment of export; ` +
-        "subsequent edits to the trip are not shown.",
-    ),
-    disclosureParagraph(
-      "Service architecture: every PaperTrip trip is serviced by a dedicated Durable Object " +
-        "holding its live state, audit log, and backups. Trip registration, membership, and " +
-        `invitations are recorded in the PaperTrip D1 registry. ${accessSentence} ` +
-        "Destructive bulk operations are restricted to the trip owner.",
-    ),
-    disclosureParagraph(
-      "Per-person shares are computed as an equal split across enrolled travelers unless an " +
-        "expense carries an explicit split override, in which case contributions are " +
-        "normalized against the override weights. Applied credits reduce the net amount of " +
-        "the expense they are attached to. All amounts are stated in U.S. dollars.",
-    ),
-    disclosureParagraph(
-      "Balances shown under Settlement Summary are informational and do not constitute a " +
-        "demand for payment. PaperTrip is not a financial institution; this document is not " +
-        "a bank statement, an invoice, or a receipt.",
-    ),
-    el(
-      "div",
-      {
-        fontSize: "9px",
+        fontSize: "8.5px",
         color: MUTED,
-        marginTop: "12px",
-        borderTop: "1px solid #d6d6d6",
-        paddingTop: "6px",
+        marginTop: "10px",
+        borderTop: `1px solid ${SOFT_RULE}`,
+        paddingTop: "5px",
       },
-      [`Statement reference: ${trip.id} / rev ${rev ?? "-"} / ${today}  ·  ${siteHost}`],
+      [`Statement reference: ${trip.id} / rev ${rev ?? "-"} / ${today} · ${SITE_HOST}`],
     ),
   );
 
@@ -643,9 +798,7 @@ export async function exportLedgerPdf(
   wrapper.append(container);
   document.body.append(wrapper);
 
-  // Wait for the masthead image to finish decoding: html2canvas snapshots the
-  // DOM as laid out, and an image that is still loading rasterizes as a blank
-  // box. Decode failures (missing asset) just drop the mark, never the export.
+  // Wait for any future body images before taking the statement snapshot.
   await Promise.all(
     Array.from(container.querySelectorAll("img")).map((img) => img.decode().catch(() => {})),
   );
@@ -654,15 +807,16 @@ export async function exportLedgerPdf(
   // measured DOM row positions below into the same coordinate space.
   const SCALE = 2;
 
-  // Safe page-break boundaries (canvas px): the top edge of every table row.
-  // The paginator only ever cuts a page at one of these, so a row is never
-  // sliced in half across the page edge. Measured while the node is laid out
-  // in the DOM (before html2canvas tears its clone down).
+  // Safe page-break boundaries (canvas px): table rows plus marked headings and
+  // disclosure paragraphs. The paginator favors the lowest one that fits.
   const containerTop = container.getBoundingClientRect().top;
-  const breakOffsets = Array.from(container.querySelectorAll("tr"))
-    .map((tr) => Math.round((tr.getBoundingClientRect().top - containerTop) * SCALE))
-    .filter((y) => y > 0)
-    .sort((a, b) => a - b);
+  const breakOffsets = [
+    ...new Set(
+      Array.from(container.querySelectorAll("[data-statement-break]"))
+        .map((node) => Math.round((node.getBoundingClientRect().top - containerTop) * SCALE))
+        .filter((y) => y > 0),
+    ),
+  ].sort((a, b) => a - b);
 
   let canvas: HTMLCanvasElement;
   try {
@@ -675,13 +829,16 @@ export async function exportLedgerPdf(
     wrapper.remove();
   }
 
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  // The reference statement uses a narrow, long 522 × 1008 pt page. Matching
+  // that stock gives the body its characteristic dense vertical rhythm.
+  const doc = new jsPDF({ unit: "pt", format: [522, 1008], orientation: "portrait" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 36;
-  const footerSpace = 16;
-  const usableWidth = pageWidth - margin * 2;
-  const usableHeight = pageHeight - margin * 2 - footerSpace;
+  const sideMargin = 24;
+  const bodyTop = 60;
+  const footerTop = pageHeight - 34;
+  const usableWidth = pageWidth - sideMargin * 2;
+  const usableHeight = footerTop - bodyTop;
 
   const ptPerPx = usableWidth / canvas.width;
   const pageSliceHeightPx = Math.floor(usableHeight / ptPerPx);
@@ -724,13 +881,12 @@ export async function exportLedgerPdf(
     );
 
     if (pageIndex > 0) doc.addPage();
-    // JPEG, not PNG: the statement is black ink on white, so a high-quality JPEG
-    // is a fraction of the lossless-PNG size per page with no visible difference.
+    // PNG keeps dense small type and hairline rules crisp, with no JPEG haloing.
     doc.addImage(
-      slice.toDataURL("image/jpeg", 0.92),
-      "JPEG",
-      margin,
-      margin,
+      slice.toDataURL("image/png"),
+      "PNG",
+      sideMargin,
+      bodyTop,
       usableWidth,
       sliceHeightPx * ptPerPx,
     );
@@ -739,16 +895,55 @@ export async function exportLedgerPdf(
     pageIndex++;
   }
 
+  const today = todayIn(trip.base.timezone);
+  const compactTripId = trip.id.length > 28 ? trip.id.slice(0, 25) + "..." : trip.id;
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+
+    // Repeated institution masthead, patterned after the compact service strip
+    // at the top of the reference statement.
+    doc.setTextColor(31, 55, 92);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("PAPERTRIP", sideMargin, 22);
+    doc.setFontSize(6.5);
+    doc.text("TRIP EXPENSE STATEMENT", sideMargin, 32);
+
+    doc.setTextColor(17, 17, 17);
+    doc.setFontSize(6.5);
+    doc.text("Manage your trip online at:", 190, 19);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(110);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 18, { align: "right" });
+    doc.text(`${SITE_HOST}/t/${compactTripId}`, 190, 29);
+    doc.setFont("helvetica", "bold");
+    doc.text("Statement help:", 372, 19);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${SITE_HOST}/t/${compactTripId}/admin`, 372, 29);
+    doc.setDrawColor(190, 190, 190);
+    doc.setLineWidth(0.45);
+    doc.line(sideMargin, 43, pageWidth - sideMargin, 43);
+
+    // Footer mirrors the account-name / page / statement-date alignment used
+    // on bank statements instead of showing a lone page number.
+    doc.setDrawColor(205, 205, 205);
+    doc.line(sideMargin, footerTop + 5, pageWidth - sideMargin, footerTop + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
+    doc.text(compactTripId, sideMargin, pageHeight - 18);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 18, { align: "center" });
+    doc.text(`Statement Date:  ${fmtShortDate(today)}`, pageWidth - sideMargin, pageHeight - 18, {
+      align: "right",
+    });
+    doc.setFontSize(5.5);
+    doc.setTextColor(105, 105, 105);
+    doc.text(
+      `PAPERTRIP  ·  REV ${context.rev ?? "-"}  ·  ${trip.base.timezone}`,
+      sideMargin,
+      pageHeight - 8,
+    );
   }
 
-  const today = todayIn(trip.base.timezone);
   const filename = `${trip.id}-expense-statement-${today}.pdf`;
   doc.setProperties({
     title: `${trip.id}-expense-statement-${today}`,
