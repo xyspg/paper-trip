@@ -1,4 +1,3 @@
-import { tripData } from "./tripData";
 import type {
   ChecklistItem,
   Expense,
@@ -140,19 +139,11 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
       };
 
     case "resetExpenses":
-      // The legacy trip resets to its curated seed; every other trip has no
-      // seed — its clean slate is an empty ledger.
-      return {
-        ...trip,
-        expenses: trip.id === tripData.id ? structuredClone(tripData.expenses) : [],
-      };
+      return { ...trip, expenses: [] };
 
     case "reset":
-      // Same split as resetExpenses. Identity, metadata and the roster always
-      // survive a reset — `members` is registry-owned, not trip content.
-      if (trip.id === tripData.id) {
-        return { ...structuredClone(tripData), members: trip.members };
-      }
+      // Identity, metadata and the roster always survive a reset — `members`
+      // is registry-owned, not trip content.
       return {
         ...trip,
         items: [],

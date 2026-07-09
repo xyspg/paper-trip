@@ -1,12 +1,9 @@
 import { useTrip } from "../trip/hooks";
-import { tripData } from "../trip/tripData";
-import { isLegacyTrip } from "../trip/legacy";
 import { PaperLedger } from "./PaperLedger";
 
 export function LedgerPage({ tripId, autoExport }: { tripId: string; autoExport?: boolean }) {
   const { data } = useTrip(tripId);
-  // Legacy trip falls back to the seed while loading, matching the timeline page.
-  const trip = data?.trip ?? (isLegacyTrip(tripId) ? tripData : null);
+  const trip = data?.trip ?? null;
   if (!trip) {
     return (
       <div className="grid place-items-center py-24">

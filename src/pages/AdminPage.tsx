@@ -3,8 +3,6 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { STOPS_SEED } from "../admin/adminData";
 import type { AdminMember, Stop } from "../admin/adminData";
 import { useAudit, useBackups, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
-import { tripData } from "../trip/tripData";
-import { isLegacyTrip } from "../trip/legacy";
 import { tripTravelers } from "../trip/roster";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
@@ -64,7 +62,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
   const { data: auditEntries } = useAudit(tripId, member);
   const { data: backups } = useBackups(tripId, member);
   const tripOp = useTripOp(tripId);
-  const trip = tripSnap?.trip ?? (isLegacyTrip(tripId) ? tripData : null);
+  const trip = tripSnap?.trip ?? null;
   const suggestions = trip?.suggestions ?? [];
   const tripItems = trip?.items ?? [];
   const expenses = trip?.expenses ?? [];

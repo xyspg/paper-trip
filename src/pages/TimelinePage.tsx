@@ -1,6 +1,4 @@
 import { useTrip, useTripLiveSync } from "../trip/hooks";
-import { tripData } from "../trip/tripData";
-import { isLegacyTrip } from "../trip/legacy";
 import { PaperTimeline } from "./PaperTimeline";
 
 const shortDate = (iso: string): string => {
@@ -37,8 +35,7 @@ const nowIn = (timeZone: string): string => {
 export function TimelinePage({ tripId }: { tripId: string }) {
   useTripLiveSync(tripId); // 挂载时连 WS，收别人的改动（TripLayout 按 tripId key 重挂）
   const { data } = useTrip(tripId);
-  // 旧行程加载首帧用静态 tripData 兜底；其他行程等服务端快照
-  const trip = data?.trip ?? (isLegacyTrip(tripId) ? tripData : null);
+  const trip = data?.trip ?? null;
 
   if (!trip) {
     return (

@@ -1,6 +1,4 @@
 import { DurableObject } from "cloudflare:workers";
-import { tripData } from "../src/trip/tripData";
-import { LEGACY_TRIP_ID } from "../src/trip/legacy";
 import type { Trip, TripMember } from "../src/trip/types";
 import { applyOp, emptyTrip, type TripOp } from "../src/trip/ops";
 import type { TripBackup } from "../src/trip/types";
@@ -117,19 +115,12 @@ export class TripDurableObject extends DurableObject<Env> {
       if (row) {
         this.rev = row.rev;
         this.trip = JSON.parse(row.trip) as Trip;
-      } else if (this.ctx.id.name === LEGACY_TRIP_ID) {
-        // Only the legacy DO self-seeds (its data predates /internal/init):
-        // migrate the old KV-API state into the SQL table, or fall back to the
-        // curated tripData seed. Every other name waits for an explicit init.
-        this.trip = (await ctx.storage.get<Trip>("trip")) ?? structuredClone(tripData);
-        this.rev = (await ctx.storage.get<number>("rev")) ?? 0;
-        this.persist();
       }
       if (!this.trip) return;
       // Backfill state persisted before suggestions/expenses existed so reads never see undefined.
       const before = JSON.stringify(this.trip);
       this.trip.suggestions ??= [];
-      this.trip.expenses ??= structuredClone(tripData.expenses);
+      this.trip.expenses ??= [];
       scrubPassUrls(this.trip);
       // Persist the backfill so the SQL row (and dashboard Query panel) reflects it.
       if (JSON.stringify(this.trip) !== before) this.persist();
@@ -344,8 +335,7 @@ export class TripDurableObject extends DurableObject<Env> {
       ...this.trip,
       title: typeof body.title === "string" && body.title ? body.title : this.trip.title,
       dates: {
-        start:
-          typeof body.dates?.start === "string" ? body.dates.start : this.trip.dates.start,
+        start: typeof body.dates?.start === "string" ? body.dates.start : this.trip.dates.start,
         end: typeof body.dates?.end === "string" ? body.dates.end : this.trip.dates.end,
       },
       base: {
@@ -391,9 +381,7 @@ export class TripDurableObject extends DurableObject<Env> {
   }
 
   private async createBackup(req: Request): Promise<Response> {
-    const body = await req
-      .json<{ label?: unknown }>()
-      .catch(() => ({}) as { label?: unknown });
+    const body = await req.json<{ label?: unknown }>().catch(() => ({}) as { label?: unknown });
     const label =
       typeof body.label === "string" && body.label.trim() ? body.label.trim().slice(0, 120) : null;
     const at = new Date().toISOString();
@@ -418,10 +406,7 @@ export class TripDurableObject extends DurableObject<Env> {
 
   private deleteBackup(req: Request, id: string): Response {
     const existing = this.sql
-      .exec<TripBackup>(
-        "SELECT id, at, rev, label, actorLogin FROM backups WHERE id = ?",
-        id,
-      )
+      .exec<TripBackup>("SELECT id, at, rev, label, actorLogin FROM backups WHERE id = ?", id)
       .toArray()[0];
     if (!existing) return Response.json({ error: "not_found" }, { status: 404 });
 
@@ -432,10 +417,7 @@ export class TripDurableObject extends DurableObject<Env> {
 
   private restoreBackup(req: Request, id: string): Response {
     const row = this.sql
-      .exec<BackupRow>(
-        "SELECT id, at, rev, label, actorLogin, trip FROM backups WHERE id = ?",
-        id,
-      )
+      .exec<BackupRow>("SELECT id, at, rev, label, actorLogin, trip FROM backups WHERE id = ?", id)
       .toArray()[0];
     if (!row) return Response.json({ error: "not_found" }, { status: 404 });
 
