@@ -1,17 +1,20 @@
-import { ExternalLink, Wallet } from "lucide-react"
-import type { ReactNode } from "react"
-import { Avatar } from "../admin/Avatar"
-import { ExpenseItems } from "../admin/ExpenseItems"
-import { fmtMoney } from "../admin/adminData"
-import { tripTravelers } from "../trip/roster"
+import { ExternalLink, Wallet } from "lucide-react";
+import type { ReactNode } from "react";
+import { Avatar } from "../admin/Avatar";
+import { ExpenseItems } from "../admin/ExpenseItems";
+import { fmtMoney } from "../admin/adminData";
+import { useAdminUser } from "../admin/auth";
+import type { StatementContext } from "../trip/exportLedgerPdf";
+import { useTripMeta } from "../trip/hooks";
+import { tripTravelers } from "../trip/roster";
 import {
   appliedCredit,
   expenseBalances,
   expensePaidBy,
   expenseTotals,
   netExpense,
-} from "../trip/expenses"
-import type { Trip } from "../trip/types"
+} from "../trip/expenses";
+import type { Trip } from "../trip/types";
 
 // Ledger page: a port of the "分账" Claude Design layout (light masthead,
 // bordered summary split, editorial expense rows, totals block). Fed the app's
@@ -20,7 +23,7 @@ import type { Trip } from "../trip/types"
 
 const logo = (src: string, alt: string) => (
   <img className="w-full h-full p-1 object-contain" src={src} alt={alt} />
-)
+);
 
 // Branded lines show the real vendor logo on a light tag; generic ones fall back
 // to a lucide glyph on an accent tag.
@@ -29,34 +32,42 @@ const PRESENTATION: Record<string, ReactNode> = {
   hotel: logo("/ihg-logo.png", "IHG"),
   tickets: logo("/anime-expo-logo.jpg", "Anime Expo"),
   car: logo("/hertz-logo.png", "Hertz"),
-}
+};
 
 function amountParts(value: number): string {
-  return fmtMoney(value).replace(/^\$/, "")
+  return fmtMoney(value).replace(/^\$/, "");
 }
 
-async function exportPdf(trip: Trip) {
+async function exportPdf(trip: Trip, context: StatementContext) {
   // Opened synchronously on click so it isn't blocked as a popup once the async
   // PDF render finishes.
-  const previewWindow = window.open("", "_blank")
+  const previewWindow = window.open("", "_blank");
   try {
-    const { exportLedgerPdf } = await import("../trip/exportLedgerPdf")
-    await exportLedgerPdf(trip, tripTravelers(trip), previewWindow)
+    const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
+    await exportLedgerPdf(trip, tripTravelers(trip), context, previewWindow);
   } catch (err) {
-    previewWindow?.close()
-    console.error("导出 PDF 失败", err)
-    alert("导出 PDF 失败，请重试")
+    previewWindow?.close();
+    console.error("导出 PDF 失败", err);
+    alert("导出 PDF 失败，请重试");
   }
 }
 
-export function PaperLedger({ trip }: { trip: Trip }) {
-  const travelers = tripTravelers(trip)
-  const travelerIds = travelers.map((m) => m.id)
-  const ledger = trip.expenses
-  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger)
-  const balances = expenseBalances(ledger, travelerIds)
-  const each = balances[0]?.share ?? 0
-  const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]))
+export function PaperLedger({ trip, rev }: { trip: Trip; rev?: number }) {
+  // Registry metadata + the exporting user feed the statement's multi-tenant
+  // header (visibility, role, prepared-by). Both are optional: the statement
+  // renders placeholders while they load or for anonymous viewers.
+  const { data: meta } = useTripMeta(trip.id);
+  const { data: adminUser } = useAdminUser();
+  const preparedBy = adminUser
+    ? `${adminUser.name?.trim() || adminUser.login} (@${adminUser.login})`
+    : undefined;
+  const travelers = tripTravelers(trip);
+  const travelerIds = travelers.map((m) => m.id);
+  const ledger = trip.expenses;
+  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
+  const balances = expenseBalances(ledger, travelerIds);
+  const each = balances[0]?.share ?? 0;
+  const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
   return (
     <div className="font-sans text-[#1c1b19]">
@@ -103,20 +114,25 @@ export function PaperLedger({ trip }: { trip: Trip }) {
       </section>
 
       {/* PER-PERSON BALANCES */}
-      <section className="grid grid-cols-2 gap-3 mt-4 max-[560px]:grid-cols-1" aria-label="两人各自结算金额">
+      <section
+        className="grid grid-cols-2 gap-3 mt-4 max-[560px]:grid-cols-1"
+        aria-label="两人各自结算金额"
+      >
         {travelers.map((m) => {
-          const balance = balanceById[m.id]
-          const net = balance?.balance ?? 0
-          const owe = net < -0.005
-          const settled = Math.abs(net) < 0.005
-          const label = settled ? "已结清" : owe ? "需补付" : "应收回"
-          const tone = settled ? "#76726a" : owe ? "#c2553f" : "#3f6f5b"
+          const balance = balanceById[m.id];
+          const net = balance?.balance ?? 0;
+          const owe = net < -0.005;
+          const settled = Math.abs(net) < 0.005;
+          const label = settled ? "已结清" : owe ? "需补付" : "应收回";
+          const tone = settled ? "#76726a" : owe ? "#c2553f" : "#3f6f5b";
           return (
             <div key={m.id} className="p-4 bg-white border border-[#ebe9e3] rounded-[14px]">
               <div className="flex items-center gap-3">
                 <Avatar m={m} className="w-[38px] h-[38px] text-[13px] border border-[#ebe9e3]" />
                 <div className="min-w-0 flex-1">
-                  <div className="font-cjk font-bold text-[15px] leading-[1.2] truncate">{m.name}</div>
+                  <div className="font-cjk font-bold text-[15px] leading-[1.2] truncate">
+                    {m.name}
+                  </div>
                   <div className="font-mono text-[11px] text-[#9b988f] truncate">@{m.handle}</div>
                 </div>
                 <div className="text-right shrink-0">
@@ -131,15 +147,19 @@ export function PaperLedger({ trip }: { trip: Trip }) {
               <div className="grid grid-cols-2 gap-2 mt-3 max-[480px]:grid-cols-1">
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   已垫付
-                  <b className="font-sans font-bold text-[#1c1b19]">{fmtMoney(balance?.paid ?? 0)}</b>
+                  <b className="font-sans font-bold text-[#1c1b19]">
+                    {fmtMoney(balance?.paid ?? 0)}
+                  </b>
                 </span>
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   应承担
-                  <b className="font-sans font-bold text-[#1c1b19]">{fmtMoney(balance?.share ?? each)}</b>
+                  <b className="font-sans font-bold text-[#1c1b19]">
+                    {fmtMoney(balance?.share ?? each)}
+                  </b>
                 </span>
               </div>
             </div>
-          )
+          );
         })}
       </section>
 
@@ -151,7 +171,7 @@ export function PaperLedger({ trip }: { trip: Trip }) {
           </span>
           <button
             type="button"
-            onClick={() => exportPdf(trip)}
+            onClick={() => exportPdf(trip, { meta, rev, preparedBy })}
             className="inline-flex items-center gap-1.5 font-grotesk font-semibold text-[11px] uppercase tracking-[0.06em] text-[#3b3833] bg-white border border-[#ebe9e3] rounded-full py-2 px-3.5 cursor-pointer transition-colors hover:border-[#1c1b19]"
           >
             <ExternalLink size={13} strokeWidth={2.2} />
@@ -161,20 +181,27 @@ export function PaperLedger({ trip }: { trip: Trip }) {
 
         <div>
           {ledger.map((item) => {
-            const net = netExpense(item)
-            const brand = PRESENTATION[item.id]
-            const paidBy = expensePaidBy(item, travelerIds)
-            const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005)
-            const isSplit = payers.length > 1
+            const net = netExpense(item);
+            const brand = PRESENTATION[item.id];
+            const paidBy = expensePaidBy(item, travelerIds);
+            const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
+            const isSplit = payers.length > 1;
             return (
-              <div key={item.id} className="py-4 px-[18px] border-b border-dashed border-[#ebe9e3] last:border-b-0">
+              <div
+                key={item.id}
+                className="py-4 px-[18px] border-b border-dashed border-[#ebe9e3] last:border-b-0"
+              >
                 <div className="flex gap-[13px] items-start max-[480px]:flex-wrap">
                   <span className="grid shrink-0 w-[38px] h-[38px] place-items-center overflow-hidden rounded-[10px] border border-[#ebe9e3] bg-white">
                     {brand ?? <Wallet size={19} strokeWidth={2} className="text-[#3f6f5b]" />}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block font-cjk font-bold text-[15.5px] leading-[1.25]">{item.name}</span>
-                    <span className="block mt-[3px] font-cjk text-[12px] text-[#9b988f]">{item.sub}</span>
+                    <span className="block font-cjk font-bold text-[15.5px] leading-[1.25]">
+                      {item.name}
+                    </span>
+                    <span className="block mt-[3px] font-cjk text-[12px] text-[#9b988f]">
+                      {item.sub}
+                    </span>
                   </span>
                   <span className="shrink-0 max-[480px]:w-full max-[480px]:pl-[51px] max-[480px]:mt-1.5">
                     <span className="inline-flex items-center gap-1 py-[5px] pr-[11px] pl-[9px] bg-[#fafaf8] border border-[#ebe9e3] rounded-[10px]">
@@ -206,23 +233,28 @@ export function PaperLedger({ trip }: { trip: Trip }) {
                     </span>
                     <span className="flex flex-wrap gap-1.5">
                       {payers.map((m) => {
-                        const amt = paidBy[m.id] ?? 0
-                        const pct = net > 0 ? Math.round((amt / net) * 100) : 0
+                        const amt = paidBy[m.id] ?? 0;
+                        const pct = net > 0 ? Math.round((amt / net) * 100) : 0;
                         return (
                           <span
                             key={m.id}
                             className="inline-flex gap-[7px] items-center py-1 pr-2.5 pl-1 bg-[#fdfdfb] border border-[#ebe9e3] rounded-full"
                           >
-                            <Avatar m={m} className="w-[22px] h-[22px] text-[9px] border border-[#ebe9e3]" />
+                            <Avatar
+                              m={m}
+                              className="w-[22px] h-[22px] text-[9px] border border-[#ebe9e3]"
+                            />
                             <span className="font-cjk font-semibold text-[12px]">{m.name}</span>
                             {isSplit && (
                               <span className="font-mono font-bold text-[10.5px] text-[#76726a] bg-[#f0eee8] rounded-full px-1.5 py-px">
                                 {pct}%
                               </span>
                             )}
-                            <b className="font-sans font-bold text-[12.5px] text-[#1c1b19]">{fmtMoney(amt)}</b>
+                            <b className="font-sans font-bold text-[12.5px] text-[#1c1b19]">
+                              {fmtMoney(amt)}
+                            </b>
                           </span>
-                        )
+                        );
                       })}
                     </span>
                   </div>
@@ -230,14 +262,20 @@ export function PaperLedger({ trip }: { trip: Trip }) {
 
                 <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    实付 <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">{fmtMoney(net)}</b>
+                    实付{" "}
+                    <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
+                      {fmtMoney(net)}
+                    </b>
                   </span>
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    每人 <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">{fmtMoney(net / 2)}</b>
+                    每人{" "}
+                    <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
+                      {fmtMoney(net / 2)}
+                    </b>
                   </span>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
@@ -253,7 +291,9 @@ export function PaperLedger({ trip }: { trip: Trip }) {
           </div>
           <div className="flex items-center justify-between py-[15px] px-[18px] bg-[#1c1b19] text-[#fafaf8] font-sans font-extrabold tracking-[0.01em] text-[clamp(15px,3vw,17px)]">
             <span>实付合计 Net Total</span>
-            <span className="font-sans text-white text-[clamp(18px,4vw,22px)]">{fmtMoney(grand)}</span>
+            <span className="font-sans text-white text-[clamp(18px,4vw,22px)]">
+              {fmtMoney(grand)}
+            </span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] bg-white border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[14px]">
             <span>每人均摊 Per Person</span>
@@ -268,5 +308,5 @@ export function PaperLedger({ trip }: { trip: Trip }) {
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
     </div>
-  )
+  );
 }

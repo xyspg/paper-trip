@@ -14,5 +14,7 @@ export function LedgerPage({ tripId }: { tripId: string }) {
       </div>
     );
   }
-  return <PaperLedger trip={trip} />;
+  // `rev` is the DO document revision of the snapshot being shown; the PDF
+  // export stamps it on the statement (absent while the legacy seed fills in).
+  return <PaperLedger trip={trip} rev={data?.rev} />;
 }
