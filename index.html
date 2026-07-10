@@ -2,6 +2,14 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Vite moves the module entry into <head>. If its request fails before
+      // the full recovery handler below is parsed, remember the failure and
+      // handle it as soon as the body script runs.
+      window.__papertripAssetLoadFailed = function () {
+        window.__papertripAssetLoadFailedPending = true;
+      };
+    </script>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="shortcut icon" href="/favicon.ico" />
@@ -18,7 +26,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
       media="print"
-      onload="this.media='all'"
+      onload="this.media = 'all'"
     />
     <noscript>
       <link
@@ -54,6 +62,91 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // A cached HTML shell can outlive the hashed assets from its deployment.
+      // Recover before React exists: clear obsolete app caches, add a document
+      // cache-buster, and retry exactly once. A second failure renders a useful
+      // error instead of leaving the user on an unexplainable white page.
+      (function () {
+        var recoveryParam = "_papertrip_recover";
+        var recovering = false;
+
+        function showFailure() {
+          var root = document.getElementById("root");
+          if (!root) return;
+          root.innerHTML =
+            '<main style="box-sizing:border-box;max-width:520px;margin:12vh auto;padding:24px;font:15px/1.7 system-ui,sans-serif;color:#1c1b19">' +
+            '<h1 style="font-size:21px;margin:0 0 10px">Papertrip 资源加载失败</h1>' +
+            '<p style="margin:0">浏览器仍在使用旧版页面资源。请关闭这个页面后重新打开；如果你在应用内浏览器中，请选择「在 Safari 中打开」。</p>' +
+            "</main>";
+        }
+
+        function reloadWithFreshAssets() {
+          if (recovering) return;
+          recovering = true;
+
+          var url = new URL(window.location.href);
+          if (url.searchParams.has(recoveryParam)) {
+            showFailure();
+            return;
+          }
+          url.searchParams.set(recoveryParam, Date.now().toString(36));
+
+          var cleanup = [];
+          if ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations) {
+            cleanup.push(
+              navigator.serviceWorker
+                .getRegistrations()
+                .then(function (registrations) {
+                  return Promise.all(
+                    registrations.map(function (registration) {
+                      return registration.unregister();
+                    }),
+                  );
+                })
+                .catch(function () {}),
+            );
+          }
+          if ("caches" in window) {
+            cleanup.push(
+              caches
+                .keys()
+                .then(function (keys) {
+                  return Promise.all(
+                    keys.map(function (key) {
+                      return caches.delete(key);
+                    }),
+                  );
+                })
+                .catch(function () {}),
+            );
+          }
+
+          Promise.all(cleanup).then(function () {
+            window.location.replace(url.toString());
+          });
+        }
+
+        window.__papertripAssetLoadFailed = reloadWithFreshAssets;
+        if (window.__papertripAssetLoadFailedPending) reloadWithFreshAssets();
+        window.addEventListener("vite:preloadError", function (event) {
+          event.preventDefault();
+          reloadWithFreshAssets();
+        });
+        window.addEventListener("unhandledrejection", function (event) {
+          var reason = event.reason;
+          var message = String(reason && (reason.message || reason));
+          if (/module script|dynamically imported module|importing a module/i.test(message)) {
+            event.preventDefault();
+            reloadWithFreshAssets();
+          }
+        });
+      })();
+    </script>
+    <script
+      type="module"
+      src="/src/main.tsx"
+      onerror="window.__papertripAssetLoadFailed && window.__papertripAssetLoadFailed()"
+    ></script>
   </body>
 </html>

@@ -777,12 +777,20 @@ function buildStatement(
   return container;
 }
 
+// The finished statement plus its delivery action. deliver() hands the file
+// to the platform (share sheet on touch devices, download elsewhere) and
+// should run inside a click handler: the share sheet needs a live user
+// gesture.
+export type LedgerPdfStatement = {
+  filename: string;
+  deliver: () => Promise<void>;
+};
+
 export async function exportLedgerPdf(
   trip: Trip,
   travelers: AdminMember[],
   context: StatementContext = {},
-  previewWindow?: Window | null,
-) {
+): Promise<LedgerPdfStatement> {
   const container = buildStatement(trip, travelers, context);
 
   // The wrapper (not the container itself) carries the off-screen styles, so
@@ -961,14 +969,27 @@ export async function exportLedgerPdf(
     creator: "PaperTrip (papertrip.xyspg.moe)",
   });
 
-  const blobUrl = doc.output("bloburl").toString();
-  if (previewWindow) {
-    // Reuses the tab the caller already opened synchronously on click, since
-    // opening one only now (after the async render above) would be blocked
-    // as a popup by most browsers.
-    previewWindow.location.href = blobUrl;
-  } else {
-    // No tab to navigate (likely blocked) — fall back to a normal download.
-    doc.save(filename);
-  }
+  // Never navigate a window to a blob: URL of the PDF. Rendering a blob PDF
+  // in the main frame crashes WKWebView-based in-app browsers, and the crash
+  // can leave the origin's HTTP cache corrupted on the device (the 2026-07
+  // Telegram white-screen incident).
+  const file = new File([doc.output("blob")], filename, { type: "application/pdf" });
+  return {
+    filename,
+    deliver: async () => {
+      const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+      if (coarsePointer && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: filename });
+          return;
+        } catch (err) {
+          // Dismissing the share sheet is a completed delivery; anything
+          // else (stale gesture, broken share target) falls back to the
+          // plain download below.
+          if (err instanceof Error && err.name === "AbortError") return;
+        }
+      }
+      doc.save(filename);
+    },
+  };
 }

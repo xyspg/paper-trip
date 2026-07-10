@@ -40,14 +40,11 @@ function amountParts(value: number): string {
 }
 
 async function exportPdf(trip: Trip, context: StatementContext) {
-  // Opened synchronously on click so it isn't blocked as a popup once the async
-  // PDF render finishes.
-  const previewWindow = window.open("", "_blank");
   try {
     const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
-    await exportLedgerPdf(trip, tripTravelers(trip), context, previewWindow);
+    const statement = await exportLedgerPdf(trip, tripTravelers(trip), context);
+    await statement.deliver();
   } catch (err) {
-    previewWindow?.close();
     console.error("导出 PDF 失败", err);
     alert("导出 PDF 失败，请重试");
   }

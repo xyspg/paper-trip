@@ -5,6 +5,19 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
 
+if (new URL(window.location.href).searchParams.has("_papertrip_recover")) {
+  window.setTimeout(() => {
+    const recoveredUrl = new URL(window.location.href);
+    if (!recoveredUrl.searchParams.has("_papertrip_recover")) return;
+    recoveredUrl.searchParams.delete("_papertrip_recover");
+    window.history.replaceState(
+      null,
+      "",
+      `${recoveredUrl.pathname}${recoveredUrl.search}${recoveredUrl.hash}`,
+    );
+  }, 10_000);
+}
+
 const queryClient = new QueryClient();
 
 const router = createRouter({
