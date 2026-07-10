@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { TripAccessError } from "../trip/api";
 import type { TripMeta } from "../trip/api";
 import { useTripMeta } from "../trip/hooks";
+import { tripDocumentMetadata } from "../trip/metadata";
 import { signInWithGitHub } from "../admin/auth";
 
 type TripAccess = { tripId: string; meta: TripMeta };
@@ -70,7 +71,13 @@ export function TripLayout({ tripId, children }: { tripId: string; children: Rea
     );
   }
 
-  return <TripContext.Provider value={{ tripId, meta }}>{children}</TripContext.Provider>;
+  const metadata = tripDocumentMetadata(meta);
+  return (
+    <TripContext.Provider value={{ tripId, meta }}>
+      <title>{metadata.title}</title>
+      {children}
+    </TripContext.Provider>
+  );
 }
 
 function AccessCard({

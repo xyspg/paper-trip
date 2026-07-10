@@ -38,6 +38,7 @@ import type { Member, TripRow, TripVisibility } from "./registry";
 import { sessionUser } from "./auth";
 import receipt from "./receipt";
 import type { Env } from "./env";
+import { tripDocumentMetadata } from "../src/trip/metadata";
 import type { TripOp } from "../src/trip/ops";
 
 export { TripDurableObject } from "./TripDurableObject";
@@ -106,6 +107,77 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.get("/api", (c) => c.text("ok"));
 
+// Social crawlers do not execute the SPA, so trip pages must receive their
+// title/description in the initial HTML. Only public registry rows are exposed
+// here; private trip names and dates stay behind the authenticated API.
+const serveTripPage = async (c: Context<{ Bindings: Env }>): Promise<Response> => {
+  const tripId = c.req.param("tripId");
+  if (!tripId) return c.notFound();
+  const [asset, trip] = await Promise.all([
+    c.env.ASSETS.fetch(c.req.raw),
+    // Metadata is an enhancement: a transient registry failure must not stop
+    // the static app shell from loading and showing its normal access state.
+    getTrip(c.env.DB, tripId).catch(() => null),
+  ]);
+  if (
+    !trip ||
+    trip.visibility !== "public" ||
+    !asset.headers.get("content-type")?.includes("text/html")
+  ) {
+    return asset;
+  }
+
+  const metadata = tripDocumentMetadata({
+    title: trip.title,
+    startDate: trip.start_date,
+    endDate: trip.end_date,
+  });
+  const canonical = new URL(c.req.url);
+  canonical.search = "";
+  canonical.hash = "";
+
+  return new HTMLRewriter()
+    .on("title", {
+      element(element) {
+        element.setInnerContent(metadata.title);
+      },
+    })
+    .on('meta[name="description"]', {
+      element(element) {
+        element.setAttribute("content", metadata.description);
+      },
+    })
+    .on('meta[property="og:title"]', {
+      element(element) {
+        element.setAttribute("content", metadata.title);
+      },
+    })
+    .on('meta[property="og:description"]', {
+      element(element) {
+        element.setAttribute("content", metadata.description);
+      },
+    })
+    .on('meta[property="og:url"]', {
+      element(element) {
+        element.setAttribute("content", canonical.toString());
+      },
+    })
+    .on('meta[name="twitter:title"]', {
+      element(element) {
+        element.setAttribute("content", metadata.title);
+      },
+    })
+    .on('meta[name="twitter:description"]', {
+      element(element) {
+        element.setAttribute("content", metadata.description);
+      },
+    })
+    .transform(asset);
+};
+
+app.get("/t/:tripId", serveTripPage);
+app.get("/t/:tripId/*", serveTripPage);
+
 // better-auth owns /api/auth/* (sign-in/social, callback/github, get-session,
 // sign-out, …). Sessions live in D1 + an httpOnly cookie it manages.
 app.on(["GET", "POST"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
@@ -123,9 +195,7 @@ app.post("/api/trips/:tripId/agent-token", async (c) => {
   if (member?.role !== "owner") return c.json({ error: "forbidden" }, 403);
   const secret = c.env.AGENT_TOKEN_SECRET;
   if (!secret) return c.json({ error: "config" }, 500);
-  const body = await c.req
-    .json<{ ttlDays?: number }>()
-    .catch(() => ({}) as { ttlDays?: number });
+  const body = await c.req.json<{ ttlDays?: number }>().catch(() => ({}) as { ttlDays?: number });
   const ttlDays = Math.min(365, Math.max(1, Math.round(body.ttlDays ?? 90)));
   const exp = Math.floor(Date.now() / 1000) + ttlDays * 86400;
   const token = await signAgentToken(

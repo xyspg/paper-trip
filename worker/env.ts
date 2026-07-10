@@ -2,6 +2,9 @@ import type { TripDurableObject } from "./TripDurableObject";
 
 export interface Env {
   TRIPS: DurableObjectNamespace<TripDurableObject>;
+  // Static client bundle. Trip routes pass through the Worker so their HTML
+  // can carry registry-backed social/share metadata before the SPA boots.
+  ASSETS: Fetcher;
   // D1: better-auth tables (user/session/account/verification) plus the
   // multi-tenant registry (trips/members/invites — see worker/registry.ts).
   DB: D1Database;
