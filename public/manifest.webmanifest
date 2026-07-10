@@ -1,7 +1,7 @@
 {
-  "name": "Anime Expo 2026",
-  "short_name": "AX 2026 行程",
-  "description": "面向停车、时间线和随身清单的 Anime Expo 2026 行程规划工具。",
+  "name": "Papertrip · 纸上行程",
+  "short_name": "Papertrip",
+  "description": "人和 Agent 共写的行程工作台：时间线、预订与分账实时同步。",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#eef2f0",

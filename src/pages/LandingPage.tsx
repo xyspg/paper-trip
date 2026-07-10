@@ -1,5 +1,5 @@
-import type { ReactNode } from "react"
-import { Link } from "@tanstack/react-router"
+import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   Archive,
   ArrowRight,
@@ -10,13 +10,13 @@ import {
   Ticket,
   UserPlus,
   Zap,
-} from "lucide-react"
-import { signInWithGitHub } from "../admin/auth"
-import { LEGACY_TRIP_ID } from "../trip/legacy"
-import "./landing.css"
+} from "lucide-react";
+import { signInWithGitHub } from "../admin/auth";
+import { LEGACY_TRIP_ID } from "../trip/legacy";
+import "./landing.css";
 
 // Brand name lives here and in index.html only.
-const BRAND = "Papertrip"
+const BRAND = "Papertrip";
 
 // lucide dropped brand icons; the GitHub mark rides along as a tiny inline SVG.
 function GitHubMark({ size }: { size: number }) {
@@ -24,7 +24,7 @@ function GitHubMark({ size }: { size: number }) {
     <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" aria-hidden>
       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
     </svg>
-  )
+  );
 }
 
 // Marketing landing rendered at `/` for signed-out visitors. It reuses the
@@ -41,10 +41,10 @@ export function LandingPage() {
       <ClosingCta />
       <Footer />
     </div>
-  )
+  );
 }
 
-const container = "w-[min(1040px,100%)] mx-auto px-[clamp(16px,4vw,40px)]"
+const container = "w-[min(1040px,100%)] mx-auto px-[clamp(16px,4vw,40px)]";
 
 const githubBtn = (label: string) => (
   <button
@@ -55,7 +55,7 @@ const githubBtn = (label: string) => (
     <GitHubMark size={16} />
     {label}
   </button>
-)
+);
 
 function Nav() {
   return (
@@ -65,10 +65,16 @@ function Nav() {
         {BRAND}
       </span>
       <nav className="hidden sm:flex items-center gap-1 font-grotesk text-[12px] font-semibold text-[#76726a]">
-        <a href="#features" className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]">
+        <a
+          href="#features"
+          className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]"
+        >
           功能
         </a>
-        <a href="#agent" className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]">
+        <a
+          href="#agent"
+          className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]"
+        >
           Agent 接入
         </a>
         <Link
@@ -88,7 +94,7 @@ function Nav() {
         登录
       </button>
     </div>
-  )
+  );
 }
 
 function Hero() {
@@ -106,8 +112,8 @@ function Hero() {
           <span className="text-[#3f6f5b]">Agent</span> 负责行程
         </h1>
         <p className="mt-5 mx-auto max-w-[42ch] font-cjk text-[15px] leading-[1.9] text-[#76726a]">
-          时间线、预订、分账，一份行程实时同步。朋友从浏览器进来，Agent
-          拿着令牌从 API 进来——写的是同一张纸。
+          时间线、预订、分账，一份行程实时同步。朋友从浏览器进来，Agent 拿着令牌从 API
+          进来——写的是同一张纸。
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           {githubBtn("用 GitHub 登录，免费开始")}
@@ -124,7 +130,7 @@ function Hero() {
         <DeviceScene />
       </div>
     </header>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------------ */
@@ -151,7 +157,7 @@ function CursorMark({ label, color }: { label: string; color: string }) {
         {label}
       </span>
     </span>
-  )
+  );
 }
 
 function Bubble({
@@ -159,9 +165,9 @@ function Bubble({
   typeClass,
   chars,
 }: {
-  className: string
-  typeClass: string
-  chars: string
+  className: string;
+  typeClass: string;
+  chars: string;
 }) {
   return (
     <div className={`lp-bubble ${className} max-w-none`}>
@@ -174,10 +180,20 @@ function Bubble({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
-function MiniChip({ text, color, bg, border }: { text: string; color: string; bg: string; border: string }) {
+function MiniChip({
+  text,
+  color,
+  bg,
+  border,
+}: {
+  text: string;
+  color: string;
+  bg: string;
+  border: string;
+}) {
   return (
     <span
       className="inline-flex py-[2px] px-1.5 rounded-full font-grotesk text-[8px] font-bold uppercase tracking-[0.06em]"
@@ -185,7 +201,7 @@ function MiniChip({ text, color, bg, border }: { text: string; color: string; bg
     >
       {text}
     </span>
-  )
+  );
 }
 
 function MiniTicket({
@@ -196,24 +212,28 @@ function MiniTicket({
   className,
   children,
 }: {
-  chip: ReactNode
-  time: string
-  title: string
-  sub?: string
-  className?: string
-  children?: ReactNode
+  chip: ReactNode;
+  time: string;
+  title: string;
+  sub?: string;
+  className?: string;
+  children?: ReactNode;
 }) {
   return (
-    <div className={`relative p-2 bg-white border border-[#ebe9e3] rounded-[8px] text-left ${className ?? ""}`}>
+    <div
+      className={`relative p-2 bg-white border border-[#ebe9e3] rounded-[8px] text-left ${className ?? ""}`}
+    >
       <div className="flex items-center gap-1">
         {chip}
         <span className="ml-auto font-mono text-[8px] text-[#9b988f]">{time}</span>
       </div>
-      <div className="mt-1 font-sans font-bold text-[10px] leading-tight text-[#1c1b19]">{title}</div>
+      <div className="mt-1 font-sans font-bold text-[10px] leading-tight text-[#1c1b19]">
+        {title}
+      </div>
       {sub && <div className="mt-0.5 font-cjk text-[8.5px] text-[#76726a]">{sub}</div>}
       {children}
     </div>
-  )
+  );
 }
 
 function DeviceScene() {
@@ -224,8 +244,10 @@ function DeviceScene() {
         <div className="font-grotesk text-[8px] font-bold uppercase tracking-[0.14em] text-[#9b988f]">
           Boarding Pass
         </div>
-        <div className="mt-1 font-mono text-[10px] font-bold text-[#1c1b19]">UA 872 · JFK → LAX</div>
-        <div className="font-mono text-[8.5px] text-[#76726a]">7/3 08:05 · SEAT 23A</div>
+        <div className="mt-1 font-mono text-[10px] font-bold text-[#1c1b19]">
+          AC 103 · YYZ → YVR
+        </div>
+        <div className="font-mono text-[8.5px] text-[#76726a]">8/12 08:30 · SEAT 18A</div>
         <div className="lp-pass-barcode mt-1.5 h-[14px] rounded-[2px]" />
       </div>
 
@@ -238,7 +260,7 @@ function DeviceScene() {
             <span className="w-2 h-2 rounded-full bg-[#e4e1d9]" />
             <span className="w-2 h-2 rounded-full bg-[#e4e1d9]" />
             <span className="ml-2 py-[3px] px-2.5 rounded-full bg-white border border-[#ebe9e3] font-mono text-[8.5px] text-[#9b988f]">
-              /t/anime-expo-2026
+              /t/north-america-west-coast
             </span>
             <span className="ml-auto inline-flex items-center gap-1 font-grotesk text-[8px] font-bold uppercase tracking-[0.1em] text-[#3f6f5b]">
               <span className="w-[5px] h-[5px] rounded-full bg-[#3f6f5b]" />
@@ -250,19 +272,19 @@ function DeviceScene() {
           <div className="p-3.5">
             <div className="flex items-baseline gap-2">
               <span className="font-sans font-extrabold tracking-[-0.02em] text-[15px]">
-                Anime Expo <span className="text-[#3f6f5b]">2026</span>
+                北美西海岸<span className="text-[#3f6f5b]">之旅</span>
               </span>
               <span className="font-grotesk text-[8px] font-semibold uppercase tracking-[0.14em] text-[#9b988f]">
-                7/3 – 7/5 · Los Angeles
+                8/12 – 8/20 · Vancouver → Portland
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 mt-2.5 max-[560px]:grid-cols-2">
               <MiniTicket
                 chip={<MiniChip text="交通" color="#5b7a99" bg="#eef2f6" border="#cdd8e2" />}
-                time="08:05"
-                title="UA 872 · JFK → LAX"
-                sub="T7 值机 · 23A/23B"
+                time="08:30"
+                title="AC 103 · YYZ → YVR"
+                sub="T1 值机 · 18A/18B"
               >
                 {/* Status chip the human cursor flips: 计划中 → 已锁定 */}
                 <span className="relative inline-block mt-1 h-[14px] w-[44px]">
@@ -278,8 +300,8 @@ function DeviceScene() {
               <MiniTicket
                 chip={<MiniChip text="酒店" color="#7a5c84" bg="#f5eef6" border="#ddccdf" />}
                 time="15:00"
-                title="Hotel Checkers"
-                sub="入住 · 确认码 8H2KQ"
+                title="Waterfront Hotel"
+                sub="入住 · 确认码 7N4PQ"
               />
 
               {/* Ledger card, spans both rows */}
@@ -289,32 +311,32 @@ function DeviceScene() {
                 </div>
                 <div className="mt-1.5 space-y-1 font-cjk text-[9px] text-[#3b3833]">
                   <div className="flex justify-between gap-2">
-                    <span>晚餐 · Tsujita</span>
-                    <span className="font-mono">$86.00</span>
+                    <span>晚餐 · Gastown</span>
+                    <span className="font-mono">$92.00</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span>停车 · LAZ</span>
-                    <span className="font-mono">$30.00</span>
+                    <span>租车 · 三日</span>
+                    <span className="font-mono">$148.00</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span>门票 · AX Day 1</span>
-                    <span className="font-mono">$120.00</span>
+                    <span>门票 · 吊桥公园</span>
+                    <span className="font-mono">$126.00</span>
                   </div>
                 </div>
                 <div className="flex justify-between gap-2 mt-1.5 pt-1.5 border-t border-[#ebe9e3] font-sans font-bold text-[9.5px]">
                   <span>合计</span>
-                  <span className="font-mono">$236.00</span>
+                  <span className="font-mono">$366.00</span>
                 </div>
                 <div className="lp-ledger-chip mt-1.5 py-1 px-1.5 rounded-[6px] bg-[#eef4f0] border border-[#cfe0d6] font-cjk text-[8.5px] font-medium text-[#3f6f5b]">
-                  结算：spr → 你 $88.00
+                  结算：同行者 → 你 $183.00
                 </div>
               </div>
 
               <MiniTicket
                 chip={<MiniChip text="活动" color="#c2553f" bg="#f8efec" border="#ecccc2" />}
                 time="09:00"
-                title="AX Day 1 · 入场"
-                sub="South Hall · 排队 B 口"
+                title="Stanley Park · 骑行"
+                sub="Seawall · 租车点集合"
               />
 
               {/* The booking the agent types in */}
@@ -322,8 +344,8 @@ function DeviceScene() {
                 className="lp-card-agent"
                 chip={<MiniChip text="预订" color="#3f6f5b" bg="#eef4f0" border="#cfe0d6" />}
                 time="14:20"
-                title="DL 417 · LAX → JFK"
-                sub="回程 · 确认码 QX93F"
+                title="Amtrak 517 · SEA → PDX"
+                sub="南下 · 确认码 R4K8M"
               >
                 <span className="inline-flex items-center gap-1 mt-1 font-grotesk text-[7.5px] font-bold uppercase tracking-[0.1em] text-[#7a5c84]">
                   <Bot size={9} strokeWidth={2.4} />
@@ -345,7 +367,7 @@ function DeviceScene() {
       <div className="lp-phone absolute right-8 -bottom-4 z-20 hidden sm:block w-[168px] p-2.5 max-md:right-0">
         <div className="flex items-center justify-between">
           <span className="font-sans font-extrabold text-[10.5px] tracking-tight">
-            AX <span className="text-[#3f6f5b]">2026</span>
+            西海岸<span className="text-[#3f6f5b]">之旅</span>
           </span>
           <span className="font-grotesk text-[7.5px] font-bold uppercase tracking-[0.1em] text-[#9b988f]">
             时间线
@@ -353,17 +375,22 @@ function DeviceScene() {
         </div>
         <div className="mt-2 space-y-1.5">
           {[
-            ["09:00", "AX Day 1 · 入场", "#c2553f"],
-            ["12:30", "Tsujita 拉面", "#b08648"],
-            ["14:20", "DL 417 回程", "#3f6f5b"],
+            ["09:00", "Stanley Park 骑行", "#c2553f"],
+            ["12:30", "Granville Island 午餐", "#b08648"],
+            ["14:20", "Amtrak 517 南下", "#3f6f5b"],
           ].map(([time, label, color]) => (
             <div
               key={label}
               className="flex items-center gap-1.5 py-1.5 px-2 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[7px]"
             >
-              <span className="w-[4px] h-[4px] rounded-full shrink-0" style={{ background: color }} />
+              <span
+                className="w-[4px] h-[4px] rounded-full shrink-0"
+                style={{ background: color }}
+              />
               <span className="font-mono text-[8px] text-[#9b988f]">{time}</span>
-              <span className="font-cjk text-[8.5px] font-medium text-[#1c1b19] truncate">{label}</span>
+              <span className="font-cjk text-[8.5px] font-medium text-[#1c1b19] truncate">
+                {label}
+              </span>
             </div>
           ))}
         </div>
@@ -379,19 +406,27 @@ function DeviceScene() {
       <div className="lp-cursor lp-cursor-user">
         <CursorMark label="你" color="#3f6f5b" />
       </div>
-      <Bubble className="lp-bubble-1 left-[38%] top-[74%] max-[560px]:left-[10%]" typeClass="lp-type-1" chars="把这个预订信息加进去" />
-      <Bubble className="lp-bubble-2 left-[58%] top-[16%] max-[640px]:left-[30%]" typeClass="lp-type-2" chars="计算一下费用" />
+      <Bubble
+        className="lp-bubble-1 left-[38%] top-[74%] max-[560px]:left-[10%]"
+        typeClass="lp-type-1"
+        chars="把这个预订信息加进去"
+      />
+      <Bubble
+        className="lp-bubble-2 left-[58%] top-[16%] max-[640px]:left-[30%]"
+        typeClass="lp-type-2"
+        chars="计算一下费用"
+      />
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------------ */
 
 const DEMO_ROWS: { say: string; result: string }[] = [
-  { say: "把这个预订信息加进去", result: "新增预订 · DL 417 · 7/5 14:20 回程" },
-  { say: "计算一下费用", result: "账本已结清 · 3 笔支出 · spr 应付你 $88.00" },
+  { say: "把这个预订信息加进去", result: "新增预订 · Amtrak 517 · 8/16 14:20 南下" },
+  { say: "计算一下费用", result: "账本已结清 · 3 笔支出 · 同行者应付你 $183.00" },
   { say: "周六下午排太满了，帮我匀开一点", result: "移动 2 个日程 · 已实时同步给所有成员" },
-]
+];
 
 function AgentDemo() {
   return (
@@ -408,7 +443,11 @@ function AgentDemo() {
               <span className="py-2.5 px-4 bg-[#fafaf8] border border-[#ebe9e3] rounded-[12px] rounded-bl-[4px] font-cjk text-[13.5px] font-medium">
                 「{row.say}」
               </span>
-              <ArrowRight size={15} strokeWidth={2.2} className="text-[#9b988f] max-[560px]:hidden" />
+              <ArrowRight
+                size={15}
+                strokeWidth={2.2}
+                className="text-[#9b988f] max-[560px]:hidden"
+              />
               <span className="inline-flex items-center gap-2 py-2.5 px-4 bg-[#eef4f0] border border-[#cfe0d6] rounded-[12px] font-cjk text-[13px] text-[#3f6f5b]">
                 <Zap size={13} strokeWidth={2.4} />
                 {row.result}
@@ -421,7 +460,7 @@ function AgentDemo() {
         </p>
       </div>
     </section>
-  )
+  );
 }
 
 const FEATURES: { icon: ReactNode; title: string; body: string }[] = [
@@ -455,7 +494,7 @@ const FEATURES: { icon: ReactNode; title: string; body: string }[] = [
     title: "备份与审计",
     body: "每次改动留痕、可追责到人（或 Agent）；一键快照，误操作随时回滚。",
   },
-]
+];
 
 function Features() {
   return (
@@ -483,14 +522,26 @@ function Features() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 const STEPS: { n: string; title: string; body: string }[] = [
-  { n: "01", title: "登录，建一个行程", body: "GitHub 一键登录，起个名字、定好日期，行程纸就铺开了。" },
-  { n: "02", title: "把同行人请进来", body: "填个邮箱发出邀请，对方点开链接登录即加入，无需注册流程。" },
-  { n: "03", title: "给 Agent 发张门票", body: "后台一键签发令牌，把 SKILL.md 丢给你的 Agent，开始使唤它。" },
-]
+  {
+    n: "01",
+    title: "登录，建一个行程",
+    body: "GitHub 一键登录，起个名字、定好日期，行程纸就铺开了。",
+  },
+  {
+    n: "02",
+    title: "把同行人请进来",
+    body: "填个邮箱发出邀请，对方点开链接登录即加入，无需注册流程。",
+  },
+  {
+    n: "03",
+    title: "给 Agent 发张门票",
+    body: "后台一键签发令牌，把 SKILL.md 丢给你的 Agent，开始使唤它。",
+  },
+];
 
 function DevBand() {
   return (
@@ -508,9 +559,8 @@ function DevBand() {
               进入行程的门票
             </h2>
             <p className="mt-4 max-w-[40ch] font-cjk text-[14px] leading-[1.9] text-[#b5b1a8]">
-              令牌只对单个行程有效、限时、可随时吊销；配套的 SKILL.md
-              把行程 API 讲给 Agent 听。Claude Code、或任何会发 HTTP
-              的东西，都能替你打理行程。
+              令牌只对单个行程有效、限时、可随时吊销；配套的 SKILL.md 把行程 API 讲给 Agent
+              听。Claude Code、或任何会发 HTTP 的东西，都能替你打理行程。
             </p>
             <div className="mt-7 space-y-4">
               {STEPS.map((s) => (
@@ -518,7 +568,9 @@ function DevBand() {
                   <span className="font-mono text-[13px] font-bold text-[#8fb8a4]">{s.n}</span>
                   <div>
                     <div className="font-sans font-bold text-[14.5px]">{s.title}</div>
-                    <div className="mt-0.5 font-cjk text-[12.5px] leading-[1.7] text-[#b5b1a8]">{s.body}</div>
+                    <div className="mt-0.5 font-cjk text-[12.5px] leading-[1.7] text-[#b5b1a8]">
+                      {s.body}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -544,7 +596,7 @@ function DevBand() {
                 <span className="text-[#b08648]">{"kx83jq2h4m"}</span>
                 {"/trip\n"}
                 {"    Authorization: Bearer "}
-                <span className="text-[#b08648]">{"axa_…"}</span>
+                <span className="text-[#b08648]">{"••••••"}</span>
                 {"\n"}
                 <span className="text-[#8fb8a4]">{"✓"}</span>
                 {" rev 129 → 130 · 已同步给 2 位成员\n"}
@@ -556,7 +608,7 @@ function DevBand() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 function ClosingCta() {
@@ -582,7 +634,7 @@ function ClosingCta() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
@@ -595,9 +647,11 @@ function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; 
       <h2 className="mt-3.5 font-sans font-extrabold tracking-[-0.02em] leading-[1.15] text-[clamp(26px,4.5vw,38px)]">
         {title}
       </h2>
-      <p className="mt-3.5 mx-auto max-w-[46ch] font-cjk text-[13.5px] leading-[1.9] text-[#76726a]">{sub}</p>
+      <p className="mt-3.5 mx-auto max-w-[46ch] font-cjk text-[13.5px] leading-[1.9] text-[#76726a]">
+        {sub}
+      </p>
     </div>
-  )
+  );
 }
 
 function Footer() {
@@ -609,10 +663,13 @@ function Footer() {
           {BRAND}
         </span>
         <span className="font-cjk text-[12px] text-[#9b988f]">人和 Agent 共写的行程工作台</span>
-        <span className="ml-auto font-mono text-[11px] text-[#9b988f]">
-          © 2026 · Built on Cloudflare Workers
+        <span className="ml-auto inline-flex items-center gap-2 leading-none text-[#9b988f]">
+          <span className="font-sans text-[12px]" aria-hidden="true">
+            ©
+          </span>
+          <span className="font-mono text-[11px]">2026 · Built on Cloudflare Workers</span>
         </span>
       </div>
     </footer>
-  )
+  );
 }
