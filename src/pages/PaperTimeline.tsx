@@ -1,12 +1,29 @@
-import { useState, type CSSProperties, type ReactNode } from "react"
-import { AlertTriangle, Archive, ChevronDown, Clock, DollarSign, ExternalLink, Hash, Lock, MapPin, Repeat2, Route } from "lucide-react"
-import { signInWithGitHub, useAdminUser } from "../admin/auth"
-import { AddressLink } from "../components/AddressLink"
-import { SuggestBox } from "../components/SuggestBox"
-import { cardRecs } from "../trip/cardRecs"
-import { useCardImage } from "../trip/hooks"
-import type { ItemStatus, Trip, TripItem } from "../trip/types"
-import { dayLabels, formatDayDate, hasRichParking, itemPlans, renderRich, type StopPlan } from "./timelineShared"
+import { useState, type ReactNode } from "react";
+import {
+  AlertTriangle,
+  Archive,
+  ChevronDown,
+  Clock,
+  DollarSign,
+  ExternalLink,
+  Hash,
+  Lock,
+  MapPin,
+  Repeat2,
+  Route,
+} from "lucide-react";
+import { signInWithGitHub, useAdminUser } from "../admin/auth";
+import { AddressLink } from "../components/AddressLink";
+import { SuggestBox } from "../components/SuggestBox";
+import type { ItemStatus, Trip, TripItem } from "../trip/types";
+import {
+  dayLabels,
+  formatDayDate,
+  hasRichParking,
+  itemPlans,
+  renderRich,
+  type StopPlan,
+} from "./timelineShared";
 
 // Paper theme timeline: a faithful port of the "行程表" Claude Design layout
 // (light masthead + stat strip, next-up row, day sections, vertical ticket
@@ -15,16 +32,16 @@ import { dayLabels, formatDayDate, hasRichParking, itemPlans, renderRich, type S
 // TimelinePage; this renders only when the paper theme is active.
 
 type PaperTimelineProps = {
-  trip: Trip
-  orderedDates: string[]
-  stopNumbers: Map<string, number>
-  nextItem?: TripItem
-  nextPlan: string
-  parkingCount: number
-  dateRange: string
-}
+  trip: Trip;
+  orderedDates: string[];
+  stopNumbers: Map<string, number>;
+  nextItem?: TripItem;
+  nextPlan: string;
+  parkingCount: number;
+  dateRange: string;
+};
 
-type Swatch = { color: string; border: string; bg: string }
+type Swatch = { color: string; border: string; bg: string };
 
 const categoryMeta: Record<TripItem["category"], { name: string } & Swatch> = {
   flight: { name: "交通 · Transit", color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
@@ -33,15 +50,15 @@ const categoryMeta: Record<TripItem["category"], { name: string } & Swatch> = {
   event: { name: "活动 · Event", color: "#c2553f", border: "#ecccc2", bg: "#f8efec" },
   hotel: { name: "酒店 · Stay", color: "#7a5c84", border: "#ddccdf", bg: "#f5eef6" },
   errand: { name: "杂项 · Misc", color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
-}
+};
 
 const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
   locked: { label: "已锁定", color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
   planned: { label: "计划中", color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
   done: { label: "已完成", color: "#76726a", border: "#ebe9e3", bg: "#fdfdfb" },
-}
+};
 
-const PAPER_BOLD = "font-bold text-[#1c1b19]"
+const PAPER_BOLD = "font-bold text-[#1c1b19]";
 
 // Archive by the trip's own calendar date, not the device's, so a day isn't
 // archived while it is still that evening at the destination (e.g. a phone on
@@ -50,27 +67,27 @@ const PAPER_BOLD = "font-bold text-[#1c1b19]"
 // the device date if the stored zone is invalid.
 const todayIn = (timeZone: string) => {
   try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date())
+    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
   } catch {
-    return new Intl.DateTimeFormat("en-CA").format(new Date())
+    return new Intl.DateTimeFormat("en-CA").format(new Date());
   }
-}
+};
 
 // Short label for a stop that carries its own timezone ("EDT", "GMT+9"),
 // resolved on that stop's date so DST is right. Null when it matches the
 // trip default or the zone string is invalid.
 const zoneTag = (item: TripItem, defaultTimezone: string): string | null => {
-  if (!item.timezone || item.timezone === defaultTimezone) return null
+  if (!item.timezone || item.timezone === defaultTimezone) return null;
   try {
     return (
       new Intl.DateTimeFormat("en-US", { timeZone: item.timezone, timeZoneName: "short" })
         .formatToParts(new Date(`${item.date}T12:00:00`))
         .find((p) => p.type === "timeZoneName")?.value ?? null
-    )
+    );
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 export function PaperTimeline({
   trip,
@@ -81,24 +98,24 @@ export function PaperTimeline({
   parkingCount,
   dateRange,
 }: PaperTimelineProps) {
-  const titleWords = trip.title.trim().split(/\s+/)
-  const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined
-  const titleLead = titleWords.join(" ")
+  const titleWords = trip.title.trim().split(/\s+/);
+  const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined;
+  const titleLead = titleWords.join(" ");
   // Fresh trips have no items yet; the next-action row simply doesn't render.
-  const nextStatus = nextItem ? statusMeta[nextItem.status] : undefined
+  const nextStatus = nextItem ? statusMeta[nextItem.status] : undefined;
 
   // Days before today (LA time) are archived into a collapsed section at the
   // bottom; the rest stay inline. Manual header toggles are stored as sparse
   // overrides so the date-derived defaults (archived → collapsed) still apply
   // to days the user never touched, even after server data replaces the trip.
-  const today = todayIn(trip.base.timezone)
-  const activeDates = orderedDates.filter((date) => date >= today)
-  const archivedDates = orderedDates.filter((date) => date < today)
-  const [dayOverrides, setDayOverrides] = useState<Record<string, boolean>>({})
-  const [archiveOpen, setArchiveOpen] = useState(false)
-  const isDayCollapsed = (date: string) => dayOverrides[date] ?? date < today
+  const today = todayIn(trip.base.timezone);
+  const activeDates = orderedDates.filter((date) => date >= today);
+  const archivedDates = orderedDates.filter((date) => date < today);
+  const [dayOverrides, setDayOverrides] = useState<Record<string, boolean>>({});
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const isDayCollapsed = (date: string) => dayOverrides[date] ?? date < today;
   const toggleDay = (date: string) =>
-    setDayOverrides((prev) => ({ ...prev, [date]: !isDayCollapsed(date) }))
+    setDayOverrides((prev) => ({ ...prev, [date]: !isDayCollapsed(date) }));
 
   const renderDay = (date: string) => (
     <DaySection
@@ -112,7 +129,7 @@ export function PaperTimeline({
       collapsed={isDayCollapsed(date)}
       onToggle={() => toggleDay(date)}
     />
-  )
+  );
 
   return (
     <div className="font-sans text-[#1c1b19]">
@@ -131,7 +148,11 @@ export function PaperTimeline({
         </p>
 
         <div className="grid grid-cols-3 mt-6.5 overflow-hidden border border-[#ebe9e3] rounded-[14px] max-[620px]:grid-cols-1">
-          <Stat k="Stops" v={trip.items.length.toString()} sub={`停靠点 · 横跨 ${orderedDates.length} 天`} />
+          <Stat
+            k="Stops"
+            v={trip.items.length.toString()}
+            sub={`停靠点 · 横跨 ${orderedDates.length} 天`}
+          />
           <Stat k="Parking" v={parkingCount.toString()} sub="停车方案 · Parking" />
           <Stat k="Window" v={dateRange} sub="周五抵达 · 周日返程" accent />
         </div>
@@ -146,7 +167,9 @@ export function PaperTimeline({
           <span className="font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-white bg-[#3f6f5b] rounded-full py-[5px] px-3">
             下一步行动
           </span>
-          <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">{nextItem.time}</span>
+          <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">
+            {nextItem.time}
+          </span>
           <div>
             <div className="font-cjk font-bold text-[17px]">{nextItem.title}</div>
             <div className="mt-[3px] font-cjk text-[12.5px] text-[#76726a]">
@@ -155,7 +178,11 @@ export function PaperTimeline({
           </div>
           <span
             className="ml-auto font-grotesk text-[10.5px] font-semibold tracking-[0.04em] rounded-full py-[5px] px-3 border"
-            style={{ color: nextStatus.color, borderColor: nextStatus.border, background: nextStatus.bg }}
+            style={{
+              color: nextStatus.color,
+              borderColor: nextStatus.border,
+              background: nextStatus.bg,
+            }}
           >
             {nextStatus.label}
           </span>
@@ -227,7 +254,7 @@ export function PaperTimeline({
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
     </div>
-  )
+  );
 }
 
 function DaySection({
@@ -240,16 +267,16 @@ function DaySection({
   collapsed,
   onToggle,
 }: {
-  tripId: string
-  defaultTimezone: string
-  date: string
-  dayNumber: number
-  items: TripItem[]
-  stopNumbers: Map<string, number>
-  collapsed: boolean
-  onToggle: () => void
+  tripId: string;
+  defaultTimezone: string;
+  date: string;
+  dayNumber: number;
+  items: TripItem[];
+  stopNumbers: Map<string, number>;
+  collapsed: boolean;
+  onToggle: () => void;
 }) {
-  const meta = dayLabels[date] ?? { label: date, tag: "" }
+  const meta = dayLabels[date] ?? { label: date, tag: "" };
   return (
     <section className="mt-[clamp(34px,6vw,48px)]">
       <button
@@ -299,7 +326,7 @@ function DaySection({
         </div>
       )}
     </section>
-  )
+  );
 }
 
 function Stat({ k, v, sub, accent }: { k: string; v: string; sub: string; accent?: boolean }) {
@@ -313,7 +340,7 @@ function Stat({ k, v, sub, accent }: { k: string; v: string; sub: string; accent
       </div>
       <div className="mt-[3px] font-cjk text-[11.5px] text-[#76726a]">{sub}</div>
     </div>
-  )
+  );
 }
 
 function Ticket({
@@ -322,15 +349,14 @@ function Ticket({
   item,
   stopNumber,
 }: {
-  tripId: string
-  zone: string | null
-  item: TripItem
-  stopNumber: number
+  tripId: string;
+  zone: string | null;
+  item: TripItem;
+  stopNumber: number;
 }) {
-  const category = categoryMeta[item.category]
-  const plans = itemPlans(item)
-  const cardRec = cardRecs[item.id]
-  const compact = !item.time.includes(":")
+  const category = categoryMeta[item.category];
+  const plans = itemPlans(item);
+  const compact = !item.time.includes(":");
 
   return (
     <article className="relative mb-4 last:mb-0">
@@ -382,19 +408,17 @@ function Ticket({
             </div>
           )}
 
-          {cardRec && <PayWith rec={cardRec} accent={category.color} />}
-
           <div className="mt-3 flex">
             <SuggestBox tripId={tripId} itemId={item.id} itemTitle={item.title} />
           </div>
         </div>
       </div>
     </article>
-  )
+  );
 }
 
 function PlanRow({ plan }: { plan: StopPlan }) {
-  const alt = plan.kind === "alt"
+  const alt = plan.kind === "alt";
   return (
     <div
       className={`flex gap-[11px] items-center py-2.5 px-[13px] rounded-[10px] border ${
@@ -408,23 +432,25 @@ function PlanRow({ plan }: { plan: StopPlan }) {
       >
         {plan.label}
       </span>
-      <span className={`font-cjk text-[13px] leading-[1.6] ${alt ? "text-[#76726a]" : "text-[#3b3833]"}`}>
+      <span
+        className={`font-cjk text-[13px] leading-[1.6] ${alt ? "text-[#76726a]" : "text-[#3b3833]"}`}
+      >
         {renderRich(plan.text, PAPER_BOLD)}
       </span>
     </div>
-  )
+  );
 }
 
 function ParkingPanel({ item }: { item: TripItem }) {
-  const parking = item.parking
-  if (!parking) return null
+  const parking = item.parking;
+  if (!parking) return null;
 
   const timeWindow =
-    parking.validFrom && parking.validTo ? `${parking.validFrom} - ${parking.validTo}` : undefined
+    parking.validFrom && parking.validTo ? `${parking.validFrom} - ${parking.validTo}` : undefined;
   const walk =
     parking.walkMinutes && parking.walkDistanceMiles
       ? `${parking.walkMinutes} min / ${parking.walkDistanceMiles} mi`
-      : undefined
+      : undefined;
 
   return (
     <div className="mt-3.5 overflow-hidden border border-[#e6dfd4] rounded-[13px] bg-[#fdfdfb]">
@@ -444,11 +470,21 @@ function ParkingPanel({ item }: { item: TripItem }) {
         <div className="min-w-0">
           <div className="grid grid-cols-2 gap-2 max-[500px]:grid-cols-1">
             {parking.reservationId && (
-              <ParkingFact icon={<Hash size={13} />} label="Rental ID" value={parking.reservationId} />
+              <ParkingFact
+                icon={<Hash size={13} />}
+                label="Rental ID"
+                value={parking.reservationId}
+              />
             )}
-            {timeWindow && <ParkingFact icon={<Clock size={13} />} label="Window" value={timeWindow} />}
+            {timeWindow && (
+              <ParkingFact icon={<Clock size={13} />} label="Window" value={timeWindow} />
+            )}
             {typeof parking.price === "number" && (
-              <ParkingFact icon={<DollarSign size={13} />} label="Total" value={`$${parking.price.toFixed(2)}`} />
+              <ParkingFact
+                icon={<DollarSign size={13} />}
+                label="Total"
+                value={`$${parking.price.toFixed(2)}`}
+              />
             )}
             {walk && <ParkingFact icon={<Route size={13} />} label="Walk" value={walk} />}
             {parking.inOutAllowed && (
@@ -458,7 +494,11 @@ function ParkingPanel({ item }: { item: TripItem }) {
 
           {parking.warning && (
             <div className="flex gap-[9px] items-start mt-2.5 py-2.5 px-[13px] rounded-[10px] border border-[#ead6a3] bg-[#fff8dc] font-cjk text-[12px] leading-[1.6] text-[#3b3833]">
-              <AlertTriangle className="shrink-0 mt-[2px] text-[#b08648]" size={15} strokeWidth={2.4} />
+              <AlertTriangle
+                className="shrink-0 mt-[2px] text-[#b08648]"
+                size={15}
+                strokeWidth={2.4}
+              />
               <span>{parking.warning}</span>
             </div>
           )}
@@ -499,16 +539,22 @@ function ParkingPanel({ item }: { item: TripItem }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // The provider pass URL is a capability link (holding it = authority to edit or
 // cancel the reservation), so it stays server-side: signed-in admins follow the
 // /api/parking-pass redirect, everyone else is offered the GitHub login first.
-function ParkingPassButton({ reservationId, provider }: { reservationId: string; provider: string }) {
-  const { data: user } = useAdminUser()
+function ParkingPassButton({
+  reservationId,
+  provider,
+}: {
+  reservationId: string;
+  provider: string;
+}) {
+  const { data: user } = useAdminUser();
   const className =
-    "inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] border-0 bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] cursor-pointer hover:bg-[#3f6f5b]"
+    "inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] border-0 bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] cursor-pointer hover:bg-[#3f6f5b]";
 
   return user ? (
     <a
@@ -530,7 +576,7 @@ function ParkingPassButton({ reservationId, provider }: { reservationId: string;
       {provider} Pass · 登录打开
       <Lock size={14} strokeWidth={2.4} />
     </button>
-  )
+  );
 }
 
 function ParkingFact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -543,83 +589,12 @@ function ParkingFact({ icon, label, value }: { icon: ReactNode; label: string; v
         <span className="block font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] text-[#9b988f]">
           {label}
         </span>
-        <span className="block font-cjk font-bold text-[12.5px] text-[#1c1b19] truncate">{value}</span>
+        <span className="block font-cjk font-bold text-[12.5px] text-[#1c1b19] truncate">
+          {value}
+        </span>
       </span>
     </div>
-  )
-}
-
-function PayWith({ rec, accent }: { rec: (typeof cardRecs)[string]; accent: string }) {
-  const cardImage = useCardImage()
-  const bestImage = cardImage(rec.best.cardName)
-  return (
-    <div className="mt-3.5 overflow-hidden border border-[#ebe9e3] rounded-[12px]">
-      <div className="flex gap-[9px] items-center py-[9px] px-[13px] bg-[#fdfdfb] border-b border-[#ebe9e3]">
-        <span
-          className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.1em] text-white rounded-full py-[3px] px-[9px] whitespace-nowrap"
-          style={{ background: accent }}
-        >
-          刷卡建议
-        </span>
-        <span className="font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.06em] text-[#76726a]">
-          {rec.category}
-        </span>
-      </div>
-
-      <div className="flex gap-[13px] items-center p-[13px]">
-        <div className="shrink-0 w-[72px] h-[46px] overflow-hidden border border-[#ebe9e3] rounded-[7px] bg-[repeating-linear-gradient(48deg,#efe9dc_0_6px,#f6f1e6_6px_12px)]">
-          {bestImage && (
-            <img src={bestImage} alt={rec.best.name} loading="lazy" className="block w-full h-full object-cover" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-cjk font-bold text-[14px] leading-[1.25]">
-            {rec.best.name}
-            {rec.best.last4 && <span className="font-mono font-normal text-[12px] text-[#9b988f]"> {rec.best.last4}</span>}
-          </div>
-          <div className="mt-[3px] font-cjk text-[11.5px] text-[#76726a]">{rec.best.why}</div>
-        </div>
-        <div className="shrink-0 flex items-baseline gap-px font-grotesk font-bold" style={{ color: accent }}>
-          <span className="text-[26px] leading-none tracking-[-0.02em]">{rec.best.rate}</span>
-          <span className="text-[13px]">%</span>
-        </div>
-      </div>
-
-      <div className="grid gap-2 py-2.5 px-[13px] border-t border-dashed border-[#ebe9e3]">
-        {rec.alts.map((alt) => {
-          const altImage = cardImage(alt.cardName)
-          return (
-            <div className="flex gap-[9px] items-center" key={alt.name}>
-              <span
-                className="shrink-0 w-[22px] h-3.5 overflow-hidden border border-[#ebe9e3] rounded-[3px]"
-                style={{ background: alt.swatch } as CSSProperties}
-              >
-                {altImage && (
-                  <img src={altImage} alt={alt.name} loading="lazy" className="block w-full h-full object-cover" />
-                )}
-              </span>
-              <span className="flex-1 min-w-0 font-cjk font-semibold text-[12px]">{alt.name}</span>
-              <span className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.04em] text-[#9b988f] whitespace-nowrap">
-                {alt.tag}
-              </span>
-              <span className="shrink-0 min-w-[42px] text-right font-mono font-bold text-[12px] text-[#76726a]">
-                {alt.rate}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      {rec.note && (
-        <div className="flex gap-[9px] items-start py-2.5 px-[13px] border-t border-[#ebe9e3] bg-[#fdfdfb] font-cjk text-[12px] leading-[1.6] text-[#3b3833]">
-          <span className="shrink-0 mt-px font-grotesk font-semibold text-[9px] uppercase tracking-[0.08em] text-[#fafaf8] bg-[#1c1b19] rounded-[6px] py-[3px] px-2">
-            {rec.note.kind}
-          </span>
-          <span>{renderRich(rec.note.text, PAPER_BOLD)}</span>
-        </div>
-      )}
-    </div>
-  )
+  );
 }
 
 function Legend({ color, label }: { color: string; label: string }) {
@@ -628,5 +603,5 @@ function Legend({ color, label }: { color: string; label: string }) {
       <span className="w-3 h-3 rounded-[4px]" style={{ background: color }} />
       {label}
     </div>
-  )
+  );
 }

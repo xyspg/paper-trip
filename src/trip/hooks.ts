@@ -8,7 +8,6 @@ import {
   deleteTrip,
   fetchAudit,
   fetchBackups,
-  fetchCreditCards,
   fetchInvites,
   fetchMembers,
   fetchTrip,
@@ -194,18 +193,6 @@ export const useRestoreBackup = (tripId: string) => {
       queryClient.invalidateQueries({ queryKey: auditKey(tripId) });
     },
   });
-};
-
-// Resolve a card's art by its catalog name. The card list rarely changes, so it
-// is cached indefinitely; cards missing from the catalog (or before the fetch
-// resolves) return undefined and fall back to a swatch.
-export const useCardImage = (): ((name?: string) => string | undefined) => {
-  const { data } = useQuery({
-    queryKey: ["credit-cards"],
-    queryFn: fetchCreditCards,
-    staleTime: Infinity,
-  });
-  return (name) => (name ? data?.find((card) => card.name === name)?.imageUrl : undefined);
 };
 
 export const useTripOp = (tripId: string) => {
