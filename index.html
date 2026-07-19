@@ -141,6 +141,53 @@
             reloadWithFreshAssets();
           }
         });
+
+        // A previous build shipped a cache-first service worker (trip-ops-v1)
+        // that fell back to /index.html for any failed request — including
+        // hashed asset requests, which then arrive as HTML and fail to execute,
+        // leaving a blank page. It also ignores the origin's must-revalidate
+        // headers, so a plain refresh keeps serving the stale copy. The app no
+        // longer uses a service worker, so any registration is stale: if one is
+        // actively controlling this page, tear it down and reload once for
+        // uncached, network-fresh assets; otherwise just unregister it so it
+        // can't hijack a later navigation.
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          if (
+            navigator.serviceWorker.controller &&
+            !new URL(window.location.href).searchParams.has(recoveryParam)
+          ) {
+            reloadWithFreshAssets();
+          } else {
+            navigator.serviceWorker
+              .getRegistrations()
+              .then(function (registrations) {
+                registrations.forEach(function (registration) {
+                  registration.unregister();
+                });
+              })
+              .catch(function () {});
+          }
+        }
+
+        // Boot watchdog: if nothing has rendered into #root a few seconds after
+        // the page finishes loading, the app failed to boot before React could
+        // mount (poisoned entry chunk, HTML served for a JS request, a hung
+        // dependency) — a failure the React-level error boundary can't catch.
+        // Recover once; a second failure renders a readable message via
+        // reloadWithFreshAssets() instead of leaving a blank screen.
+        var bootChecked = false;
+        var checkBoot = function () {
+          if (bootChecked) return;
+          var root = document.getElementById("root");
+          if (root && root.childElementCount === 0) {
+            bootChecked = true;
+            reloadWithFreshAssets();
+          }
+        };
+        window.addEventListener("load", function () {
+          window.setTimeout(checkBoot, 3000);
+        });
+        window.setTimeout(checkBoot, 12000);
       })();
     </script>
     <script
