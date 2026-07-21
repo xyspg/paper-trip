@@ -1,56 +1,89 @@
 import { useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import { CATS, STATUS, uid } from "./adminData";
-import type { Stop, StopCat, StopStatus } from "./adminData";
+import { CATS, uid } from "./adminData";
+import type { StopCat } from "./adminData";
 import { AddStopModal } from "./AddStopModal";
 import type { NewStopInput } from "./AddStopModal";
 import { Icons } from "./AdminIcons";
 import { Editable } from "./Editable";
-import { BTN, BTN_GHOST, BTN_DANGER, BTN_INK, BTN_SM, Metrics, SectionHead } from "./adminUi";
+import {
+  AdminEmptyState,
+  BTN,
+  BTN_GHOST,
+  BTN_DANGER,
+  BTN_INK,
+  BTN_SM,
+  Metrics,
+  SectionHead,
+} from "./adminUi";
 import { useConfirm } from "./useConfirm";
 import type { ToastFn } from "./useAdminToasts";
+import {
+  addPlanToItem,
+  deletePlanFromItem,
+  itineraryDates,
+  itineraryStop,
+  tripCategoryFor,
+  updatePlanText,
+} from "./itineraryAdapter";
+import type { ItineraryStop } from "./itineraryAdapter";
+import { formatDayDate } from "../pages/timelineShared";
+import type { useTripOp } from "../trip/hooks";
+import type { TripOp } from "../trip/ops";
+import type { ItemStatus, TripItem } from "../trip/types";
 
 type Props = {
-  stops: Stop[];
-  setStops: Dispatch<SetStateAction<Stop[]>>;
+  items: TripItem[];
+  startDate: string | null;
+  endDate: string | null;
+  timezone: string;
+  tripOp: ReturnType<typeof useTripOp>;
   toast: ToastFn;
 };
 
-const STATUS_CYCLE: StopStatus[] = ["booked", "planned", "watch"];
+const STATUS_CYCLE: ItemStatus[] = ["planned", "locked", "done"];
 const CAT_CYCLE: StopCat[] = ["transit", "food", "event", "stay", "misc"];
 
-const STATUS_STYLE: Record<StopStatus, { color: string; border: string; bg: string }> = {
-  booked: { color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
-  planned: { color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
-  watch: { color: "#c2553f", border: "#ecccc2", bg: "#f8efec" },
+const STATUS_STYLE: Record<
+  ItemStatus,
+  { label: string; color: string; border: string; bg: string }
+> = {
+  planned: { label: "计划中", color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
+  locked: { label: "已锁定", color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
+  done: { label: "已完成", color: "#76726a", border: "#ebe9e3", bg: "#fdfdfb" },
 };
 
-export function ItinerarySection({ stops, setStops, toast }: Props) {
+export function ItinerarySection({ items, startDate, endDate, timezone, tripOp, toast }: Props) {
   const { confirm, confirmModal } = useConfirm();
 
-  const patch = (id: string, p: Partial<Stop>) =>
-    setStops(stops.map((s) => (s.id === id ? { ...s, ...p } : s)));
+  const send = (op: TripOp, success?: string) =>
+    tripOp.mutate(op, {
+      onSuccess: () => {
+        if (success) toast(success);
+      },
+      onError: () => toast("保存失败，请重试", "warn"),
+    });
 
-  const updatePlan = (sid: string, pid: string, text: string) =>
-    setStops(
-      stops.map((s) =>
-        s.id === sid ? { ...s, plans: s.plans.map((p) => (p.id === pid ? { ...p, text } : p)) } : s,
-      ),
-    );
+  const updateItem = (id: string, transform: (item: TripItem) => TripItem, success?: string) => {
+    const item = items.find((candidate) => candidate.id === id);
+    if (!item) return;
+    const next = transform(item);
+    if (next === item) return;
+    send({ type: "updateItem", item: next }, success);
+  };
 
-  const updatePlanKind = (sid: string, pid: string) =>
-    setStops(
-      stops.map((s) =>
-        s.id === sid
-          ? {
-              ...s,
-              plans: s.plans.map((p) =>
-                p.id === pid ? { ...p, kind: p.kind === "main" ? "alt" : "main" } : p,
-              ),
-            }
-          : s,
-      ),
-    );
+  const patch = (id: string, p: Partial<ItineraryStop>) =>
+    updateItem(id, (item) => ({
+      ...item,
+      time: p.time ?? item.time,
+      title: p.title ?? item.title,
+      category: p.cat ? tripCategoryFor(p.cat, item.category) : item.category,
+      location: p.loc ?? item.location,
+      address: p.addr ?? item.address,
+      status: p.status ?? item.status,
+    }));
+
+  const updatePlan = (itemId: string, planId: string, text: string) =>
+    updateItem(itemId, (item) => updatePlanText(item, planId, text));
 
   const deletePlan = async (sid: string, pid: string) => {
     const ok = await confirm({
@@ -59,31 +92,12 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
       confirmLabel: "删除方案",
     });
     if (!ok) return;
-    setStops(
-      stops.map((s) => (s.id === sid ? { ...s, plans: s.plans.filter((p) => p.id !== pid) } : s)),
-    );
+    updateItem(sid, (item) => deletePlanFromItem(item, pid));
   };
 
-  const addPlan = (sid: string) =>
-    setStops(
-      stops.map((s) =>
-        s.id === sid
-          ? {
-              ...s,
-              plans: [
-                ...s.plans,
-                {
-                  id: uid("p"),
-                  kind: s.plans.some((p) => p.kind === "main") ? "alt" : "main",
-                  text: "",
-                },
-              ],
-            }
-          : s,
-      ),
-    );
+  const addPlan = (id: string) => updateItem(id, addPlanToItem);
 
-  const cycleStatus = (id: string, cur: StopStatus) =>
+  const cycleStatus = (id: string, cur: ItemStatus) =>
     patch(id, { status: STATUS_CYCLE[(STATUS_CYCLE.indexOf(cur) + 1) % STATUS_CYCLE.length] });
   const cycleCat = (id: string, cur: StopCat) =>
     patch(id, { cat: CAT_CYCLE[(CAT_CYCLE.indexOf(cur) + 1) % CAT_CYCLE.length] });
@@ -102,43 +116,37 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
       confirmLabel: "删除停靠点",
     });
     if (!ok) return;
-    setStops(stops.filter((s) => s.id !== id));
-    toast("已删除停靠点", "warn");
+    send({ type: "deleteItem", itemId: id }, "已删除停靠点");
   };
 
   const [addDay, setAddDay] = useState<number | null>(null);
 
   const createStop = (input: NewStopInput) => {
-    const newStop: Stop = {
+    const item: TripItem = {
       id: uid("s"),
-      day: input.day,
       date: input.date,
       time: input.time,
-      cat: input.cat,
+      category: tripCategoryFor(input.cat),
       status: input.status,
       title: input.title || "新停靠点",
-      loc: "地点待定",
-      addr: "",
-      plans: [{ id: uid("p"), kind: "main", text: "主方案待补充。" }],
+      location: "地点待定",
+      address: "",
+      durationMinutes: 60,
+      priority: "medium",
+      notes: [],
+      links: [],
     };
-    setStops((prev) => {
-      // Insert within the chosen day, kept in ascending time order so the new
-      // stop lands where the user expects instead of being appended out of view.
-      let at = prev.findIndex((s) => s.day === input.day && s.time > input.time);
-      if (at === -1) {
-        const lastInDay = prev.map((s) => s.day).lastIndexOf(input.day);
-        at = lastInDay === -1 ? prev.length : lastInDay + 1;
-      }
-      const arr = [...prev];
-      arr.splice(at, 0, newStop);
-      return arr;
-    });
+    send({ type: "addItem", item }, "已新增停靠点");
     setAddDay(null);
-    toast("已新增停靠点");
   };
 
-  // group by day, keep order
-  const days: { day: number; date: string; stops: Stop[] }[] = [];
+  const dates = itineraryDates(items, startDate, endDate, timezone);
+  const dayByDate = new Map(dates.map((date, index) => [date, index + 1]));
+  const stops = items.map((item) => itineraryStop(item, dayByDate.get(item.date) ?? 1));
+
+  // Group persisted items by their ISO date; empty dates remain available in
+  // the add-stop modal without rendering empty day sections.
+  const days: { day: number; date: string; stops: ItineraryStop[] }[] = [];
   stops.forEach((s) => {
     let d = days.find((x) => x.day === s.day);
     if (!d) {
@@ -149,13 +157,15 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
   });
 
   const first = days[0];
-  const dayOpts = days.length
-    ? days.map((d) => ({ day: d.day, date: d.date }))
-    : [{ day: 1, date: "7/3 · FRI" }];
+  const dayOpts = dates.map((date, index) => ({
+    day: index + 1,
+    date,
+    label: formatDayDate(date),
+  }));
 
-  const booked = stops.filter((s) => s.status === "booked").length;
+  const locked = stops.filter((s) => s.status === "locked").length;
   const planned = stops.filter((s) => s.status === "planned").length;
-  const watch = stops.filter((s) => s.status === "watch").length;
+  const done = stops.filter((s) => s.status === "done").length;
 
   return (
     <div>
@@ -177,11 +187,21 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
       <Metrics
         items={[
           { k: "停靠点", v: stops.length, sub: `横跨 ${days.length} 天` },
-          { k: "已预订", v: booked, sub: "Booked", color: "#3f6f5b" },
+          { k: "已锁定", v: locked, sub: "Locked", color: "#3f6f5b" },
           { k: "计划中", v: planned, sub: "Planned", color: "#5b7a99" },
-          { k: "需关注", v: watch, sub: "Watch", color: "#c2553f" },
+          { k: "已完成", v: done, sub: "Done", color: "#76726a" },
         ]}
       />
+
+      {stops.length === 0 && (
+        <div className="mt-8">
+          <AdminEmptyState
+            title="还没有停靠点"
+            body="新增第一站后，它会立即同步到这个行程的时间线。"
+            icon={<Icons.route sw={2.2} />}
+          />
+        </div>
+      )}
 
       {days.map((d) => (
         <div key={d.day} className="mt-8">
@@ -189,9 +209,12 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
             <span className="font-grotesk font-bold text-[13px] tracking-[0.06em]">
               DAY {String(d.day).padStart(2, "0")}
             </span>
-            <span className="font-cjk text-[13px] text-[#76726a]">{d.date}</span>
+            <span className="font-cjk text-[13px] text-[#76726a]">{formatDayDate(d.date)}</span>
             <span className="flex-1 h-px bg-[#e3ded4]" />
-            <button className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`} onClick={() => setAddDay(d.day)}>
+            <button
+              className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`}
+              onClick={() => setAddDay(d.day)}
+            >
               <Icons.plus sw={2.6} />
               本日加一站
             </button>
@@ -218,7 +241,11 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
                     />
                     <button
                       className="font-grotesk text-[9.5px] tracking-[0.1em] uppercase rounded-full px-2.5 py-1 border cursor-pointer max-[640px]:ml-auto"
-                      style={{ color: cat.color, borderColor: `${cat.color}55`, background: `${cat.color}12` }}
+                      style={{
+                        color: cat.color,
+                        borderColor: `${cat.color}55`,
+                        background: `${cat.color}12`,
+                      }}
                       title="点击切换类别"
                       onClick={() => cycleCat(s.id, s.cat)}
                     >
@@ -242,7 +269,7 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
                         title="点击切换状态"
                         onClick={() => cycleStatus(s.id, s.status)}
                       >
-                        {STATUS[s.status].label}
+                        {st.label}
                       </button>
                     </div>
 
@@ -268,40 +295,47 @@ export function ItinerarySection({ stops, setStops, toast }: Props) {
                           key={p.id}
                           className={`flex gap-2.5 items-start p-2.5 rounded-[10px] border ${p.kind === "main" ? "border-[#ebe9e3] bg-[#fdfdfb]" : "border-dashed border-[#d8d5cb] bg-[#fafaf8]"}`}
                         >
-                          <button
-                            className="shrink-0 font-grotesk text-[9.5px] font-bold tracking-[0.06em] uppercase mt-0.5 cursor-pointer"
+                          <span
+                            className="shrink-0 font-grotesk text-[9.5px] font-bold tracking-[0.06em] uppercase mt-0.5"
                             style={{ color: p.kind === "main" ? "#3f6f5b" : "#9b988f" }}
-                            title="切换 主/备"
-                            onClick={() => updatePlanKind(s.id, p.id)}
                           >
                             {p.kind === "main" ? "主方案" : "备用"}
-                          </button>
+                          </span>
                           <Editable
                             key={`plan-${p.text}`}
                             className="flex-1 font-cjk text-[13px] leading-relaxed min-w-0"
                             value={p.text}
+                            placeholder={p.kind === "main" ? "主方案待补充" : "备用方案待补充"}
                             multiline
                             ariaLabel="方案内容"
                             onCommit={(v) => updatePlan(s.id, p.id, v)}
                           />
-                          <button
-                            className="shrink-0 w-[22px] h-[22px] rounded-md border border-[#ebe9e3] text-[#9b988f] grid place-items-center cursor-pointer hover:bg-[#c2553f] hover:text-white hover:border-[#c2553f] transition-colors [&_svg]:size-[13px]"
-                            title="删除该方案"
-                            onClick={() => deletePlan(s.id, p.id)}
-                          >
-                            <Icons.x sw={2.4} />
-                          </button>
+                          {p.id !== "parking:primary" && (
+                            <button
+                              className="shrink-0 w-[22px] h-[22px] rounded-md border border-[#ebe9e3] text-[#9b988f] grid place-items-center cursor-pointer hover:bg-[#c2553f] hover:text-white hover:border-[#c2553f] transition-colors [&_svg]:size-[13px]"
+                              title="删除该方案"
+                              onClick={() => deletePlan(s.id, p.id)}
+                            >
+                              <Icons.x sw={2.4} />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
 
                     <div className="flex items-center gap-2.5 flex-wrap mt-3.5 pt-3.5 border-t border-dashed border-[#ebe9e3]">
-                      <button className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`} onClick={() => addPlan(s.id)}>
+                      <button
+                        className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`}
+                        onClick={() => addPlan(s.id)}
+                      >
                         <Icons.plus sw={2.6} />
                         加方案
                       </button>
                       <span className="ml-auto" />
-                      <button className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`} onClick={() => deleteStop(s.id)}>
+                      <button
+                        className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`}
+                        onClick={() => deleteStop(s.id)}
+                      >
                         <Icons.trash sw={2.2} />
                         删除停靠点
                       </button>

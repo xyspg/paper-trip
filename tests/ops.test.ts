@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { applyOp } from "../src/trip/ops";
-import { tripData } from "../src/trip/tripData";
+import { applyOp, emptyTrip } from "../src/trip/ops";
 import type { Trip, TripItem } from "../src/trip/types";
 
 const item = (id: string, date: string, time: string): TripItem => ({
@@ -20,7 +19,12 @@ const item = (id: string, date: string, time: string): TripItem => ({
 });
 
 const base = (): Trip => ({
-  ...structuredClone(tripData),
+  ...emptyTrip({
+    id: "test-trip",
+    title: "Test trip",
+    dates: { start: "2026-07-02", end: "2026-07-03" },
+    timezone: "UTC",
+  }),
   items: [
     item("a", "2026-07-02", "09:00"),
     item("b", "2026-07-02", "18:00"),

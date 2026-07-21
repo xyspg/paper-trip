@@ -1,8 +1,8 @@
-import { useState } from "react"
-import { AdminModal } from "./AdminModal"
-import { STATUS } from "./adminData"
-import type { StopCat, StopStatus } from "./adminData"
-import { Icons } from "./AdminIcons"
+import { useState } from "react";
+import { AdminModal } from "./AdminModal";
+import type { StopCat } from "./adminData";
+import { Icons } from "./AdminIcons";
+import type { ItemStatus } from "../trip/types";
 import {
   BTN,
   BTN_GHOST,
@@ -13,52 +13,58 @@ import {
   FIELD_LABEL,
   ModalFooter,
   ModalHeader,
-} from "./adminUi"
+} from "./adminUi";
 
 export type NewStopInput = {
-  day: number
-  date: string
-  time: string
-  title: string
-  cat: StopCat
-  status: StopStatus
-}
+  day: number;
+  date: string;
+  time: string;
+  title: string;
+  cat: StopCat;
+  status: ItemStatus;
+};
 
-type DayOpt = { day: number; date: string }
+export type StopDayOption = { day: number; date: string; label: string };
 
 type Props = {
-  isOpen: boolean
-  days: DayOpt[]
-  initialDay: number
-  onClose: () => void
-  onCreate: (input: NewStopInput) => void
-}
+  isOpen: boolean;
+  days: StopDayOption[];
+  initialDay: number;
+  onClose: () => void;
+  onCreate: (input: NewStopInput) => void;
+};
 
-const STATUS_KEYS = Object.keys(STATUS) as StopStatus[]
+const STATUS: Record<ItemStatus, { label: string }> = {
+  planned: { label: "计划中" },
+  locked: { label: "已锁定" },
+  done: { label: "已完成" },
+};
 
-// Selected-status chip fill, keyed by the status' CSS class (booked/planned/watch).
+const STATUS_KEYS = Object.keys(STATUS) as ItemStatus[];
+
+// Selected-status chip fill, keyed by the persisted TripItem status.
 // Literal editorial hues (accent / slate / ochre) so the pill fills in its own color.
 const STATUS_ON_HEX: Record<string, string> = {
-  booked: "#3f6f5b",
+  locked: "#3f6f5b",
   planned: "#5b7a99",
-  watch: "#b08648",
-}
+  done: "#76726a",
+};
 
 // Reset the form whenever the modal (re)opens for a different day by keying the
 // parent on `initialDay`; this inner component always starts from fresh defaults.
 function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
-  const fallbackDay = days[0]?.day ?? 1
-  const [day, setDay] = useState(days.some((d) => d.day === initialDay) ? initialDay : fallbackDay)
-  const [time, setTime] = useState("09:00")
-  const [title, setTitle] = useState("")
-  const [cat, setCat] = useState<StopCat>("event")
-  const [status, setStatus] = useState<StopStatus>("planned")
+  const fallbackDay = days[0]?.day ?? 1;
+  const [day, setDay] = useState(days.some((d) => d.day === initialDay) ? initialDay : fallbackDay);
+  const [time, setTime] = useState("09:00");
+  const [title, setTitle] = useState("");
+  const [cat, setCat] = useState<StopCat>("event");
+  const [status, setStatus] = useState<ItemStatus>("planned");
 
   const submit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const date = days.find((d) => d.day === day)?.date ?? ""
-    onCreate({ day, date, time: time.trim() || "00:00", title: title.trim(), cat, status })
-  }
+    e.preventDefault();
+    const date = days.find((d) => d.day === day)?.date ?? "";
+    onCreate({ day, date, time: time.trim() || "00:00", title: title.trim(), cat, status });
+  };
 
   return (
     <form className="flex flex-col" onSubmit={submit}>
@@ -74,7 +80,7 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
           >
             {days.map((d) => (
               <option key={d.day} value={d.day}>
-                Day {d.day} · {d.date}
+                Day {d.day} · {d.label}
               </option>
             ))}
           </select>
@@ -113,18 +119,20 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
           <span className={FIELD_LABEL}>状态</span>
           <div className="flex flex-wrap gap-[7px]">
             {STATUS_KEYS.map((k) => {
-              const on = status === k
+              const on = status === k;
               return (
                 <button
                   type="button"
                   key={k}
                   className={`inline-flex items-center gap-[7px] font-grotesk font-semibold text-[11px] tracking-[0.03em] px-3 py-[7px] rounded-full border transition-colors ${on ? "text-white" : CHIP_OFF}`}
-                  style={on ? { background: STATUS_ON_HEX[STATUS[k].cls], borderColor: STATUS_ON_HEX[STATUS[k].cls] } : undefined}
+                  style={
+                    on ? { background: STATUS_ON_HEX[k], borderColor: STATUS_ON_HEX[k] } : undefined
+                  }
                   onClick={() => setStatus(k)}
                 >
                   {STATUS[k].label}
                 </button>
-              )
+              );
             })}
           </div>
         </div>
@@ -141,7 +149,7 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
         </button>
       </ModalFooter>
     </form>
-  )
+  );
 }
 
 export function AddStopModal({ isOpen, days, initialDay, onClose, onCreate }: Props) {
@@ -155,5 +163,5 @@ export function AddStopModal({ isOpen, days, initialDay, onClose, onCreate }: Pr
         onCreate={onCreate}
       />
     </AdminModal>
-  )
+  );
 }

@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { STOPS_SEED } from "../admin/adminData";
-import type { AdminMember, Stop } from "../admin/adminData";
+import type { AdminMember } from "../admin/adminData";
 import { useAudit, useBackups, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripTravelers } from "../trip/roster";
 import { Avatar } from "../admin/Avatar";
@@ -11,6 +9,7 @@ import { AdminLogin } from "../admin/AdminLogin";
 import { adminLogout, useAdminUser } from "../admin/auth";
 import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
+import { PapertripLogo } from "../components/PapertripLogo";
 import { useTripAccess } from "../components/TripLayout";
 
 type SectionKey =
@@ -52,7 +51,6 @@ export function AdminPage({ tripId }: { tripId: string }) {
   // Active tab is derived from the current path so the sidebar highlights the
   // section the router is actually showing.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [stops, setStops] = useState<Stop[]>(STOPS_SEED);
   const { toasts, toast } = useAdminToasts();
 
   // Suggestions are the live trip's comments, submitted from the public timeline.
@@ -71,7 +69,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
   // `null` = this section has no meaningful count, so the sidebar hides the chip.
   const counts: Record<SectionKey, number | null> = {
-    itinerary: stops.length,
+    itinerary: tripItems.length,
     suggestions: pendingCount,
     split: expenses.length,
     members: travelers.length || null,
@@ -96,7 +94,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
   if (!user) {
     return (
       <div className={ADMIN_SHELL}>
-        <AdminLogin />
+        <AdminLogin tripId={tripId} tripTitle={meta.title} />
       </div>
     );
   }
@@ -154,8 +152,6 @@ export function AdminPage({ tripId }: { tripId: string }) {
       value={{
         tripId,
         toast,
-        stops,
-        setStops,
         suggestions,
         items: tripItems,
         expenses,
@@ -172,9 +168,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
             title="返回行程页"
             aria-label="返回行程页"
           >
-            <span className="shrink-0 w-9 h-9 rounded-[9px] bg-[#1c1b19] text-[#fafaf8] grid place-items-center font-grotesk font-bold text-[15px]">
-              AX
-            </span>
+            <PapertripLogo className="w-9 h-9 rounded-[9px]" />
             <span className="min-w-0">
               <span className="block font-sans font-bold text-[14.5px] tracking-tight truncate">
                 {meta.title} · 后台

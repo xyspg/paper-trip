@@ -15,6 +15,7 @@ import {
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
 import { AddressLink } from "../components/AddressLink";
 import { SuggestBox } from "../components/SuggestBox";
+import { isLegacyTrip } from "../trip/legacy";
 import type { ItemStatus, Trip, TripItem } from "../trip/types";
 import {
   dayLabels,
@@ -101,10 +102,11 @@ export function PaperTimeline({
   const titleWords = trip.title.trim().split(/\s+/);
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined;
   const titleLead = titleWords.join(" ");
+  const legacy = isLegacyTrip(trip.id);
   // Fresh trips have no items yet; the next-action row simply doesn't render.
   const nextStatus = nextItem ? statusMeta[nextItem.status] : undefined;
 
-  // Days before today (LA time) are archived into a collapsed section at the
+  // Days before today in the trip's own timezone are archived into a collapsed section at the
   // bottom; the rest stay inline. Manual header toggles are stored as sparse
   // overrides so the date-derived defaults (archived → collapsed) still apply
   // to days the user never touched, even after server data replaces the trip.
@@ -154,7 +156,12 @@ export function PaperTimeline({
             sub={`停靠点 · 横跨 ${orderedDates.length} 天`}
           />
           <Stat k="Parking" v={parkingCount.toString()} sub="停车方案 · Parking" />
-          <Stat k="Window" v={dateRange} sub="周五抵达 · 周日返程" accent />
+          <Stat
+            k="Window"
+            v={dateRange}
+            sub={legacy ? "周五抵达 · 周日返程" : "行程日期 · Travel dates"}
+            accent
+          />
         </div>
       </header>
 
@@ -207,7 +214,7 @@ export function PaperTimeline({
       {/* DAY SECTIONS */}
       {activeDates.map(renderDay)}
 
-      {/* ARCHIVED DAYS — days already past in LA, tucked behind one toggle */}
+      {/* ARCHIVED DAYS — days already past at the destination, tucked behind one toggle */}
       {archivedDates.length > 0 && (
         <section className="mt-[clamp(34px,6vw,48px)]">
           <button
@@ -243,16 +250,20 @@ export function PaperTimeline({
           <Legend color="#7a5c84" label="酒店" />
           <Legend color="#3f6f5b" label="杂项" />
         </div>
-        <p className="mt-4 pt-4 border-t border-dashed border-[#ebe9e3] font-cjk text-[12.5px] leading-[1.7] text-[#76726a]">
-          回报率 = 积分倍数 × 估值（cpp)
-        </p>
+        {legacy && (
+          <p className="mt-4 pt-4 border-t border-dashed border-[#ebe9e3] font-cjk text-[12.5px] leading-[1.7] text-[#76726a]">
+            回报率 = 积分倍数 × 估值（cpp)
+          </p>
+        )}
       </section>
 
-      <p className="flex gap-3.5 items-center mt-[30px] pt-[22px] border-t border-[#ebe9e3] font-grotesk text-[11px] uppercase tracking-[0.14em] text-[#9b988f]">
-        <span className="flex-1 h-px bg-[#cfccc2]" />
-        NYC → LAX
-        <span className="flex-1 h-px bg-[#cfccc2]" />
-      </p>
+      {legacy && (
+        <p className="flex gap-3.5 items-center mt-[30px] pt-[22px] border-t border-[#ebe9e3] font-grotesk text-[11px] uppercase tracking-[0.14em] text-[#9b988f]">
+          <span className="flex-1 h-px bg-[#cfccc2]" />
+          NYC → LAX
+          <span className="flex-1 h-px bg-[#cfccc2]" />
+        </p>
+      )}
     </div>
   );
 }
@@ -276,7 +287,9 @@ function DaySection({
   collapsed: boolean;
   onToggle: () => void;
 }) {
-  const meta = dayLabels[date] ?? { label: date, tag: "" };
+  const meta = isLegacyTrip(tripId)
+    ? (dayLabels[date] ?? { label: formatDayDate(date), tag: "" })
+    : { label: formatDayDate(date), tag: "" };
   return (
     <section className="mt-[clamp(34px,6vw,48px)]">
       <button
