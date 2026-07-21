@@ -66,7 +66,7 @@ function inviteHtml({
   <body style="margin:0;padding:32px 16px;background:#fafaf8;font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans SC',sans-serif;color:#1c1b19;">
     <div style="max-width:480px;margin:0 auto;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-        <span style="display:inline-block;width:36px;height:36px;border-radius:9px;background:#1c1b19;color:#fafaf8;font-weight:700;font-size:15px;text-align:center;line-height:36px;">AX</span>
+        <span style="display:inline-block;width:36px;height:36px;border-radius:9px;background:#1c1b19;color:#fafaf8;font-weight:700;font-size:13px;text-align:center;line-height:36px;">PT</span>
         <span style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#3f6f5b;font-weight:600;">行程作战表 · Trip Invite</span>
       </div>
       <div style="background:#ffffff;border:1px solid #ebe9e3;border-radius:14px;padding:28px;">

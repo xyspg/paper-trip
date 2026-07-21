@@ -1,10 +1,8 @@
 import type { ReactNode } from "react"
 import type { TripItem } from "../trip/types"
 
-// Presentation helpers shared by both timeline layouts (anime = TimelinePage,
-// paper = PaperTimeline). The two render very different chrome, but the data
-// shaping (stop plans, day-date formatting, inline **bold** spans) and the
-// per-day editorial labels are identical, so they live here as one source.
+// Presentation helpers for the trip timeline. Data shaping and lightweight
+// rich-text rendering live here so the page stays focused on layout.
 
 export type StopPlan = { kind: "main" | "alt"; label: string; text: string }
 
@@ -56,10 +54,3 @@ export const renderRich = (text: string, boldClassName = "font-extrabold"): Reac
         part
       ),
     )
-
-// Per-day editorial label + tag, keyed by the real trip dates.
-export const dayLabels: Record<string, { label: string; tag: string }> = {
-  "2026-07-03": { label: "抵达 + Anime Expo 第一天", tag: "Arrival Day" },
-  "2026-07-04": { label: "Anime Expo 全天", tag: "Main Event" },
-  "2026-07-05": { label: "返程缓冲", tag: "Departure" },
-}

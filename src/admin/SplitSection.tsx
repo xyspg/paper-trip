@@ -47,7 +47,7 @@ export function SplitSection({
   const handleEdit = (input: NewExpenseInput) => {
     if (!editing) return;
     // Carry over fields the modal doesn't touch (id, credit) so editing the
-    // name/amount/split never drops the IHG credit on a row. The scanned-receipt
+    // name/amount/split never drops the credit on a row. The scanned-receipt
     // `items` breakdown is kept only when the amount is unchanged: the manual
     // form has no items UI, so once the total is edited the per-dish prices no
     // longer sum to it, and a stale breakdown that contradicts the total (shown
@@ -226,7 +226,7 @@ export function SplitSection({
                 </span>
                 {e.credit ? (
                   <span className="inline-flex items-center gap-1.5 font-grotesk text-[10px] tracking-[0.06em] uppercase whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full px-2.5 py-1">
-                    IHG credit <span className="font-sans">−{fmtMoney(appliedCredit(e))}</span>
+                    Credit <span className="font-sans">−{fmtMoney(appliedCredit(e))}</span>
                   </span>
                 ) : null}
                 <span className="ml-auto font-cjk font-semibold text-[12.5px] text-[#76726a]">
@@ -259,7 +259,7 @@ export function SplitSection({
             <span className="font-sans">{fmtMoney(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
-            <span>Chase IHG credit</span>
+            <span>抵扣 Credit</span>
             <span className="font-sans">−{fmtMoney(creditTotal)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-3.5 bg-[#1c1b19] text-[#fafaf8] font-sans font-bold tracking-[0.02em] text-[16px]">
@@ -335,7 +335,7 @@ export function SplitSection({
             转 <b className="font-sans text-white">{fmtMoney(settleAmt)}</b>
           </span>
         ) : (
-          <span className="font-cjk font-semibold text-[14px]">两人已结清，无需互相转账。</span>
+          <span className="font-cjk font-semibold text-[14px]">所有人已结清，无需互相转账。</span>
         )}
       </div>
 

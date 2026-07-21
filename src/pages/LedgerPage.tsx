@@ -12,6 +12,6 @@ export function LedgerPage({ tripId, autoExport }: { tripId: string; autoExport?
     );
   }
   // `rev` is the DO document revision of the snapshot being shown; the PDF
-  // export stamps it on the statement (absent while the legacy seed fills in).
+  // export stamps it on the statement once the live snapshot arrives.
   return <PaperLedger trip={trip} rev={data?.rev} autoExport={autoExport} />;
 }

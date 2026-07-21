@@ -96,7 +96,7 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
       return { ...trip, suggestions: [] };
 
     case "addExpense":
-      // Newest last so the ledger keeps its curated order and added rows append.
+      // Newest last so the ledger keeps its entered order and added rows append.
       return { ...trip, expenses: [...(trip.expenses ?? []), op.expense] };
 
     case "updateExpense":

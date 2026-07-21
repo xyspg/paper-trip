@@ -8,7 +8,7 @@ CREATE TABLE trips (
   visibility  TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('public','private')),
   start_date  TEXT,
   end_date    TEXT,
-  timezone    TEXT NOT NULL DEFAULT 'America/Los_Angeles',
+  timezone    TEXT NOT NULL DEFAULT 'UTC',
   created_by  TEXT,
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
@@ -17,8 +17,8 @@ CREATE TABLE trip_members (
   trip_id     TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
   user_id     TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
   role        TEXT NOT NULL CHECK (role IN ('owner','member')),
-  -- Roster/payer id inside the trip document: 'you'/'spr' on the legacy trip
-  -- (expenses reference those), = user_id everywhere else.
+  -- Roster/payer id inside the trip document. Expenses reference this stable
+  -- key even if the user's profile changes.
   member_key  TEXT NOT NULL,
   color       TEXT,
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -38,17 +38,3 @@ CREATE TABLE trip_invites (
   accepted_at TEXT
 );
 CREATE INDEX trip_invites_trip_idx ON trip_invites (trip_id);
-
--- Memberships provisioned for people who have never signed in, keyed by OAuth
--- account id (matches better-auth account.providerId/accountId). Promoted into
--- trip_members lazily on sign-in by claimMemberships (worker/registry.ts).
-CREATE TABLE member_claims (
-  trip_id      TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
-  provider_id  TEXT NOT NULL,
-  account_id   TEXT NOT NULL,
-  role         TEXT NOT NULL CHECK (role IN ('owner','member')),
-  member_key   TEXT NOT NULL,
-  display_name TEXT NOT NULL,
-  color        TEXT,
-  PRIMARY KEY (trip_id, provider_id, account_id)
-);

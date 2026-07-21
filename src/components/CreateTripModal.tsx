@@ -68,7 +68,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="例如 Anime Expo 2027"
+            placeholder="例如 东京夏日之旅"
             onChange={(e) => setTitle(e.target.value)}
           />
         </label>

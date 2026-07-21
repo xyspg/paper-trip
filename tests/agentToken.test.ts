@@ -11,8 +11,8 @@ const NOW = Math.floor(Date.now() / 1000);
 const claims = (over: Partial<AgentClaims> = {}): AgentClaims => ({
   kind: "agent",
   sub: "usr_123",
-  login: "xyspg",
-  tripId: "anime-expo-2026",
+  login: "traveler",
+  tripId: "summer-trip",
   exp: NOW + 3600,
   ...over,
 });
@@ -20,7 +20,7 @@ const claims = (over: Partial<AgentClaims> = {}): AgentClaims => ({
 describe("agent token", () => {
   it("round-trips valid claims", async () => {
     const token = await signAgentToken(claims(), SECRET);
-    expect(token.startsWith("axa_")).toBe(true);
+    expect(token.startsWith("pta_")).toBe(true);
     expect(await verifyAgentToken(token, SECRET)).toEqual(claims());
   });
 
@@ -52,8 +52,8 @@ describe("agent token", () => {
     expect(await verifyAgentToken(token, SECRET)).toBeNull();
   });
 
-  it("rejects a bare token without the axa_ prefix", async () => {
+  it("rejects a bare token without the pta_ prefix", async () => {
     const token = await signAgentToken(claims(), SECRET);
-    expect(await verifyAgentToken(token.slice("axa_".length), SECRET)).toBeNull();
+    expect(await verifyAgentToken(token.slice("pta_".length), SECRET)).toBeNull();
   });
 });

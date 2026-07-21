@@ -33,7 +33,7 @@ type BackupRow = TripBackup & {
 
 // Trips persisted before the parking-pass proxy carry the secret provider
 // capability URL in `parking.passUrl`, and public reads (/api/trip, the
-// websocket snapshot) serve this.trip verbatim. Strip the legacy field at
+// websocket snapshot) serve this.trip verbatim. Strip the deprecated field at
 // every point state enters memory: init load and backup restore.
 function scrubPassUrls(trip: Trip): void {
   for (const item of trip.items) {
@@ -296,7 +296,7 @@ export class TripDurableObject extends DurableObject<Env> {
         start: typeof body.dates?.start === "string" ? body.dates.start : "",
         end: typeof body.dates?.end === "string" ? body.dates.end : "",
       },
-      timezone: typeof body.timezone === "string" ? body.timezone : "America/Los_Angeles",
+      timezone: typeof body.timezone === "string" ? body.timezone : "UTC",
     });
     this.rev = 0;
     this.persist();

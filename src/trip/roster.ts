@@ -1,6 +1,4 @@
-import { isLegacyTrip } from "./legacy"
 import type { Trip } from "./types"
-import { MEMBERS as LEGACY_MEMBERS } from "../admin/adminData"
 import type { AdminMember } from "../admin/adminData"
 
 // Single source for roster swatches: the worker assigns them round-robin as
@@ -10,11 +8,9 @@ export const MEMBER_COLORS = ["#3f6f5b", "#5b7a99", "#b08648", "#7a5c84", "#c255
 
 // The people money can be split across, derived from the synced trip document
 // (trip.members is registry-owned, pushed by the worker on every membership
-// change). The hardcoded pair remains only as a fallback for the legacy trip
-// before its roster backfill has run.
+// change).
 export function tripTravelers(trip: Trip): AdminMember[] {
   const members = trip.members ?? []
-  if (members.length === 0) return isLegacyTrip(trip.id) ? LEGACY_MEMBERS : []
   return members.map((m, i) => ({
     id: m.id,
     name: m.name,

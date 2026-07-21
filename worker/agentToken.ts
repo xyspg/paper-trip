@@ -8,7 +8,7 @@ import type { TripRole } from "./registry";
 // Bearer tokens minted from a member session for local agents (the SKILL.md
 // flow). Signed with AGENT_TOKEN_SECRET — deliberately NOT the better-auth
 // secret, so neither credential kind can ever pass the other's verifier. The
-// `kind` claim plus the axa_ prefix keep tokens self-describing on top of that.
+// `kind` claim plus the pta_ prefix keep tokens self-describing on top of that.
 
 export type AgentClaims = {
   kind: "agent";
@@ -18,7 +18,7 @@ export type AgentClaims = {
   exp: number; // unix seconds
 };
 
-const PREFIX = "axa_";
+const PREFIX = "pta_";
 const enc = new TextEncoder();
 
 export function hmacKey(secret: string): Promise<CryptoKey> {

@@ -15,10 +15,8 @@ import {
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
 import { AddressLink } from "../components/AddressLink";
 import { SuggestBox } from "../components/SuggestBox";
-import { isLegacyTrip } from "../trip/legacy";
 import type { ItemStatus, Trip, TripItem } from "../trip/types";
 import {
-  dayLabels,
   formatDayDate,
   hasRichParking,
   itemPlans,
@@ -26,11 +24,8 @@ import {
   type StopPlan,
 } from "./timelineShared";
 
-// Paper theme timeline: a faithful port of the "行程表" Claude Design layout
-// (light masthead + stat strip, next-up row, day sections, vertical ticket
-// timeline). Fed the real trip data; dynamic per-category/status hues use inline
-// `style` so Tailwind's JIT never purges them. Anime keeps its own layout in
-// TimelinePage; this renders only when the paper theme is active.
+// Paper theme timeline. It is entirely driven by the current trip; dynamic
+// per-category/status hues use inline styles so Tailwind never purges them.
 
 type PaperTimelineProps = {
   trip: Trip;
@@ -62,10 +57,9 @@ const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
 const PAPER_BOLD = "font-bold text-[#1c1b19]";
 
 // Archive by the trip's own calendar date, not the device's, so a day isn't
-// archived while it is still that evening at the destination (e.g. a phone on
-// NYC time flips to 7/4 at 9pm LA time on 7/3). en-CA formats as YYYY-MM-DD,
-// matching the trip's ISO date keys for plain string comparison. Falls back to
-// the device date if the stored zone is invalid.
+// archived while it is still that evening at the destination. en-CA formats as
+// YYYY-MM-DD, matching the trip's ISO date keys for plain string comparison.
+// Falls back to the device date if the stored zone is invalid.
 const todayIn = (timeZone: string) => {
   try {
     return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
@@ -102,7 +96,6 @@ export function PaperTimeline({
   const titleWords = trip.title.trim().split(/\s+/);
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined;
   const titleLead = titleWords.join(" ");
-  const legacy = isLegacyTrip(trip.id);
   // Fresh trips have no items yet; the next-action row simply doesn't render.
   const nextStatus = nextItem ? statusMeta[nextItem.status] : undefined;
 
@@ -156,12 +149,7 @@ export function PaperTimeline({
             sub={`停靠点 · 横跨 ${orderedDates.length} 天`}
           />
           <Stat k="Parking" v={parkingCount.toString()} sub="停车方案 · Parking" />
-          <Stat
-            k="Window"
-            v={dateRange}
-            sub={legacy ? "周五抵达 · 周日返程" : "行程日期 · Travel dates"}
-            accent
-          />
+          <Stat k="Window" v={dateRange} sub="行程日期 · Travel dates" accent />
         </div>
       </header>
 
@@ -250,20 +238,7 @@ export function PaperTimeline({
           <Legend color="#7a5c84" label="酒店" />
           <Legend color="#3f6f5b" label="杂项" />
         </div>
-        {legacy && (
-          <p className="mt-4 pt-4 border-t border-dashed border-[#ebe9e3] font-cjk text-[12.5px] leading-[1.7] text-[#76726a]">
-            回报率 = 积分倍数 × 估值（cpp)
-          </p>
-        )}
       </section>
-
-      {legacy && (
-        <p className="flex gap-3.5 items-center mt-[30px] pt-[22px] border-t border-[#ebe9e3] font-grotesk text-[11px] uppercase tracking-[0.14em] text-[#9b988f]">
-          <span className="flex-1 h-px bg-[#cfccc2]" />
-          NYC → LAX
-          <span className="flex-1 h-px bg-[#cfccc2]" />
-        </p>
-      )}
     </div>
   );
 }
@@ -287,9 +262,6 @@ function DaySection({
   collapsed: boolean;
   onToggle: () => void;
 }) {
-  const meta = isLegacyTrip(tripId)
-    ? (dayLabels[date] ?? { label: formatDayDate(date), tag: "" })
-    : { label: formatDayDate(date), tag: "" };
   return (
     <section className="mt-[clamp(34px,6vw,48px)]">
       <button
@@ -307,16 +279,10 @@ function DaySection({
             {formatDayDate(date)}
           </span>
           <span className="block mt-px font-cjk text-[12.5px] text-[#76726a]">
-            {meta.label}
-            {collapsed && ` · ${items.length} 站`}
+            第 {dayNumber} 天{collapsed && ` · ${items.length} 站`}
           </span>
         </span>
         <span className="ml-auto flex shrink-0 items-center gap-2.5">
-          {meta.tag && (
-            <span className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.14em] text-[#76726a] whitespace-nowrap py-[5px] px-[11px] border border-[#ebe9e3] rounded-full">
-              {meta.tag}
-            </span>
-          )}
           <ChevronDown
             className={`text-[#9b988f] transition-transform group-hover:text-[#1c1b19] ${collapsed ? "-rotate-90" : ""}`}
             size={18}
@@ -411,7 +377,7 @@ function Ticket({
             {item.address}
           </AddressLink>
 
-          {item.parking && hasRichParking(item) && <ParkingPanel item={item} />}
+          {item.parking && hasRichParking(item) && <ParkingPanel tripId={tripId} item={item} />}
 
           {plans.length > 0 && (
             <div className="grid gap-2 mt-3.5">
@@ -454,7 +420,7 @@ function PlanRow({ plan }: { plan: StopPlan }) {
   );
 }
 
-function ParkingPanel({ item }: { item: TripItem }) {
+function ParkingPanel({ tripId, item }: { tripId: string; item: TripItem }) {
   const parking = item.parking;
   if (!parking) return null;
 
@@ -545,6 +511,7 @@ function ParkingPanel({ item }: { item: TripItem }) {
 
           {parking.reservationId && (
             <ParkingPassButton
+              tripId={tripId}
               reservationId={parking.reservationId}
               provider={parking.provider ?? "Parking"}
             />
@@ -557,11 +524,13 @@ function ParkingPanel({ item }: { item: TripItem }) {
 
 // The provider pass URL is a capability link (holding it = authority to edit or
 // cancel the reservation), so it stays server-side: signed-in admins follow the
-// /api/parking-pass redirect, everyone else is offered the GitHub login first.
+// trip-scoped redirect, everyone else is offered the GitHub login first.
 function ParkingPassButton({
+  tripId,
   reservationId,
   provider,
 }: {
+  tripId: string;
   reservationId: string;
   provider: string;
 }) {
@@ -572,7 +541,7 @@ function ParkingPassButton({
   return user ? (
     <a
       className={className}
-      href={`/api/parking-pass/${encodeURIComponent(reservationId)}`}
+      href={`/api/trips/${encodeURIComponent(tripId)}/parking-pass/${encodeURIComponent(reservationId)}`}
       target="_blank"
       rel="noreferrer"
     >

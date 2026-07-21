@@ -1,16 +1,15 @@
-# Trip Ops
+# PaperTrip
 
-A parking-first travel planner for detailed trip execution. The current app is a local-first Vite + React + Tailwind CSS PWA for Anime Expo 2026 planning.
+A multi-tenant trip planner for shared timelines, bookings, expenses, and agent-assisted editing. The React client and Cloudflare Worker share one trip-scoped data model backed by D1 and one Durable Object per trip.
 
 ## Features
 
-- Day-by-day operating timeline
-- Parking and backup parking fields on every stop
-- Places view with map links
-- Checklist with local persistence
-- Add/remove stops from the browser
-- Markdown export for a Git repository or notes app
-- PWA manifest and service worker shell caching
+- Trip-scoped public timeline and admin console
+- Shared itinerary, parking details, checklists, and suggestions
+- Multi-person expenses, receipt scanning, and PDF statements
+- GitHub sign-in, roles, invites, and private/public trips
+- Local agent tokens with scoped write permissions and audit logs
+- Real-time synchronization through Cloudflare Durable Objects
 
 ## Stack
 
@@ -18,7 +17,8 @@ A parking-first travel planner for detailed trip execution. The current app is a
 - React 19
 - Tailwind CSS 4 via `@tailwindcss/vite`
 - TypeScript
-- Local storage persistence
+- Cloudflare Workers, Durable Objects, and D1
+- better-auth
 
 ## Commands
 
@@ -27,12 +27,13 @@ bun install
 bun run dev
 bun run build
 bun run lint
+bun run typecheck:worker
 ```
 
 ## Local URL
 
-When the dev server is running, open:
+The preferred local flow uses Portless:
 
-```text
-http://localhost:5173/
+```bash
+portless papertrip vite
 ```

@@ -15,7 +15,7 @@ browsers immediately and lands in an audit log under your token's identity.
 - **API base**: the origin you fetched this file from (e.g. `https://papertrip.example.com`).
 - **Trip id**: given by the user alongside the token. All paths below live
   under `/api/trips/<tripId>`.
-- **Auth**: every request needs `Authorization: Bearer <token>` — the `axa_...`
+- **Auth**: every request needs `Authorization: Bearer <token>` — the `pta_...`
   token the user gave you. The token is scoped to exactly one trip; it opens
   nothing else. (Reads work unauthenticated only on public trips.)
 - Tokens expire and are revoked if the minter leaves the trip; a 401/403 on a
@@ -96,7 +96,7 @@ GET  /api/trips/<tripId>/backups   → list (restore/delete are human-only)
 ```ts
 type TripItem = {
   id: string                 // kebab-case slug, e.g. "dinner-kagaya"
-  date: string               // "2026-07-03" — in the trip's own timezone (trip.base.timezone)
+  date: string               // "2027-08-16" — in the trip's own timezone (trip.base.timezone)
   time: string               // "18:30" 24h — wall clock at the stop itself
   timezone?: string          // IANA zone, ONLY when this stop is not in trip.base.timezone (cross-timezone trips)
   title: string
@@ -139,7 +139,7 @@ document shapes: read them from the live GET instead of guessing.
    `status: "locked"`, the reservation time, and the confirmation code if given.
 5. Times are wall-clock local to the stop. Stops in the trip's default zone
    (`trip.base.timezone`) omit `timezone`; a stop in another zone (e.g. the
-   NYC leg of a coast-to-coast trip) sets its own IANA `timezone` so the
+   remote leg of a cross-timezone trip) sets its own IANA `timezone` so the
    timeline can label it. Dates must fall inside `trip.dates`.
 6. Don't touch `trip.suggestions` entries you didn't create; don't delete
    items/expenses unless the user asked.

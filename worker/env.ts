@@ -26,9 +26,9 @@ export interface Env {
   GEMINI_API_KEY?: string;
   // Gemini model id for the receipt scanner; a public var set in wrangler.jsonc.
   GEMINI_MODEL?: string;
-  // JSON map of reservationId → full provider pass URL. Pass links are
-  // capability URLs (whoever holds one can edit/cancel the reservation), so
-  // they live only in this secret and are served via /api/parking-pass/:rid
-  // behind trip membership — never in trip data or the client bundle.
+  // JSON map of tripId → reservationId → full provider pass URL. Pass links
+  // are capability URLs (whoever holds one can edit/cancel the reservation),
+  // so they live only in this secret and are served behind membership in the
+  // same trip — never in trip data or the client bundle.
   PARKING_PASS_URLS?: string;
 }

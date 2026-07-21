@@ -6,8 +6,7 @@
   /* Design system: the calm editorial "paper" palette imported from the Claude
      Design project is now the single source of truth; `@theme` emits these as
      :root CSS vars and generates the matching utilities (bg-paper, text-ink, …).
-     The legacy accent names (magenta/cyan/…) are kept so older admin/shared
-     components keep resolving, but they now point at muted editorial hues. */
+     Existing semantic accent names point at muted editorial hues. */
   --color-paper: #fafaf8;
   --color-paper-2: #ffffff;
   --color-ink: #1c1b19;
@@ -20,8 +19,6 @@
   --color-green: #3f6f5b; /* accent */
   --color-amber: #b08648; /* ochre */
   --color-red: #c2553f; /* terracotta alert */
-  --color-jetblue: #5b7a99; /* slate */
-
   /* Flat editorial surfaces: no hard offset shadows */
   --shadow-hard: none;
   --shadow-hard-sm: none;

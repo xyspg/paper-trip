@@ -81,7 +81,7 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="例如 门票 · Anime Expo 3-day"
+            placeholder="例如 景点门票 · 三日通票"
             onChange={(e) => setName(e.target.value)}
           />
         </label>

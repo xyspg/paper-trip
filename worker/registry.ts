@@ -10,8 +10,6 @@ import type { TripMember } from "../src/trip/types";
 // CONTENT (items/expenses/…) lives in each trip's Durable Object; everything
 // here is authorization and listing metadata.
 
-export { LEGACY_TRIP_ID } from "../src/trip/legacy";
-
 export type TripVisibility = "public" | "private";
 export type TripRole = "owner" | "member";
 
@@ -42,13 +40,6 @@ export type MemberDetail = {
   name: string;
   login: string | null;
   image: string | null;
-};
-
-export type ClaimRow = {
-  member_key: string;
-  role: TripRole;
-  display_name: string;
-  color: string | null;
 };
 
 export type Member = SessionUser & { role: TripRole; memberKey: string };
@@ -139,7 +130,7 @@ export async function updateTrip(
 }
 
 export async function deleteTrip(db: D1Database, id: string): Promise<void> {
-  // Members/invites/claims cascade via their trip_id foreign keys.
+  // Members and invites cascade via their trip_id foreign keys.
   await db.prepare("DELETE FROM trips WHERE id = ?1").bind(id).run();
 }
 
@@ -189,16 +180,6 @@ export async function listMembers(db: D1Database, tripId: string): Promise<Membe
   return rows.results;
 }
 
-export async function listClaims(db: D1Database, tripId: string): Promise<ClaimRow[]> {
-  const rows = await db
-    .prepare(
-      "SELECT member_key, role, display_name, color FROM member_claims WHERE trip_id = ?1",
-    )
-    .bind(tripId)
-    .all<ClaimRow>();
-  return rows.results;
-}
-
 export async function countMembers(db: D1Database, tripId: string): Promise<number> {
   const row = await db
     .prepare("SELECT COUNT(*) AS n FROM trip_members WHERE trip_id = ?1")
@@ -226,32 +207,18 @@ export const actorOf = (u: SessionUser): InternalActor => ({
   email: u.email,
 });
 
-// Push the current roster (real members + unclaimed seed placeholders) into
-// the trip's DO, where it lives as trip.members. Call after every membership
-// change so the document all clients render never drifts from the registry.
-export async function syncRoster(
-  env: Env,
-  tripId: string,
-  actor?: InternalActor,
-): Promise<void> {
-  const [members, claims] = await Promise.all([
-    listMembers(env.DB, tripId),
-    listClaims(env.DB, tripId),
-  ]);
-  const roster: TripMember[] = [
-    ...members.map((m) => ({
-      id: m.memberKey,
-      userId: m.userId,
-      name: m.name || m.login || m.userId,
-      avatarUrl: m.image ?? undefined,
-      color: m.color ?? undefined,
-    })),
-    ...claims.map((cl) => ({
-      id: cl.member_key,
-      name: cl.display_name,
-      color: cl.color ?? undefined,
-    })),
-  ];
+// Push the current roster into the trip's DO, where it lives as trip.members.
+// Call after every membership change so the document all clients render never
+// drifts from the registry.
+export async function syncRoster(env: Env, tripId: string, actor?: InternalActor): Promise<void> {
+  const members = await listMembers(env.DB, tripId);
+  const roster: TripMember[] = members.map((m) => ({
+    id: m.memberKey,
+    userId: m.userId,
+    name: m.name || m.login || m.userId,
+    avatarUrl: m.image ?? undefined,
+    color: m.color ?? undefined,
+  }));
   await env.TRIPS.getByName(tripId).fetch(
     new Request("https://do/internal/members", {
       method: "POST",
@@ -296,7 +263,14 @@ export async function createInviteRow(
     .prepare(
       "INSERT INTO trip_invites (id, trip_id, email, token_hash, invited_by, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
     )
-    .bind(invite.id, invite.tripId, invite.email, invite.tokenHash, invite.invitedBy, invite.expiresAt)
+    .bind(
+      invite.id,
+      invite.tripId,
+      invite.email,
+      invite.tokenHash,
+      invite.invitedBy,
+      invite.expiresAt,
+    )
     .run();
 }
 
@@ -345,67 +319,15 @@ export async function markInviteAccepted(
     .run();
 }
 
-// Promote member_claims rows (memberships provisioned by OAuth account id, for
-// people who had never signed in) into real trip_members rows. Idempotent;
-// returns the trip ids that gained a membership so callers can re-read and
-// re-sync those rosters.
-export async function claimMemberships(db: D1Database, userId: string): Promise<string[]> {
-  // Steady-state fast path: claims exist only around seeding/provisioning, so
-  // one cheap probe usually replaces the per-account scans below.
-  const anyClaims = await db.prepare("SELECT 1 FROM member_claims LIMIT 1").first();
-  if (!anyClaims) return [];
-
-  const accounts = await db
-    .prepare('SELECT "providerId", "accountId" FROM account WHERE "userId" = ?1')
-    .bind(userId)
-    .all<{ providerId: string; accountId: string }>();
-
-  const claimedTripIds: string[] = [];
-  for (const account of accounts.results) {
-    const claims = await db
-      .prepare(
-        "SELECT trip_id, role, member_key, color FROM member_claims WHERE provider_id = ?1 AND account_id = ?2",
-      )
-      .bind(account.providerId, account.accountId)
-      .all<{ trip_id: string; role: TripRole; member_key: string; color: string | null }>();
-    if (claims.results.length === 0) continue;
-
-    for (const claim of claims.results) {
-      await db
-        .prepare(
-          "INSERT OR IGNORE INTO trip_members (trip_id, user_id, role, member_key, color) VALUES (?1, ?2, ?3, ?4, ?5)",
-        )
-        .bind(claim.trip_id, userId, claim.role, claim.member_key, claim.color)
-        .run();
-      claimedTripIds.push(claim.trip_id);
-    }
-    await db
-      .prepare("DELETE FROM member_claims WHERE provider_id = ?1 AND account_id = ?2")
-      .bind(account.providerId, account.accountId)
-      .run();
-  }
-  return claimedTripIds;
-}
-
-// Session and membership on one trip, resolved together. Claims are promoted
-// on a membership miss (and the affected rosters re-synced), so a freshly
-// signed-in invitee/seeded admin resolves without depending on any auth-hook
-// ordering. This replaces the ADMIN_IDS allowlist: authorization is "is a
-// member of this trip", never a global admin bit.
+// Session and membership on one trip, resolved together. Authorization is
+// "is a member of this trip", never a global admin bit.
 export async function sessionMember(
   c: Context<{ Bindings: Env }>,
   tripId: string,
 ): Promise<{ user: SessionUser | null; member: Member | null }> {
   const user = await sessionUser(c);
   if (!user) return { user: null, member: null };
-  let membership = await getMembership(c.env.DB, tripId, user.id);
-  if (!membership) {
-    const claimed = await claimMemberships(c.env.DB, user.id);
-    if (claimed.length > 0) {
-      await Promise.all(claimed.map((id) => syncRoster(c.env, id, actorOf(user))));
-      membership = await getMembership(c.env.DB, tripId, user.id);
-    }
-  }
+  const membership = await getMembership(c.env.DB, tripId, user.id);
   if (!membership) return { user, member: null };
   return { user, member: { ...user, role: membership.role, memberKey: membership.member_key } };
 }

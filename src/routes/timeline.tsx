@@ -1,12 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { LEGACY_TRIP_ID } from "../trip/legacy";
 
-// Pre-multi-tenant bookmark: the un-scoped paths always meant the legacy trip.
+// A trip id is required; unscoped bookmarks return to the trip dashboard.
 export const Route = createFileRoute("/timeline")({
   beforeLoad: () => {
     throw redirect({
-      to: "/t/$tripId/timeline",
-      params: { tripId: LEGACY_TRIP_ID },
+      to: "/",
       replace: true,
     });
   },

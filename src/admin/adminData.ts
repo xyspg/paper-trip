@@ -15,33 +15,6 @@ export type AdminMember = {
 // here so admin modules keep importing the type from one place.
 export type { Expense } from "../trip/types";
 
-// ---- Legacy-trip roster fallback ----
-// Real rosters live on the synced trip (trip.members, see src/trip/roster.ts);
-// this pair remains only as the legacy trip's first-frame fallback before its
-// snapshot arrives.
-export const MEMBERS: AdminMember[] = [
-  {
-    id: "you",
-    name: "xyspg",
-    handle: "xyspg",
-    role: "管理员",
-    color: "var(--color-magenta)",
-    traveler: true,
-    initials: "XY",
-    avatarUrl: "https://github.com/xyspg.png",
-  },
-  {
-    id: "spr",
-    name: "Sapphire Rapids",
-    handle: "sapphirerapids",
-    role: "同行",
-    color: "var(--color-cyan)",
-    traveler: true,
-    initials: "SR",
-    avatarUrl: "https://github.com/sapphire-rapids.png",
-  },
-];
-
 // ---- Category palette (shared with itinerary page) ----
 // Editorial paper hues (slate / ochre / alert / plum / accent). Literal hex so
 // the itinerary can derive translucent tints via `color + '55'` / `+ '12'`.

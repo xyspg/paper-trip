@@ -39,7 +39,7 @@ function buildAuth(env: Env) {
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
-    trustedOrigins: [env.APP_ORIGIN ?? "", "https://ax26.localhost", "https://papertrip.localhost"].filter(Boolean),
+    trustedOrigins: [env.APP_ORIGIN ?? "", "https://papertrip.localhost"].filter(Boolean),
     session: {
       expiresIn: 60 * 60 * 24 * 30, // 30 days, matching the retired HMAC cookie
       // Skip the per-request D1 session read; a revoked session lives ≤5 min.

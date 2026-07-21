@@ -97,20 +97,10 @@ export type TripMemberInfo = {
   color: string | null;
 };
 
-// A seeded/pre-provisioned person who has never signed in (claim, not account).
-export type PendingClaim = {
-  memberKey: string;
-  role: TripRole;
-  name: string;
-  color: string | null;
-};
-
-export const fetchMembers = async (
-  tripId: string,
-): Promise<{ members: TripMemberInfo[]; pending: PendingClaim[] }> => {
+export const fetchMembers = async (tripId: string): Promise<{ members: TripMemberInfo[] }> => {
   const res = await fetch(`${trips(tripId)}/members`);
   if (!res.ok) throw new Error(`GET ${trips(tripId)}/members failed: ${res.status}`);
-  return (await res.json()) as { members: TripMemberInfo[]; pending: PendingClaim[] };
+  return (await res.json()) as { members: TripMemberInfo[] };
 };
 
 export const removeMember = async (tripId: string, userId: string): Promise<void> => {

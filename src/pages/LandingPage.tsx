@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
 import {
   Archive,
   ArrowRight,
@@ -12,7 +11,6 @@ import {
   Zap,
 } from "lucide-react";
 import { signInWithGitHub } from "../admin/auth";
-import { LEGACY_TRIP_ID } from "../trip/legacy";
 import "./landing.css";
 
 // Brand name lives here and in index.html only.
@@ -77,13 +75,6 @@ function Nav() {
         >
           Agent 接入
         </a>
-        <Link
-          to="/t/$tripId/timeline"
-          params={{ tripId: LEGACY_TRIP_ID }}
-          className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]"
-        >
-          示例行程
-        </Link>
       </nav>
       <button
         type="button"
@@ -117,14 +108,13 @@ function Hero() {
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           {githubBtn("用 GitHub 登录，免费开始")}
-          <Link
-            to="/t/$tripId/timeline"
-            params={{ tripId: LEGACY_TRIP_ID }}
+          <a
+            href="#features"
             className="inline-flex items-center gap-1.5 py-3 px-5 rounded-[10px] border border-[#ebe9e3] bg-white no-underline text-[#3b3833] font-sans font-semibold text-[13.5px] hover:border-[#1c1b19]"
           >
-            看看示例行程
+            了解功能
             <ArrowRight size={15} strokeWidth={2.2} />
-          </Link>
+          </a>
         </div>
 
         <DeviceScene />
@@ -623,14 +613,6 @@ function ClosingCta() {
         <p className="mt-4 font-cjk text-[14px] text-[#76726a]">免费使用，登录即开工。</p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           {githubBtn("用 GitHub 登录")}
-          <Link
-            to="/t/$tripId/timeline"
-            params={{ tripId: LEGACY_TRIP_ID }}
-            className="inline-flex items-center gap-1.5 py-3 px-5 rounded-[10px] border border-[#ebe9e3] bg-white no-underline text-[#3b3833] font-sans font-semibold text-[13.5px] hover:border-[#1c1b19]"
-          >
-            先围观示例行程
-            <ArrowRight size={15} strokeWidth={2.2} />
-          </Link>
         </div>
       </div>
     </section>

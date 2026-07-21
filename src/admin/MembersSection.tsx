@@ -20,9 +20,8 @@ import { useTripAccess } from "../components/TripLayout"
 import type { AdminMember } from "./adminData"
 import type { CreatedInvite } from "../trip/api"
 
-// The trip's roster: registered members plus seeded people who haven't signed
-// in yet, and (for owners) the email invite flow. The emailed link is a bearer
-// credential: any GitHub account that opens it may join.
+// The trip's roster and, for owners, the email invite flow. The emailed link is
+// a bearer credential: any GitHub account that opens it may join.
 export function MembersSection({ toast }: { toast: ToastFn }) {
   const { tripId, meta } = useTripAccess()
   const isOwner = meta.role === "owner"
@@ -224,24 +223,6 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
                     移除
                   </button>
                 )}
-              </div>
-            ))}
-
-            {data.pending.map((cl) => (
-              <div
-                key={cl.memberKey}
-                className="flex items-center gap-3 p-3.5 bg-[#fdfdfb] border border-dashed border-[#ebe9e3] rounded-[14px]"
-              >
-                <Avatar m={avatarFor(cl.name, null, cl.color)} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-cjk font-bold text-[14px] leading-[1.2] truncate">
-                    {cl.name}
-                  </div>
-                  <div className="font-mono text-[11px] text-[#9b988f]">尚未登录 · 待认领</div>
-                </div>
-                <span className="shrink-0 inline-flex items-center py-[3px] px-2 rounded-full border border-[#ebe9e3] font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] text-[#76726a]">
-                  {cl.role === "owner" ? "创建者" : "成员"}
-                </span>
               </div>
             ))}
           </div>

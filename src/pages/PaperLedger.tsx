@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Link2, Wallet } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
 import { fmtMoney } from "../admin/adminData";
@@ -17,23 +17,8 @@ import {
 } from "../trip/expenses";
 import type { Trip } from "../trip/types";
 
-// Ledger page: a port of the "分账" Claude Design layout (light masthead,
-// bordered summary split, editorial expense rows, totals block). Fed the app's
-// real expense data and keeps its richer features (per-person balances, split
-// payers, receipt items, PDF export).
-
-const logo = (src: string, alt: string) => (
-  <img className="w-full h-full p-1 object-contain" src={src} alt={alt} />
-);
-
-// Branded lines show the real vendor logo on a light tag; generic ones fall back
-// to a lucide glyph on an accent tag.
-const PRESENTATION: Record<string, ReactNode> = {
-  flight: logo("/jetblue-logo.png", "JetBlue"),
-  hotel: logo("/ihg-logo.png", "IHG"),
-  tickets: logo("/anime-expo-logo.jpg", "Anime Expo"),
-  car: logo("/hertz-logo.png", "Hertz"),
-};
+// Ledger page driven only by the current trip's expenses and roster. It keeps
+// per-person balances, split payers, receipt items, and PDF export.
 
 function amountParts(value: number): string {
   return fmtMoney(value).replace(/^\$/, "");
@@ -100,12 +85,13 @@ export function PaperLedger({
   // moment that happens.
   const [autoExportRequested] = useState(() => Boolean(autoExport));
   const [linkCopied, setLinkCopied] = useState(false);
-  // The export itself waits for the live snapshot (rev, so the legacy seed
-  // fallback is never exported) and for the metadata queries to settle, so
+  // The export waits for the live snapshot and metadata queries to settle, so
   // the statement carries the full registry context.
   const autoExportReady = autoExportRequested && rev != null && !metaPending && !userLoading;
   const travelers = tripTravelers(trip);
   const travelerIds = travelers.map((m) => m.id);
+  const travelerCount = travelerIds.length;
+  const divisor = Math.max(travelerCount, 1);
   const ledger = trip.expenses;
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
@@ -124,7 +110,7 @@ export function PaperLedger({
           行程<span className="text-[#b08648]">花销</span>
         </h1>
         <p className="mt-3.5 max-w-[46ch] font-cjk text-[14px] leading-[1.75] text-[#76726a]">
-          机票 · 酒店 · 门票 · 租车,全部已支付,两人均摊。
+          集中记录共同花销、抵扣与垫付，自动计算每位同行人的结算金额。
         </p>
       </header>
 
@@ -138,7 +124,7 @@ export function PaperLedger({
             {fmtMoney(grand)}
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
-            已抵扣 Chase IHG credit{" "}
+            已抵扣 Credit{" "}
             <span className="font-sans font-bold text-[#3f6f5b]">−{fmtMoney(creditTotal)}</span>
           </div>
         </div>
@@ -146,20 +132,22 @@ export function PaperLedger({
           <div className="flex items-center gap-[7px] font-grotesk font-semibold text-[10px] uppercase tracking-[0.12em] text-[#76726a]">
             每人均摊 Per Person
             <span className="font-mono font-bold text-[10px] tracking-normal text-[#3f6f5b] bg-white border border-[#cfe0d6] rounded-[5px] px-1.5 py-px">
-              ÷2
+              ÷{divisor}
             </span>
           </div>
           <div className="mt-3 font-sans font-extrabold text-[clamp(26px,6vw,36px)] leading-none tracking-[-0.02em] text-[#3f6f5b]">
             {fmtMoney(each)}
           </div>
-          <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">两人各承担一半</div>
+          <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
+            {travelerCount > 0 ? `${travelerCount} 位同行人平均承担` : "邀请同行人后计算"}
+          </div>
         </div>
       </section>
 
       {/* PER-PERSON BALANCES */}
       <section
         className="grid grid-cols-2 gap-3 mt-4 max-[560px]:grid-cols-1"
-        aria-label="两人各自结算金额"
+        aria-label="同行人各自结算金额"
       >
         {travelers.map((m) => {
           const balance = balanceById[m.id];
@@ -250,7 +238,6 @@ export function PaperLedger({
         <div>
           {ledger.map((item) => {
             const net = netExpense(item);
-            const brand = PRESENTATION[item.id];
             const paidBy = expensePaidBy(item, travelerIds);
             const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
             const isSplit = payers.length > 1;
@@ -261,7 +248,7 @@ export function PaperLedger({
               >
                 <div className="flex gap-[13px] items-start max-[480px]:flex-wrap">
                   <span className="grid shrink-0 w-[38px] h-[38px] place-items-center overflow-hidden rounded-[10px] border border-[#ebe9e3] bg-white">
-                    {brand ?? <Wallet size={19} strokeWidth={2} className="text-[#3f6f5b]" />}
+                    <Wallet size={19} strokeWidth={2} className="text-[#3f6f5b]" />
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block font-cjk font-bold text-[15.5px] leading-[1.25]">
@@ -286,7 +273,7 @@ export function PaperLedger({
                 {item.credit > 0 && (
                   <div className="flex gap-2 items-center justify-end mt-2.5 max-[480px]:justify-start max-[480px]:pl-[51px]">
                     <span className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.06em] whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full py-[3px] px-2.5">
-                      Chase IHG credit
+                      Credit
                     </span>
                     <span className="font-sans font-bold text-[13px] text-[#3f6f5b]">
                       −{fmtMoney(appliedCredit(item))}
@@ -338,7 +325,7 @@ export function PaperLedger({
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
                     每人{" "}
                     <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(net / 2)}
+                      {fmtMoney(net / divisor)}
                     </b>
                   </span>
                 </div>
@@ -354,7 +341,7 @@ export function PaperLedger({
             <span className="font-sans font-bold">{fmtMoney(subtotal)}</span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
-            <span>Chase IHG credit</span>
+            <span>抵扣 Credit</span>
             <span className="font-sans font-bold">−{fmtMoney(creditTotal)}</span>
           </div>
           <div className="flex items-center justify-between py-[15px] px-[18px] bg-[#1c1b19] text-[#fafaf8] font-sans font-extrabold tracking-[0.01em] text-[clamp(15px,3vw,17px)]">
@@ -372,7 +359,7 @@ export function PaperLedger({
 
       <p className="flex gap-3.5 items-center mt-[26px] pt-[22px] border-t border-[#ebe9e3] font-grotesk text-[11px] uppercase tracking-[0.12em] text-[#9b988f]">
         <span className="flex-1 h-px bg-[#cfccc2]" />
-        全部已付 · 两人均摊
+        {ledger.length} 笔花销 · {travelerCount} 位同行人
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
 

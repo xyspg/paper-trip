@@ -5,11 +5,9 @@ import { createAuth } from "./auth";
 import { agentUser, signAgentToken } from "./agentToken";
 import type { AgentClaims } from "./agentToken";
 import {
-  LEGACY_TRIP_ID,
   MEMBER_COLORS,
   actorOf,
   addMembership,
-  claimMemberships,
   countMembers,
   createInviteRow,
   createTrip,
@@ -20,12 +18,10 @@ import {
   getTrip,
   hashInviteToken,
   internalHeaders,
-  listClaims,
   listInvites,
   listMembers,
   listTripsForUser,
   markInviteAccepted,
-  memberUser,
   removeMembership,
   sessionMember,
   syncRoster,
@@ -207,16 +203,19 @@ app.post("/api/trips/:tripId/agent-token", async (c) => {
 
 // Parking pass links are capability URLs — knowing one is full authority to
 // edit or cancel the reservation — so the real URL never leaves the server.
-// Legacy-trip members get a 302 to the provider; everyone else a 403.
-app.get("/api/parking-pass/:rid", async (c) => {
-  if (!(await memberUser(c, LEGACY_TRIP_ID))) return c.json({ error: "forbidden" }, 403);
-  let urls: Record<string, string> = {};
+// Authorization is checked against the trip named in the route.
+app.get("/api/trips/:tripId/parking-pass/:rid", async (c) => {
+  const tripId = c.req.param("tripId");
+  if (!(await getTrip(c.env.DB, tripId))) return c.json({ error: "not_found" }, 404);
+  const { member } = await sessionMember(c, tripId);
+  if (!member) return c.json({ error: "forbidden" }, 403);
+  let urls: Record<string, Record<string, string>> = {};
   try {
-    urls = JSON.parse(c.env.PARKING_PASS_URLS ?? "{}") as Record<string, string>;
+    urls = JSON.parse(c.env.PARKING_PASS_URLS ?? "{}") as Record<string, Record<string, string>>;
   } catch {
     // Malformed secret reads as "no passes configured" and falls through to 404.
   }
-  const url = urls[c.req.param("rid")];
+  const url = urls[tripId]?.[c.req.param("rid")];
   if (!url) return c.json({ error: "not found" }, 404);
   return c.redirect(url, 302);
 });
@@ -226,10 +225,6 @@ app.get("/api/parking-pass/:rid", async (c) => {
 app.get("/api/trips", async (c) => {
   const user = await sessionUser(c);
   if (!user) return c.json({ error: "unauthorized" }, 401);
-  // Promote any pending seed/invite claims first so a first-ever sign-in
-  // already sees the trips waiting for them.
-  const claimed = await claimMemberships(c.env.DB, user.id);
-  await Promise.all(claimed.map((id) => syncRoster(c.env, id, actorOf(user))));
   const trips = await listTripsForUser(c.env.DB, user.id);
   return c.json({ trips: trips.map((t) => ({ ...tripMeta(t), role: t.role })) });
 });
@@ -249,7 +244,7 @@ app.post("/api/trips", async (c) => {
   const startDate = asDate(body?.startDate);
   const endDate = asDate(body?.endDate);
   const timezone =
-    typeof body?.timezone === "string" && body.timezone ? body.timezone : "America/Los_Angeles";
+    typeof body?.timezone === "string" && body.timezone ? body.timezone : "UTC";
   const visibility = asVisibility(body?.visibility) ?? "private";
 
   // Retry the slug on collision; two failures in a row means something is
@@ -387,10 +382,7 @@ app.get("/api/trips/:tripId/members", async (c) => {
   if (!trip) return c.json({ error: "not_found" }, 404);
   const { member } = await sessionMember(c, tripId);
   if (!member) return c.json({ error: "forbidden" }, 403);
-  const [members, claims] = await Promise.all([
-    listMembers(c.env.DB, tripId),
-    listClaims(c.env.DB, tripId),
-  ]);
+  const members = await listMembers(c.env.DB, tripId);
   return c.json({
     members: members.map((m) => ({
       userId: m.userId,
@@ -400,13 +392,6 @@ app.get("/api/trips/:tripId/members", async (c) => {
       login: m.login,
       image: m.image,
       color: m.color,
-    })),
-    // Seeded people who have never signed in; they hold a claim, not an account.
-    pending: claims.map((cl) => ({
-      memberKey: cl.member_key,
-      role: cl.role,
-      name: cl.display_name,
-      color: cl.color,
     })),
   });
 });

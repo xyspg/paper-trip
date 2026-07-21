@@ -58,7 +58,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-// "2026-07-02" -> "07/02/26", the short numeric form bank statements use.
+// "2027-08-16" -> "08/16/27", the short numeric form bank statements use.
 function fmtShortDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : iso;

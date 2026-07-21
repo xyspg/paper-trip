@@ -6,6 +6,5 @@ export const Route = createFileRoute("/t/$tripId/bookings")({
 });
 
 function BookingsRoute() {
-  const { tripId } = Route.useParams();
-  return <BookingsPage tripId={tripId} />;
+  return <BookingsPage />;
 }
