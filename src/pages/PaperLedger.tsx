@@ -11,6 +11,7 @@ import { tripTravelers } from "../trip/roster";
 import {
   appliedCredit,
   expenseBalances,
+  expenseOwedBy,
   expensePaidBy,
   expenseTotals,
   netExpense,
@@ -91,11 +92,13 @@ export function PaperLedger({
   const travelers = tripTravelers(trip);
   const travelerIds = travelers.map((m) => m.id);
   const travelerCount = travelerIds.length;
-  const divisor = Math.max(travelerCount, 1);
   const ledger = trip.expenses;
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
-  const each = balances[0]?.share ?? 0;
+  const outstanding = balances.reduce(
+    (sum, balance) => sum + Math.max(0, -balance.balance),
+    0,
+  );
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
   return (
@@ -110,7 +113,7 @@ export function PaperLedger({
           行程<span className="text-[#b08648]">花销</span>
         </h1>
         <p className="mt-3.5 max-w-[46ch] font-cjk text-[14px] leading-[1.75] text-[#76726a]">
-          集中记录共同花销、抵扣与垫付，自动计算每位同行人的结算金额。
+          集中记录共同花销、抵扣与垫付；每一笔都能按实际情况分配到同行人。
         </p>
       </header>
 
@@ -130,16 +133,13 @@ export function PaperLedger({
         </div>
         <div className="p-[20px_22px] bg-[#eef4f0]">
           <div className="flex items-center gap-[7px] font-grotesk font-semibold text-[10px] uppercase tracking-[0.12em] text-[#76726a]">
-            每人均摊 Per Person
-            <span className="font-mono font-bold text-[10px] tracking-normal text-[#3f6f5b] bg-white border border-[#cfe0d6] rounded-[5px] px-1.5 py-px">
-              ÷{divisor}
-            </span>
+            待结算 Outstanding
           </div>
           <div className="mt-3 font-sans font-extrabold text-[clamp(26px,6vw,36px)] leading-none tracking-[-0.02em] text-[#3f6f5b]">
-            {fmtMoney(each)}
+            {fmtMoney(outstanding)}
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
-            {travelerCount > 0 ? `${travelerCount} 位同行人平均承担` : "邀请同行人后计算"}
+            {travelerCount > 0 ? `${travelerCount} 位同行人按明细分别承担` : "邀请同行人后计算"}
           </div>
         </div>
       </section>
@@ -185,7 +185,7 @@ export function PaperLedger({
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   应承担
                   <b className="font-sans font-bold text-[#1c1b19]">
-                    {fmtMoney(balance?.share ?? each)}
+                    {fmtMoney(balance?.share ?? 0)}
                   </b>
                 </span>
               </div>
@@ -241,6 +241,8 @@ export function PaperLedger({
             const paidBy = expensePaidBy(item, travelerIds);
             const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
             const isSplit = payers.length > 1;
+            const owedBy = expenseOwedBy(item, travelerIds);
+            const responsible = travelers.filter((m) => (owedBy[m.id] ?? 0) > 0.005);
             return (
               <div
                 key={item.id}
@@ -315,6 +317,31 @@ export function PaperLedger({
                   </div>
                 )}
 
+                {responsible.length > 0 && (
+                  <div className="flex flex-wrap gap-x-2.5 gap-y-2 items-center mt-2.5 max-[480px]:pl-[51px]">
+                    <span className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] text-[#76726a]">
+                      承担 Owed by
+                    </span>
+                    <span className="flex flex-wrap gap-1.5">
+                      {responsible.map((m) => (
+                        <span
+                          key={m.id}
+                          className="inline-flex gap-[7px] items-center py-1 pr-2.5 pl-1 bg-[#fdfdfb] border border-[#ebe9e3] rounded-full"
+                        >
+                          <Avatar
+                            m={m}
+                            className="w-[22px] h-[22px] text-[9px] border border-[#ebe9e3]"
+                          />
+                          <span className="font-cjk font-semibold text-[12px]">{m.name}</span>
+                          <b className="font-sans font-bold text-[12.5px] text-[#1c1b19]">
+                            {fmtMoney(owedBy[m.id] ?? 0)}
+                          </b>
+                        </span>
+                      ))}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
                     实付{" "}
@@ -323,9 +350,11 @@ export function PaperLedger({
                     </b>
                   </span>
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    每人{" "}
+                    已分配{" "}
                     <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(net / divisor)}
+                      {fmtMoney(
+                        travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0),
+                      )}
                     </b>
                   </span>
                 </div>
@@ -351,8 +380,10 @@ export function PaperLedger({
             </span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] bg-white border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[14px]">
-            <span>每人均摊 Per Person</span>
-            <span className="font-sans font-bold text-[#3f6f5b] text-[16px]">{fmtMoney(each)}</span>
+            <span>承担合计 Allocated</span>
+            <span className="font-sans font-bold text-[#3f6f5b] text-[16px]">
+              {fmtMoney(grand)}
+            </span>
           </div>
         </div>
       </section>

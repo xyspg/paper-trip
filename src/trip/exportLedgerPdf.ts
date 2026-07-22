@@ -5,6 +5,7 @@ import type { TripMeta } from "./api";
 import {
   appliedCredit,
   expenseBalances,
+  expenseOwedBy,
   expensePaidBy,
   expenseTotals,
   netExpense,
@@ -373,7 +374,10 @@ function buildStatement(
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
-  const each = balances[0]?.share ?? 0;
+  const outstanding = balances.reduce(
+    (sum, balance) => sum + Math.max(0, -balance.balance),
+    0,
+  );
   const timezone = trip.base.timezone;
   const today = todayIn(timezone);
   const generatedAt = stampIn(timezone);
@@ -393,6 +397,7 @@ function buildStatement(
   for (const item of ledger) {
     const net = netExpense(item);
     const paidBy = expensePaidBy(item, travelerIds);
+    const owedBy = expenseOwedBy(item, travelerIds);
     const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
     const isSplit = payers.length > 1;
 
@@ -403,12 +408,22 @@ function buildStatement(
         return isSplit ? `${m.name} ${percent}%` : m.name;
       })
       .join(" / ");
+    const allocationText = travelers
+      .filter((m) => (owedBy[m.id] ?? 0) > 0.005)
+      .map((m) => `${m.name} ${fmtMoney(owedBy[m.id] ?? 0)}`)
+      .join(" / ");
     purchaseRows.push({
       category: categoryLabels[item.cat] ?? item.cat,
       description: el("div", {}, [
         el("div", { fontWeight: "600" }, [item.name]),
         el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
-          [item.sub, payerText ? `PAID BY ${payerText}` : ""].filter(Boolean).join("  ·  "),
+          [
+            item.sub,
+            payerText ? `PAID BY ${payerText}` : "",
+            allocationText ? `ALLOCATED TO ${allocationText}` : "",
+          ]
+            .filter(Boolean)
+            .join("  ·  "),
         ]),
       ]),
       amount: fmtMoney(item.amount),
@@ -516,7 +531,7 @@ function buildStatement(
 
   const headlineFigures = el("div", { minWidth: "0", display: "grid", gap: "10px" }, [
     bannerFigure("New Balance", fmtMoney(grand)),
-    bannerFigure("Per Person Due", fmtMoney(each)),
+    bannerFigure("Settlement Due", fmtMoney(outstanding)),
     bannerFigure("Statement Date", fmtShortDate(today), "18px"),
   ]);
 
@@ -615,7 +630,7 @@ function buildStatement(
               value: `${fmtShortDate(trip.dates.start)} - ${fmtShortDate(trip.dates.end)}`,
             },
             { label: "Travelers", value: String(travelers.length) },
-            { label: "Per-Person Share", value: fmtMoney(each) },
+            { label: "Allocated Balance", value: fmtMoney(grand) },
           ]),
         ]),
         el("div", { minWidth: "0" }, [
@@ -648,7 +663,7 @@ function buildStatement(
   container.append(
     heading("Settlement Summary"),
     statementTable(
-      ["Traveler", "Paid", "Required Share", "Balance", "Status"],
+      ["Traveler", "Paid", "Allocated Amount", "Balance", "Status"],
       travelers.map((m) => {
         const b = balanceById[m.id];
         const net = b?.balance ?? 0;
@@ -660,7 +675,7 @@ function buildStatement(
             el("div", { fontSize: "9.5px", color: MUTED }, [`@${m.handle}`]),
           ]),
           fmtMoney(b?.paid ?? 0),
-          fmtMoney(b?.share ?? each),
+          fmtMoney(b?.share ?? 0),
           settled ? fmtMoney(0) : (net < 0 ? "-" : "+") + fmtMoney(Math.abs(net)),
           status,
         ];
@@ -739,9 +754,9 @@ function buildStatement(
           "SHARES, CREDITS, AND BALANCES",
         ]),
         disclosureParagraph(
-          "Per-person shares are computed as an equal split across enrolled travelers unless an " +
-            "expense carries an explicit split override. Applied credits reduce the net amount " +
-            "of the expense they are attached to. All amounts are stated in U.S. dollars.",
+          "Each expense may allocate exact responsibility amounts to individual travelers; " +
+            "entries without a custom allocation use an equal split. Applied credits reduce the " +
+            "net amount of the expense they are attached to. All amounts are stated in U.S. dollars.",
         ),
       ]),
       el("div", {}, [

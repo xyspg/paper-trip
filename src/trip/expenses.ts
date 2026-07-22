@@ -1,4 +1,7 @@
-import type { Expense } from "./types";
+import type { Expense, ExpenseAllocation } from "./types";
+
+const cents = (value: number): number => Math.round(Math.max(0, Number(value) || 0) * 100);
+const fromCents = (value: number): number => value / 100;
 
 // Expense ledger math shared by the public ledger and the admin split view so the
 // two surfaces can never disagree. A line's credit can only offset up to its own
@@ -35,13 +38,71 @@ export const expensePaidBy = (e: Expense, memberIds: string[]): Record<string, n
   if (shares) {
     let sum = 0;
     for (const id of memberIds) sum += Math.max(0, Number(shares[id]) || 0);
-    if (sum > 0) {
-      for (const id of memberIds) out[id] = (net * Math.max(0, Number(shares[id]) || 0)) / sum;
-      return out;
-    }
+    if (sum > 0) return allocateByWeight(net, memberIds, shares);
   }
   if (e.payer in out) out[e.payer] = net;
   return out;
+};
+
+// Allocate an amount using arbitrary non-negative weights while keeping the
+// result exact to the cent. Fractional remainders are handed out in stable
+// member order, so the returned amounts always add up to `amount`.
+export const allocateByWeight = (
+  amount: number,
+  memberIds: string[],
+  weights?: Record<string, number>,
+): ExpenseAllocation => {
+  const out: ExpenseAllocation = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const target = cents(amount);
+  if (memberIds.length === 0 || target === 0) return out;
+
+  const safeWeights = memberIds.map((id) => Math.max(0, Number(weights?.[id]) || 0));
+  const weightTotal = safeWeights.reduce((sum, value) => sum + value, 0);
+  const effective = weightTotal > 0 ? safeWeights : memberIds.map(() => 1);
+  const effectiveTotal = effective.reduce((sum, value) => sum + value, 0);
+  const rows = memberIds.map((id, index) => {
+    const raw = (target * effective[index]) / effectiveTotal;
+    const floor = Math.floor(raw);
+    return { id, index, value: floor, remainder: raw - floor };
+  });
+  const remaining = target - rows.reduce((sum, row) => sum + row.value, 0);
+  const remainderOrder = [...rows].sort(
+    (a, b) => b.remainder - a.remainder || a.index - b.index,
+  );
+  for (let i = 0; i < remaining; i += 1) remainderOrder[i % remainderOrder.length].value += 1;
+  for (const row of rows) out[row.id] = fromCents(row.value);
+  return out;
+};
+
+export const evenExpenseAllocation = (
+  amount: number,
+  memberIds: string[],
+): ExpenseAllocation => allocateByWeight(amount, memberIds);
+
+export const expenseAllocationTotal = (
+  allocation: ExpenseAllocation | undefined,
+  memberIds: string[],
+): number =>
+  fromCents(memberIds.reduce((sum, id) => sum + cents(allocation?.[id] ?? 0), 0));
+
+export const expenseAllocationMatches = (
+  allocation: ExpenseAllocation | undefined,
+  amount: number,
+  memberIds: string[],
+): boolean =>
+  allocation === undefined || cents(expenseAllocationTotal(allocation, memberIds)) === cents(amount);
+
+// Resolve what each traveler ultimately owes for an expense. Explicit amounts
+// are used only when they reconcile to the net cost; malformed/stale external
+// data falls back to AA so the ledger can never create or lose money.
+export const expenseOwedBy = (e: Expense, memberIds: string[]): ExpenseAllocation => {
+  const net = netExpense(e);
+  if (e.owedBy && expenseAllocationMatches(e.owedBy, net, memberIds)) {
+    return Object.fromEntries(
+      memberIds.map((id) => [id, fromCents(cents(e.owedBy?.[id] ?? 0))]),
+    );
+  }
+  return evenExpenseAllocation(net, memberIds);
 };
 
 export type ExpenseBalance = {
@@ -51,20 +112,58 @@ export type ExpenseBalance = {
   balance: number;
 };
 
+export type SettlementTransfer = {
+  from: string;
+  to: string;
+  amount: number;
+};
+
 export const expenseBalances = (expenses: Expense[], memberIds: string[]): ExpenseBalance[] => {
-  const { total } = expenseTotals(expenses);
-  const share = memberIds.length ? total / memberIds.length : 0;
   const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const owed = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
   for (const e of expenses) {
     const by = expensePaidBy(e, memberIds);
-    for (const id of memberIds) paid[id] += by[id];
+    const allocation = expenseOwedBy(e, memberIds);
+    for (const id of memberIds) {
+      paid[id] += by[id];
+      owed[id] += allocation[id];
+    }
   }
 
   return memberIds.map((id) => ({
     id,
     paid: paid[id] || 0,
-    share,
-    balance: (paid[id] || 0) - share,
+    share: owed[id] || 0,
+    balance: (paid[id] || 0) - (owed[id] || 0),
   }));
+};
+
+// Convert any number of positive/negative balances into a compact transfer
+// plan. This replaces the old two-person-only pairing and works for any roster.
+export const settlementTransfers = (balances: ExpenseBalance[]): SettlementTransfer[] => {
+  const debtors = balances
+    .filter((balance) => cents(-balance.balance) > 0)
+    .map((balance) => ({ id: balance.id, amount: cents(-balance.balance) }));
+  const receivers = balances
+    .filter((balance) => cents(balance.balance) > 0)
+    .map((balance) => ({ id: balance.id, amount: cents(balance.balance) }));
+  const transfers: SettlementTransfer[] = [];
+  let debtorIndex = 0;
+  let receiverIndex = 0;
+
+  while (debtorIndex < debtors.length && receiverIndex < receivers.length) {
+    const debtor = debtors[debtorIndex];
+    const receiver = receivers[receiverIndex];
+    const amount = Math.min(debtor.amount, receiver.amount);
+    if (amount > 0) {
+      transfers.push({ from: debtor.id, to: receiver.id, amount: fromCents(amount) });
+      debtor.amount -= amount;
+      receiver.amount -= amount;
+    }
+    if (debtor.amount === 0) debtorIndex += 1;
+    if (receiver.amount === 0) receiverIndex += 1;
+  }
+
+  return transfers;
 };

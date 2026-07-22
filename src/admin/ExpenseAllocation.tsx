@@ -1,0 +1,132 @@
+import { useState } from "react";
+import type { ExpenseAllocation as ExpenseAllocationValue } from "../trip/types";
+import {
+  evenExpenseAllocation,
+  expenseAllocationMatches,
+  expenseAllocationTotal,
+} from "../trip/expenses";
+import { Avatar } from "./Avatar";
+import type { AdminMember } from "./adminData";
+import { fmtMoney, round2 } from "./adminData";
+import { BTN_GHOST, BTN_SM } from "./adminUi";
+import { Icons } from "./AdminIcons";
+
+type Props = {
+  amount: number;
+  travelers: AdminMember[];
+  value?: ExpenseAllocationValue;
+  onChange: (value?: ExpenseAllocationValue) => void;
+};
+
+function AllocationInput({
+  member,
+  value,
+  onCommit,
+}: {
+  member: AdminMember;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(value ? String(value) : "");
+  const commit = () => {
+    const parsed = parseFloat(draft);
+    const next = Number.isFinite(parsed) ? round2(Math.max(0, parsed)) : 0;
+    setDraft(next ? String(next) : "");
+    onCommit(next);
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-2.5 px-3 py-2 border border-[#ebe9e3] rounded-xl bg-white">
+      <span className="inline-flex items-center gap-2 min-w-0 font-cjk font-semibold text-sm text-[#1c1b19]">
+        <Avatar m={member} size="xs" />
+        <span className="truncate">{member.name}</span>
+      </span>
+      <span className="inline-flex items-center gap-[3px] border border-[#ebe9e3] rounded-[10px] px-2.5 py-[5px] bg-white transition-colors focus-within:border-[#1c1b19]">
+        <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">$</span>
+        <input
+          className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          value={draft}
+          autoComplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          aria-label={`${member.name} 承担金额`}
+          placeholder="0.00"
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+        />
+      </span>
+    </div>
+  );
+}
+
+// `undefined` is the durable AA default. A concrete map is a custom allocation
+// whose cents must reconcile to the expense's net amount before it can be saved.
+export function ExpenseAllocation({ amount, travelers, value, onChange }: Props) {
+  const memberIds = travelers.map((member) => member.id);
+  const allocation = value ?? evenExpenseAllocation(amount, memberIds);
+  const total = expenseAllocationTotal(allocation, memberIds);
+  const matches = expenseAllocationMatches(value, amount, memberIds);
+  const difference = round2(amount - total);
+
+  if (travelers.length === 0) {
+    return (
+      <div className="font-cjk text-[12px] leading-[1.6] text-[#9b988f]">
+        请先邀请同行人，再设置每个人的承担金额。
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      <div className="flex items-center justify-between gap-2.5">
+        <span className="font-cjk text-[11.5px] text-[#76726a]">
+          {value ? "自定义金额" : "默认 AA，可直接修改任意一人"}
+        </span>
+        {value && (
+          <button
+            type="button"
+            className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`}
+            onClick={() => onChange(undefined)}
+          >
+            <Icons.swap sw={2.2} />
+            恢复 AA
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {travelers.map((member) => (
+          <AllocationInput
+            key={`${member.id}-${allocation[member.id] ?? 0}`}
+            member={member}
+            value={allocation[member.id] ?? 0}
+            onCommit={(next) => onChange({ ...allocation, [member.id]: next })}
+          />
+        ))}
+      </div>
+
+      <div
+        className={`flex items-center justify-between gap-3 font-cjk font-semibold text-[11.5px] ${matches ? "text-[#3f6f5b]" : "text-[#c2553f]"}`}
+        role={!matches ? "alert" : undefined}
+      >
+        <span>
+          {matches
+            ? "已完整分配"
+            : difference > 0
+              ? `还需分配 ${fmtMoney(difference)}`
+              : `已超出 ${fmtMoney(Math.abs(difference))}`}
+        </span>
+        <span className="font-sans">
+          {fmtMoney(total)} / {fmtMoney(amount)}
+        </span>
+      </div>
+    </div>
+  );
+}

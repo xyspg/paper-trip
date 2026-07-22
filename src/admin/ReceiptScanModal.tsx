@@ -17,7 +17,8 @@ import {
   ModalFooter,
   ModalHeader,
 } from "./adminUi"
-import { splitToExpense } from "./PaymentSplit"
+import { PaymentSplit, defaultSplit, splitToExpense } from "./PaymentSplit"
+import type { SplitValue } from "./PaymentSplit"
 import type { NewExpenseInput } from "./AddExpenseModal"
 import { deriveShares, parseReceipt } from "./receipt"
 import type { ExpenseItem } from "../trip/types"
@@ -74,6 +75,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const [suggestedPcts, setSuggestedPcts] = useState<number[]>([15, 18, 20])
   // Manual per-traveler overrides; absent id = use the computed amount.
   const [manual, setManual] = useState<Record<string, number>>({})
+  const [payment, setPayment] = useState<SplitValue>(() => defaultSplit(travelers))
   // Bumped on "recompute" so the uncontrolled amount inputs remount fresh.
   const [recalc, setRecalc] = useState(0)
 
@@ -117,6 +119,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       setTipPct(null)
       setTotalTarget(null)
       setManual({})
+      setPayment(defaultSplit(travelers))
       setPhase("review")
     } catch (err) {
       setError(err instanceof Error ? err.message : "识别失败，请重试")
@@ -207,7 +210,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const submit = () => {
     if (!canSubmit) return
     const shares = Object.fromEntries(travelerIds.map((id) => [id, finalOf(id)]))
-    const { payer, split } = splitToExpense({ mode: "amount", shares }, travelerIds)
+    const { payer, split } = splitToExpense(payment, travelerIds)
     const items: ExpenseItem[] = cleanRows.map((r) => {
       const who = r.who.filter((id) => travelerIds.includes(id))
       return {
@@ -224,6 +227,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       cat: "food",
       payer,
       split,
+      owedBy: shares,
       items,
     })
   }
@@ -530,8 +534,18 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </div>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+              <span className={FIELD_LABEL}>谁付的（垫付）</span>
+              <PaymentSplit
+                value={payment}
+                onChange={setPayment}
+                amount={grandTotal}
+                travelers={travelers}
+              />
+            </div>
+
+            <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <div className="flex items-center justify-between gap-2.5 mb-2">
-                <span className={FIELD_LABEL}>每人应付（可手动修改）</span>
+                <span className={FIELD_LABEL}>每人承担金额（可手动修改）</span>
                 {hasOverride && (
                   <button type="button" className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`} onClick={clearOverrides}>
                     <Icons.swap sw={2.2} />
@@ -559,7 +573,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         autoComplete="off"
                         data-1p-ignore
                         data-lpignore="true"
-                        aria-label={`${m.name} 应付`}
+                        aria-label={`${m.name} 承担金额`}
                         onBlur={(e) => setManualAmount(m.id, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") e.currentTarget.blur()

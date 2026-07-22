@@ -1,7 +1,11 @@
 import { useState } from "react"
 import { AdminModal } from "./AdminModal"
 import type { Expense, StopCat } from "./adminData"
-import type { ExpenseItem, ExpenseSplit } from "../trip/types"
+import type {
+  ExpenseAllocation as ExpenseAllocationValue,
+  ExpenseItem,
+  ExpenseSplit,
+} from "../trip/types"
 import { Icons } from "./AdminIcons"
 import {
   BTN,
@@ -16,6 +20,8 @@ import {
 import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
 import type { SplitValue } from "./PaymentSplit"
 import { useAdmin } from "./AdminContext"
+import { ExpenseAllocation } from "./ExpenseAllocation"
+import { expenseAllocationMatches } from "../trip/expenses"
 
 export type NewExpenseInput = {
   name: string
@@ -24,6 +30,7 @@ export type NewExpenseInput = {
   cat: StopCat
   payer: string
   split?: ExpenseSplit
+  owedBy?: ExpenseAllocationValue
   // Scanned-receipt breakdown, set only by the receipt scanner. The manual
   // add/edit form below never produces items.
   items?: ExpenseItem[]
@@ -49,18 +56,29 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   const [split, setSplit] = useState<SplitValue>(() =>
     initial ? splitFromExpense(initial) : defaultSplit(travelers),
   )
+  const [owedBy, setOwedBy] = useState<ExpenseAllocationValue | undefined>(() =>
+    initial?.owedBy ? { ...initial.owedBy } : undefined,
+  )
 
   const parsed = Math.max(0, parseFloat(amount) || 0)
-  const canSubmit = name.trim().length > 0
+  const netAmount = Math.max(0, parsed - (initial?.credit ?? 0))
+  const travelerIds = travelers.map((m) => m.id)
+  const allocationValid = expenseAllocationMatches(owedBy, netAmount, travelerIds)
+  const canSubmit = name.trim().length > 0 && allocationValid
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!canSubmit) return
-    const { payer, split: splitField } = splitToExpense(
-      split,
-      travelers.map((m) => m.id),
-    )
-    onSubmit({ name: name.trim(), sub: sub.trim(), amount: parsed, cat, payer, split: splitField })
+    const { payer, split: splitField } = splitToExpense(split, travelerIds)
+    onSubmit({
+      name: name.trim(),
+      sub: sub.trim(),
+      amount: parsed,
+      cat,
+      payer,
+      split: splitField,
+      owedBy,
+    })
   }
 
   return (
@@ -117,8 +135,23 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </label>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>谁付的 · 分摊</span>
-          <PaymentSplit value={split} onChange={setSplit} amount={parsed} travelers={travelers} />
+          <span className={FIELD_LABEL}>谁付的（垫付）</span>
+          <PaymentSplit
+            value={split}
+            onChange={setSplit}
+            amount={netAmount}
+            travelers={travelers}
+          />
+        </div>
+
+        <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className={FIELD_LABEL}>谁承担（每人金额）</span>
+          <ExpenseAllocation
+            value={owedBy}
+            onChange={setOwedBy}
+            amount={netAmount}
+            travelers={travelers}
+          />
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
@@ -164,6 +197,7 @@ export function buildExpense(input: NewExpenseInput, id: string): Expense {
     credit: 0,
     payer: input.payer,
     split: input.split,
+    owedBy: input.owedBy,
     items: input.items,
   }
 }

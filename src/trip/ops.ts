@@ -8,6 +8,7 @@ import type {
   TripItem,
   TripSuggestion,
 } from "./types";
+import { allocateByWeight, appliedCredit } from "./expenses";
 
 export type TripOp =
   | { type: "setItemStatus"; itemId: string; status: ItemStatus }
@@ -116,9 +117,17 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
     case "setExpenseAmount":
       return {
         ...trip,
-        expenses: (trip.expenses ?? []).map((e) =>
-          e.id === op.expenseId ? { ...e, amount: Number.isFinite(op.amount) ? op.amount : 0 } : e,
-        ),
+        expenses: (trip.expenses ?? []).map((e) => {
+          if (e.id !== op.expenseId) return e;
+          const amount = Number.isFinite(op.amount) ? Math.max(0, op.amount) : 0;
+          if (!e.owedBy) return { ...e, amount };
+          const next = { ...e, amount };
+          const memberIds = Object.keys(e.owedBy);
+          return {
+            ...next,
+            owedBy: allocateByWeight(amount - appliedCredit(next), memberIds, e.owedBy),
+          };
+        }),
       };
 
     case "setExpensePayer":

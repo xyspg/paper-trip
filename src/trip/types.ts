@@ -104,6 +104,12 @@ export type ExpenseSplit = {
   shares: Record<string, number>;
 };
 
+// Exact net amount each traveler is responsible for on one expense. When this
+// field is absent the expense keeps the backwards-compatible AA default. Unlike
+// `split` (who fronted the money), these values describe who ultimately owes it
+// and must add up to the expense's net amount after credit.
+export type ExpenseAllocation = Record<string, number>;
+
 // One dish/line from a scanned receipt, persisted on the expense so the itemized
 // breakdown survives past the scan session. `price` is the row's line total (the
 // same figure the split math divides). `who` lists the member ids that share the
@@ -118,9 +124,11 @@ export type ExpenseItem = {
 
 // A line item in the shared trip ledger. `payer` is a trip member id that
 // covers the whole amount by default; `split` overrides that with a
-// proportional multi-payer breakdown. Edited from the admin split view, shown
-// read-only on the public ledger. `items` is the optional scanned-receipt
-// breakdown, rendered read-only on both the admin and public ledgers (and PDF).
+// proportional multi-payer breakdown. `owedBy` independently stores the exact
+// amount each member must ultimately bear; absent means AA for legacy entries.
+// Edited from the admin split view, shown read-only on the public ledger.
+// `items` is the optional scanned-receipt breakdown, rendered read-only on both
+// the admin and public ledgers (and PDF).
 export type Expense = {
   id: string;
   cat: ExpenseCategory;
@@ -130,6 +138,7 @@ export type Expense = {
   credit: number;
   payer: string;
   split?: ExpenseSplit;
+  owedBy?: ExpenseAllocation;
   items?: ExpenseItem[];
 };
 

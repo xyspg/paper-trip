@@ -12,7 +12,14 @@ import { useConfirm } from "./useConfirm";
 import { useAdmin } from "./AdminContext";
 import { PaymentSplit, splitFromExpense, splitToExpense } from "./PaymentSplit";
 import type { SplitValue } from "./PaymentSplit";
-import { appliedCredit, expenseBalances, expenseTotals, netExpense } from "../trip/expenses";
+import {
+  appliedCredit,
+  expenseBalances,
+  expenseOwedBy,
+  expenseTotals,
+  netExpense,
+  settlementTransfers,
+} from "../trip/expenses";
 import type { ExpenseSplit } from "../trip/types";
 
 type Props = {
@@ -60,6 +67,7 @@ export function SplitSection({
       amount: input.amount,
       payer: input.payer,
       split: input.split,
+      owedBy: input.owedBy,
       items: input.amount === editing.amount ? editing.items : undefined,
     });
     setEditing(null);
@@ -113,8 +121,12 @@ export function SplitSection({
 
   const { subtotal, creditTotal, total } = expenseTotals(expenses);
   const balances = expenseBalances(expenses, travelerIds);
+  const transfers = settlementTransfers(balances);
+  const outstanding = balances.reduce(
+    (sum, balance) => sum + Math.max(0, -balance.balance),
+    0,
+  );
 
-  // settlement between the two travelers
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const travelerBalances = travelers.map((m) => ({
     m,
@@ -122,16 +134,14 @@ export function SplitSection({
     bal: balanceById[m.id]?.balance ?? 0,
     share: balanceById[m.id]?.share ?? 0,
   }));
-  const ower = travelerBalances.find((b) => b.bal < -0.005);
-  const receiver = travelerBalances.find((b) => b.bal > 0.005);
-  const settleAmt = ower ? Math.abs(ower.bal) : 0;
+  const travelerById = Object.fromEntries(travelers.map((traveler) => [traveler.id, traveler]));
 
   return (
     <div>
       <SectionHead
         kicker="03 · Split"
         title="分账金额"
-        desc="点金额直接改 · 选「谁付的」· 合计与结算实时刷新"
+        desc="每笔分别设置谁垫付、每个人承担多少；默认 AA，也可以精确到个人金额"
         actions={
           <>
             <button className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={handleReset}>
@@ -155,9 +165,9 @@ export function SplitSection({
           { k: "实付合计", v: fmtMoney(total), sub: `已抵扣 credit ${fmtMoney(creditTotal)}` },
           {
             k: "待结算",
-            v: fmtMoney(settleAmt),
-            sub: ower && receiver ? `${ower.m.name} → ${receiver.m.name}` : "已结清",
-            color: settleAmt > 0.005 ? "#c2553f" : "#3f6f5b",
+            v: fmtMoney(outstanding),
+            sub: transfers.length > 0 ? `${transfers.length} 笔转账可结清` : "已结清",
+            color: outstanding > 0.005 ? "#c2553f" : "#3f6f5b",
           },
           { k: "条目", v: expenses.length, sub: "Line items" },
         ]}
@@ -170,13 +180,15 @@ export function SplitSection({
             花销明细 · Ledger
           </span>
           <span className="ml-auto font-grotesk text-[10px] tracking-[0.04em] uppercase text-[#9b988f]">
-            点金额可改 · 点头像换付款人
+            点金额可改 · 铅笔内设置每人承担
           </span>
         </div>
 
         {expenses.map((e) => {
           const cat = CATS[e.cat];
           const IconCmp = Icons[EXP_ICON[e.id] ?? "wallet"];
+          const owedBy = expenseOwedBy(e, travelerIds);
+          const responsible = travelers.filter((traveler) => (owedBy[traveler.id] ?? 0) > 0.005);
           return (
             <div key={e.id} className="px-4 py-4 border-b border-dashed border-[#ebe9e3] last:border-0">
               <div className="flex items-start gap-3">
@@ -212,6 +224,25 @@ export function SplitSection({
                 </span>
               </div>
               <ExpenseItems items={e.items} travelers={travelers} />
+              <div className="flex flex-col items-start gap-2 mt-3">
+                <span className="font-grotesk text-[10px] tracking-[0.1em] uppercase text-[#9b988f]">
+                  谁承担
+                </span>
+                <span className="flex flex-wrap gap-1.5">
+                  {responsible.map((traveler) => (
+                    <span
+                      key={traveler.id}
+                      className="inline-flex items-center gap-1.5 border border-[#ebe9e3] rounded-full bg-[#fdfdfb] py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-[12px]"
+                    >
+                      <Avatar m={traveler} size="xs" />
+                      {traveler.name}
+                      <b className="font-sans font-bold text-[#1c1b19]">
+                        {fmtMoney(owedBy[traveler.id] ?? 0)}
+                      </b>
+                    </span>
+                  ))}
+                </span>
+              </div>
               <div className="flex items-start gap-x-4 gap-y-2.5 flex-wrap mt-3">
                 <span className="flex flex-col items-start gap-2 w-full">
                   <span className="font-grotesk text-[10px] tracking-[0.1em] uppercase text-[#9b988f]">
@@ -321,18 +352,30 @@ export function SplitSection({
         <span className="font-grotesk font-bold text-[11px] tracking-[0.14em] uppercase bg-[#3f6f5b] text-white px-2.5 py-1 rounded-full">
           结算
         </span>
-        {ower && receiver ? (
-          <span className="font-cjk font-semibold text-[14px] inline-flex items-center gap-2.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.12] border border-white/20 pl-1 pr-2.5 py-0.5">
-              <Avatar m={ower.m} size="xs" />
-              {ower.m.name}
-            </span>
-            <Icons.arrow sw={2.4} style={{ width: 18, height: 18 }} />
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.12] border border-white/20 pl-1 pr-2.5 py-0.5">
-              <Avatar m={receiver.m} size="xs" />
-              {receiver.m.name}
-            </span>
-            转 <b className="font-sans text-white">{fmtMoney(settleAmt)}</b>
+        {transfers.length > 0 ? (
+          <span className="flex flex-col gap-2">
+            {transfers.map((transfer, index) => {
+              const from = travelerById[transfer.from];
+              const to = travelerById[transfer.to];
+              if (!from || !to) return null;
+              return (
+                <span
+                  key={`${transfer.from}-${transfer.to}-${index}`}
+                  className="font-cjk font-semibold text-[14px] inline-flex items-center gap-2.5 flex-wrap"
+                >
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.12] border border-white/20 pl-1 pr-2.5 py-0.5">
+                    <Avatar m={from} size="xs" />
+                    {from.name}
+                  </span>
+                  <Icons.arrow sw={2.4} style={{ width: 18, height: 18 }} />
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.12] border border-white/20 pl-1 pr-2.5 py-0.5">
+                    <Avatar m={to} size="xs" />
+                    {to.name}
+                  </span>
+                  转 <b className="font-sans text-white">{fmtMoney(transfer.amount)}</b>
+                </span>
+              );
+            })}
           </span>
         ) : (
           <span className="font-cjk font-semibold text-[14px]">所有人已结清，无需互相转账。</span>
