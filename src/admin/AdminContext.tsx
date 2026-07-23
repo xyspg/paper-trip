@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import type { AdminMember, Expense } from "./adminData";
 import type { ToastFn } from "./useAdminToasts";
 import type { useTripOp } from "../trip/hooks";
-import type { TripItem, TripSuggestion } from "../trip/types";
+import type { Flight, TripItem, TripSuggestion } from "../trip/types";
 
 // Shared state for the admin layout and its section routes. The layout owns the
 // auth gate and live trip sync, then hands the current trip's persisted content
@@ -13,6 +13,7 @@ export type AdminContextValue = {
   suggestions: TripSuggestion[];
   items: TripItem[];
   expenses: Expense[];
+  flights: Flight[];
   // The trip's roster (from trip.members) — who money can be split across.
   travelers: AdminMember[];
   tripOp: ReturnType<typeof useTripOp>;

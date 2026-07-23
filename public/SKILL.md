@@ -1,13 +1,13 @@
 ---
 name: papertrip
-description: Read and edit one Papertrip trip (itinerary stops, checklists, suggestions, expense ledger) through the HTTP API using a trip-scoped bearer token.
+description: Read and edit one Papertrip trip (itinerary stops, traveler flights, checklists, suggestions, expense ledger) through the HTTP API using a trip-scoped bearer token.
 ---
 
 # Papertrip Trip API
 
 You are operating on a shared multi-tenant trip-planning app. Each trip is one
-JSON document: itinerary items, checklists, documents, suggestions, and an
-expense ledger. Humans watch it live — every write you make broadcasts to open
+JSON document: itinerary items, traveler flights, checklists, documents,
+suggestions, and an expense ledger. Humans watch it live — every write you make broadcasts to open
 browsers immediately and lands in an audit log under your token's identity.
 
 ## Setup
@@ -57,6 +57,9 @@ One op per request. Allowed ops and their exact shapes:
 | Set expense amount | `{"type":"setExpenseAmount","expenseId":"<id>","amount":123.45}` |
 | Set single payer | `{"type":"setExpensePayer","expenseId":"<id>","payer":"<memberId>"}` |
 | Set payer split | `{"type":"setExpenseSplit","expenseId":"<id>","payer":"<memberId>","split":{"mode":"percent"\|"amount","shares":{"<memberId>":80,"…":20}}}` |
+| Add traveler flight | `{"type":"addFlight","flight":<Flight>}` |
+| Edit traveler flight | `{"type":"updateFlight","flight":<Flight>}` |
+| Delete traveler flight | `{"type":"deleteFlight","flightId":"<id>","travelerId":"<memberId>"}` |
 
 Notes:
 - `addItem` inserts in `(date, time)` order automatically and **replaces** an
@@ -80,7 +83,7 @@ Content-Type: application/json
 - 409 `{ "error": "stale_rev", rev, trip }` — someone wrote in between. Reapply
   your changes to the returned `trip` and PUT again with the new `rev`.
 - 400 `{ "error": "bad_request" }` — the body must contain the ENTIRE trip
-  (same `id`, all five arrays present), not a fragment. `trip.members` is
+  (same `id`, every content array including `flights` present), not a fragment. `trip.members` is
   registry-owned: whatever you send there is ignored and re-imposed by the
   server.
 
@@ -123,6 +126,17 @@ type Expense = {
   payer: string              // member id (trip.members[].id)
   split?: { mode: "percent" | "amount"; shares: Record<string, number> }
   items?: { name: string; quantity: number; price: number; who?: string[] }[]
+}
+
+type Flight = {
+  id: string
+  travelerId: string          // trip.members[].id
+  airline: string
+  flightNumber: string
+  departure: { airport: string; date: string; time: string; timezone?: string }
+  arrival: { airport: string; date: string; time: string; timezone?: string }
+  confirmation?: string
+  notes?: string
 }
 ```
 

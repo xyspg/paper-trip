@@ -14,6 +14,7 @@ import { useTripAccess } from "../components/TripLayout";
 
 type SectionKey =
   | "itinerary"
+  | "flights"
   | "suggestions"
   | "split"
   | "members"
@@ -34,6 +35,7 @@ type NavEntry = {
 // shared link lands on the right tab without a `?tab=` search param.
 const NAV: NavEntry[] = [
   { key: "itinerary", label: "行程停靠点", icon: "route" },
+  { key: "flights", label: "航班信息", icon: "plane" },
   { key: "suggestions", label: "待审建议", icon: "chat", badge: true },
   { key: "split", label: "分账金额", icon: "wallet" },
   { key: "members", label: "成员", icon: "users" },
@@ -64,12 +66,14 @@ export function AdminPage({ tripId }: { tripId: string }) {
   const suggestions = trip?.suggestions ?? [];
   const tripItems = trip?.items ?? [];
   const expenses = trip?.expenses ?? [];
+  const flights = trip?.flights ?? [];
   const travelers = trip ? tripTravelers(trip) : [];
 
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
   // `null` = this section has no meaningful count, so the sidebar hides the chip.
   const counts: Record<SectionKey, number | null> = {
     itinerary: tripItems.length,
+    flights: flights.length,
     suggestions: pendingCount,
     split: expenses.length,
     members: travelers.length || null,
@@ -155,6 +159,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
         suggestions,
         items: tripItems,
         expenses,
+        flights,
         travelers,
         tripOp,
       }}
@@ -235,7 +240,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
             })}
           </aside>
 
-          <div className="hidden max-[760px]:flex fixed bottom-0 left-0 right-0 z-40 bg-[#fdfdfb] border-t border-[#ebe9e3] px-3 py-2 gap-2">
+          <div className="hidden max-[760px]:flex fixed bottom-0 left-0 right-0 z-40 overflow-x-auto bg-[#fdfdfb] border-t border-[#ebe9e3] px-3 py-2 gap-2">
             {nav.map((n) => {
               const active = pathname.includes(`/admin/${n.key}`);
               const badge = Boolean(n.badge) && (counts[n.key] ?? 0) > 0;
@@ -245,7 +250,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
                   key={n.key}
                   to={`/t/$tripId/admin/${n.key}`}
                   params={{ tripId }}
-                  className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-[10px] font-cjk font-semibold text-[11px] no-underline ${active ? "bg-[#1c1b19] text-[#fafaf8]" : "text-[#76726a]"}`}
+                  className={`flex-none min-w-[64px] flex flex-col items-center gap-1 py-1.5 rounded-[10px] font-cjk font-semibold text-[11px] no-underline ${active ? "bg-[#1c1b19] text-[#fafaf8]" : "text-[#76726a]"}`}
                 >
                   <span className="relative [&_svg]:w-[18px] [&_svg]:h-[18px]">
                     <Ico sw={2.2} />

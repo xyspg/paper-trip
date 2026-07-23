@@ -2,6 +2,7 @@ import type {
   ChecklistItem,
   Expense,
   ExpenseSplit,
+  Flight,
   ItemStatus,
   SuggestionStatus,
   Trip,
@@ -26,6 +27,9 @@ export type TripOp =
   | { type: "setExpenseAmount"; expenseId: string; amount: number }
   | { type: "setExpensePayer"; expenseId: string; payer: string }
   | { type: "setExpenseSplit"; expenseId: string; payer: string; split?: ExpenseSplit }
+  | { type: "addFlight"; flight: Flight }
+  | { type: "updateFlight"; flight: Flight }
+  | { type: "deleteFlight"; flightId: string; travelerId: string }
   | { type: "resetExpenses" }
   | { type: "reset" };
 
@@ -147,6 +151,41 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
         ),
       };
 
+    case "addFlight": {
+      const flights = trip.flights ?? [];
+      const existing = flights.find(
+        (flight) => flight.id === op.flight.id && flight.travelerId === op.flight.travelerId,
+      );
+      // Retrying the same add replaces that traveler's leg, but an id already
+      // owned by somebody else is never duplicated or reassigned accidentally.
+      if (flights.some((flight) => flight.id === op.flight.id) && !existing) return trip;
+      const next = existing
+        ? flights.map((flight) => (flight === existing ? op.flight : flight))
+        : [...flights, op.flight];
+      return { ...trip, flights: next };
+    }
+
+    case "updateFlight":
+      // Traveler assignment is immutable for an existing leg. An admin who
+      // needs to move one deletes and re-adds it, keeping normal edits scoped
+      // to the member named by the operation.
+      return {
+        ...trip,
+        flights: (trip.flights ?? []).map((flight) =>
+          flight.id === op.flight.id && flight.travelerId === op.flight.travelerId
+            ? op.flight
+            : flight,
+        ),
+      };
+
+    case "deleteFlight":
+      return {
+        ...trip,
+        flights: (trip.flights ?? []).filter(
+          (flight) => !(flight.id === op.flightId && flight.travelerId === op.travelerId),
+        ),
+      };
+
     case "resetExpenses":
       return { ...trip, expenses: [] };
 
@@ -160,6 +199,7 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
         documents: [],
         suggestions: [],
         expenses: [],
+        flights: [],
       };
   }
 }
@@ -183,6 +223,7 @@ export function emptyTrip(seed: {
     documents: [],
     suggestions: [],
     expenses: [],
+    flights: [],
     members: [],
     updatedAt: new Date().toISOString(),
   };

@@ -6,6 +6,7 @@
 import { authClient } from "../auth/client";
 
 export type AdminUser = {
+  id: string;
   login: string;
   name: string | null;
   email: string;
@@ -20,6 +21,7 @@ export function useAdminUser(): { data: AdminUser | null; isLoading: boolean } {
   return {
     data: user
       ? {
+          id: user.id,
           login: user.login || user.name,
           name: user.name ?? null,
           email: user.email,

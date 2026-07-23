@@ -66,6 +66,9 @@ const AGENT_OPS = new Set<TripOp["type"]>([
   "setExpenseAmount",
   "setExpensePayer",
   "setExpenseSplit",
+  "addFlight",
+  "updateFlight",
+  "deleteFlight",
 ]);
 
 // What forward() stamps into x-actor-* headers. Sessions map 1:1; agent

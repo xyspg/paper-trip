@@ -142,6 +142,30 @@ export type Expense = {
   items?: ExpenseItem[];
 };
 
+// One airport endpoint of a flight. Dates/times are local wall-clock values at
+// the airport; `timezone` is optional because the airport label is usually the
+// clearest cue, but an IANA zone can be stored when the traveler needs it.
+export type FlightEndpoint = {
+  airport: string;
+  date: string;
+  time: string;
+  timezone?: string;
+};
+
+// A traveler can have any number of flight legs. `travelerId` references the
+// registry-owned TripMember.id, so the booking survives display-name/avatar
+// changes and can be grouped around the signed-in traveler.
+export type Flight = {
+  id: string;
+  travelerId: string;
+  airline: string;
+  flightNumber: string;
+  departure: FlightEndpoint;
+  arrival: FlightEndpoint;
+  confirmation?: string;
+  notes?: string;
+};
+
 // One person on the trip roster. `id` is the member key every Expense.payer /
 // split share references. `userId` is absent for invited members who have not
 // signed in. Maintained by the worker (synced from the D1 registry on every
@@ -172,6 +196,7 @@ export type Trip = {
   documents: TripDocument[];
   suggestions: TripSuggestion[];
   expenses: Expense[];
+  flights: Flight[];
   // Absent on state persisted before multi-tenancy; the worker backfills it.
   members?: TripMember[];
   updatedAt: string;

@@ -60,7 +60,8 @@ function isTripShape(x: unknown, expectedId: string): x is Trip {
     Array.isArray(t.checklists) &&
     Array.isArray(t.documents) &&
     Array.isArray(t.suggestions) &&
-    Array.isArray(t.expenses)
+    Array.isArray(t.expenses) &&
+    Array.isArray(t.flights)
   );
 }
 
@@ -89,6 +90,11 @@ function opTarget(op: TripOp): string | null {
     case "setExpensePayer":
     case "setExpenseSplit":
       return op.expenseId;
+    case "addFlight":
+    case "updateFlight":
+      return op.flight.id;
+    case "deleteFlight":
+      return op.flightId;
     case "clearSuggestions":
     case "resetExpenses":
     case "reset":
@@ -117,10 +123,12 @@ export class TripDurableObject extends DurableObject<Env> {
         this.trip = JSON.parse(row.trip) as Trip;
       }
       if (!this.trip) return;
-      // Backfill state persisted before suggestions/expenses existed so reads never see undefined.
+      // Backfill state persisted before newer content arrays existed so reads
+      // never see undefined and old trips upgrade without a separate migration.
       const before = JSON.stringify(this.trip);
       this.trip.suggestions ??= [];
       this.trip.expenses ??= [];
+      this.trip.flights ??= [];
       scrubPassUrls(this.trip);
       // Persist the backfill so the SQL row (and dashboard Query panel) reflects it.
       if (JSON.stringify(this.trip) !== before) this.persist();
@@ -429,6 +437,7 @@ export class TripDurableObject extends DurableObject<Env> {
       members: this.trip?.members,
       updatedAt: at,
     };
+    this.trip.flights ??= [];
     // Backups taken before the parking-pass proxy still embed the secret URL.
     scrubPassUrls(this.trip);
     this.rev += 1;
