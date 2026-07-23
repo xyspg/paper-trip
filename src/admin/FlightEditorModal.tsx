@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Flight } from "../trip/types";
 import { AdminModal } from "./AdminModal";
 import { Icons } from "./AdminIcons";
+import { TimezoneCombobox } from "./TimezoneCombobox";
 import { uid } from "./adminData";
 import {
   BTN,
@@ -140,16 +141,15 @@ function Form({
           onChange={(event) => patchEndpoint(endpoint, { time: event.target.value })}
         />
       </label>
-      <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-        <span className={FIELD_LABEL}>时区（可选）</span>
-        <input
-          className={FIELD_INPUT}
+      <div className="min-w-0 col-span-full">
+        <TimezoneCombobox
           value={value.timezone ?? ""}
-          placeholder="America/New_York"
-          autoComplete="off"
-          onChange={(event) => patchEndpoint(endpoint, { timezone: event.target.value })}
+          label="时区（可选）"
+          description={null}
+          allowEmpty
+          onValueChange={(timezone) => patchEndpoint(endpoint, { timezone })}
         />
-      </label>
+      </div>
     </fieldset>
   );
 
