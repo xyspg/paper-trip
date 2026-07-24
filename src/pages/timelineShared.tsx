@@ -26,7 +26,10 @@ export const itemPlans = (item: TripItem): StopPlan[] => {
     }
     return plans
   }
-  return item.notes.slice(0, 2).map((text, index) => ({
+  // Every note renders: the timeline is the trip's operational sheet, so
+  // silently dropping notes past the second hid things like cancellation
+  // windows from the public page while the admin console still showed them.
+  return item.notes.map((text, index) => ({
     kind: index === 0 ? "main" : "alt",
     label: index === 0 ? "提示" : "备注",
     text,
