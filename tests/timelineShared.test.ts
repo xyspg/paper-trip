@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { itemPlans } from "../src/pages/timelineShared";
+import { itemPlans, tripDayNumber } from "../src/pages/timelineShared";
 import type { TripItem } from "../src/trip/types";
 
 const item = (over: Partial<TripItem> = {}): TripItem => ({
@@ -49,5 +49,18 @@ describe("public timeline plans", () => {
     );
 
     expect(plans.map((p) => p.label)).toEqual(["备用"]);
+  });
+});
+
+describe("public timeline day numbers", () => {
+  it("counts empty calendar dates from the trip start", () => {
+    expect(tripDayNumber("2026-08-14", "2026-08-14")).toBe(1);
+    expect(tripDayNumber("2026-08-14", "2026-08-16")).toBe(3);
+    expect(tripDayNumber("2026-08-14", "2026-08-18")).toBe(5);
+  });
+
+  it("stays accurate across daylight-saving and year boundaries", () => {
+    expect(tripDayNumber("2026-10-31", "2026-11-02")).toBe(3);
+    expect(tripDayNumber("2026-12-31", "2027-01-01")).toBe(2);
   });
 });

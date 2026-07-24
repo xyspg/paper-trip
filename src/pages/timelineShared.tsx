@@ -43,6 +43,18 @@ export const formatDayDate = (iso: string): string => {
   return `${md} · ${weekday}`;
 };
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Timeline sections only render dates that contain stops, but their DAY number
+// still belongs to the trip's full calendar range. UTC keeps the date-only
+// arithmetic stable across daylight-saving changes in either viewer timezone.
+export const tripDayNumber = (tripStart: string, date: string): number => {
+  const startMs = Date.parse(`${tripStart}T00:00:00Z`);
+  const dateMs = Date.parse(`${date}T00:00:00Z`);
+  if (!Number.isFinite(startMs) || !Number.isFinite(dateMs)) return 1;
+  return Math.round((dateMs - startMs) / MS_PER_DAY) + 1;
+};
+
 // Render lightweight **bold** spans inside an otherwise plain editorial string.
 // Each layout passes its own bold styling.
 export const renderRich = (text: string, boldClassName = "font-extrabold"): ReactNode[] =>

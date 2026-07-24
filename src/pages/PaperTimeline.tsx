@@ -21,6 +21,7 @@ import {
   hasRichParking,
   itemPlans,
   renderRich,
+  tripDayNumber,
   type StopPlan,
 } from "./timelineShared";
 
@@ -118,7 +119,7 @@ export function PaperTimeline({
       tripId={trip.id}
       defaultTimezone={trip.base.timezone}
       date={date}
-      dayNumber={orderedDates.indexOf(date) + 1}
+      dayNumber={tripDayNumber(trip.dates.start, date)}
       items={trip.items.filter((item) => item.date === date)}
       stopNumbers={stopNumbers}
       collapsed={isDayCollapsed(date)}
