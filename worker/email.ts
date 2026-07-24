@@ -43,7 +43,9 @@ export async function sendInviteEmail(
 }
 
 // Paper-editorial single-column email. Inline styles only (email clients strip
-// stylesheets); the palette mirrors src/index.css tokens.
+// stylesheets) and tables for every layout decision — Gmail drops `display:flex`
+// and `gap`, which collapses a flex lockup into overlapping spans. The palette
+// mirrors src/index.css tokens.
 function inviteHtml({
   tripTitle,
   inviterName,
@@ -61,33 +63,73 @@ function inviteHtml({
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;");
+  // The app's own icon, served straight out of public/. Absolute URLs only —
+  // mail clients have no origin to resolve against.
+  const logoUrl = (() => {
+    try {
+      return `${new URL(acceptUrl).origin}/apple-touch-icon.png`;
+    } catch {
+      return "https://papertrip.xyspg.moe/apple-touch-icon.png";
+    }
+  })();
+  const font = "-apple-system,'Segoe UI',Roboto,'Noto Sans SC',sans-serif";
   return `<!doctype html>
-<html>
-  <body style="margin:0;padding:32px 16px;background:#fafaf8;font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans SC',sans-serif;color:#1c1b19;">
-    <div style="max-width:480px;margin:0 auto;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-        <span style="display:inline-block;width:36px;height:36px;border-radius:9px;background:#1c1b19;color:#fafaf8;font-weight:700;font-size:13px;text-align:center;line-height:36px;">PT</span>
-        <span style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#3f6f5b;font-weight:600;">行程作战表 · Trip Invite</span>
-      </div>
-      <div style="background:#ffffff;border:1px solid #ebe9e3;border-radius:14px;padding:28px;">
-        <h1 style="margin:0;font-size:22px;letter-spacing:-0.01em;">邀请你加入行程</h1>
-        <p style="margin:14px 0 0;font-size:14px;line-height:1.8;color:#76726a;">
-          <b style="color:#1c1b19;">${esc(inviterName)}</b> 邀请你一起规划
-          <b style="color:#1c1b19;">「${esc(tripTitle)}」</b>：
-          共享时间线、预订信息和分账账目，实时同步。
-        </p>
-        <a href="${esc(acceptUrl)}"
-           style="display:block;margin:22px 0 0;padding:13px 0;border-radius:10px;background:#1c1b19;color:#fafaf8;text-align:center;text-decoration:none;font-weight:600;font-size:14px;">
-          用 GitHub 登录并加入
-        </a>
-        <p style="margin:18px 0 0;font-size:12px;line-height:1.7;color:#9b988f;">
-          链接 7 天内有效，任何用它登录的 GitHub 账号都会加入行程；如果这不是发给你的，请忽略这封邮件。
-        </p>
-      </div>
-      <p style="margin:16px 0 0;font-size:11px;color:#9b988f;text-align:center;">
-        ${esc(acceptUrl)}
-      </p>
-    </div>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="x-apple-disable-message-reformatting" />
+  </head>
+  <body style="margin:0;padding:0;background:#fafaf8;color:#1c1b19;font-family:${font};">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(inviterName)} 邀请你一起规划「${esc(tripTitle)}」。</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#fafaf8;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;max-width:480px;">
+            <tr>
+              <td style="padding-bottom:24px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td width="36" style="width:36px;">
+                      <img src="${logoUrl}" width="36" height="36" alt="PaperTrip" style="display:block;width:36px;height:36px;border:0;border-radius:9px;outline:none;text-decoration:none;" />
+                    </td>
+                    <td style="padding-left:10px;font-family:${font};font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#3f6f5b;font-weight:600;">
+                      Trip Invite
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#ffffff;border:1px solid #ebe9e3;border-radius:14px;padding:28px;">
+                <h1 style="margin:0;font-family:${font};font-size:22px;letter-spacing:-0.01em;color:#1c1b19;">邀请你加入行程</h1>
+                <p style="margin:14px 0 0;font-family:${font};font-size:14px;line-height:1.8;color:#76726a;">
+                  <b style="color:#1c1b19;">${esc(inviterName)}</b> 邀请你一起规划
+                  <b style="color:#1c1b19;">「${esc(tripTitle)}」</b>：
+                  共享时间线、预订信息和分账账目，实时同步。
+                </p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:22px;">
+                  <tr>
+                    <td align="center" style="background:#1c1b19;border-radius:10px;">
+                      <a href="${esc(acceptUrl)}" style="display:block;padding:13px 16px;font-family:${font};font-size:14px;font-weight:600;color:#fafaf8;text-decoration:none;">用 GitHub 登录并加入</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:18px 0 0;font-family:${font};font-size:12px;line-height:1.7;color:#9b988f;">
+                  链接 7 天内有效，任何用它登录的 GitHub 账号都会加入行程；如果这不是发给你的，请忽略这封邮件。
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding-top:16px;font-family:${font};font-size:11px;line-height:1.6;color:#9b988f;word-break:break-all;">
+                <a href="${esc(acceptUrl)}" style="color:#9b988f;text-decoration:none;">${esc(acceptUrl)}</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>`;
 }
