@@ -299,21 +299,21 @@ export function ItinerarySection({ items, startDate, endDate, timezone, tripOp, 
                             className="shrink-0 font-grotesk text-[9.5px] font-bold tracking-[0.06em] uppercase mt-0.5"
                             style={{ color: p.kind === "main" ? "#3f6f5b" : "#9b988f" }}
                           >
-                            {p.kind === "main" ? "主方案" : "备用"}
+                            {p.label}
                           </span>
                           <Editable
                             key={`plan-${p.text}`}
                             className="flex-1 font-cjk text-[13px] leading-relaxed min-w-0"
                             value={p.text}
-                            placeholder={p.kind === "main" ? "主方案待补充" : "备用方案待补充"}
+                            placeholder={`${p.label}待补充`}
                             multiline
-                            ariaLabel="方案内容"
+                            ariaLabel={`${p.label}内容`}
                             onCommit={(v) => updatePlan(s.id, p.id, v)}
                           />
                           {p.id !== "parking:primary" && (
                             <button
                               className="shrink-0 w-[22px] h-[22px] rounded-md border border-[#ebe9e3] text-[#9b988f] grid place-items-center cursor-pointer hover:bg-[#c2553f] hover:text-white hover:border-[#c2553f] transition-colors [&_svg]:size-[13px]"
-                              title="删除该方案"
+                              title={`删除该${p.label}`}
                               onClick={() => deletePlan(s.id, p.id)}
                             >
                               <Icons.x sw={2.4} />
@@ -329,7 +329,7 @@ export function ItinerarySection({ items, startDate, endDate, timezone, tripOp, 
                         onClick={() => addPlan(s.id)}
                       >
                         <Icons.plus sw={2.6} />
-                        加方案
+                        {s.hasParking ? "加方案" : "加备注"}
                       </button>
                       <span className="ml-auto" />
                       <button

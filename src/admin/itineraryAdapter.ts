@@ -1,9 +1,13 @@
 import type { StopCat } from "./adminData";
 import type { ItemStatus, TripItem } from "../trip/types";
 
+// `kind` drives the visual hierarchy (solid vs dashed row); `label` names what
+// the row actually is. Only parking rows are alternatives to each other, so
+// only they get the 主方案/备用 wording — notes are notes.
 export type ItineraryPlan = {
   id: string;
   kind: "main" | "alt";
+  label: string;
   text: string;
 };
 
@@ -17,6 +21,9 @@ export type ItineraryStop = {
   title: string;
   loc: string;
   addr: string;
+  // Parking-backed stops edit a fixed primary/backup/warning triple; every
+  // other stop edits a free-form note list. The wording differs accordingly.
+  hasParking: boolean;
   plans: ItineraryPlan[];
 };
 
@@ -50,20 +57,38 @@ export const tripCategoryFor = (
 export const itineraryPlans = (item: TripItem): ItineraryPlan[] => {
   if (item.parking) {
     const plans: ItineraryPlan[] = [
-      { id: `${PARKING_PLAN_PREFIX}primary`, kind: "main", text: item.parking.primary },
+      {
+        id: `${PARKING_PLAN_PREFIX}primary`,
+        kind: "main",
+        label: "主方案",
+        text: item.parking.primary,
+      },
     ];
     if (item.parking.backup !== undefined) {
-      plans.push({ id: `${PARKING_PLAN_PREFIX}backup`, kind: "alt", text: item.parking.backup });
+      plans.push({
+        id: `${PARKING_PLAN_PREFIX}backup`,
+        kind: "alt",
+        label: "备用",
+        text: item.parking.backup,
+      });
     }
     if (item.parking.warning !== undefined) {
-      plans.push({ id: `${PARKING_PLAN_PREFIX}warning`, kind: "alt", text: item.parking.warning });
+      plans.push({
+        id: `${PARKING_PLAN_PREFIX}warning`,
+        kind: "alt",
+        label: "提醒",
+        text: item.parking.warning,
+      });
     }
     return plans;
   }
 
+  // Matches the public timeline's vocabulary (see timelineShared.itemPlans):
+  // the first note leads, the rest are ordinary notes — not fallback plans.
   return item.notes.map((text, index) => ({
     id: `${NOTE_PLAN_PREFIX}${index}`,
     kind: index === 0 ? "main" : "alt",
+    label: index === 0 ? "提示" : "备注",
     text,
   }));
 };
@@ -78,6 +103,7 @@ export const itineraryStop = (item: TripItem, day: number): ItineraryStop => ({
   title: item.title,
   loc: item.location,
   addr: item.address,
+  hasParking: Boolean(item.parking),
   plans: itineraryPlans(item),
 });
 

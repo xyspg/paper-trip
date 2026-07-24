@@ -35,8 +35,22 @@ describe("trip-scoped itinerary adapter", () => {
       title: "抵达东京",
       cat: "transit",
       status: "locked",
-      plans: [{ id: "note:0", text: "领取行李" }],
+      hasParking: false,
+      plans: [{ id: "note:0", label: "提示", text: "领取行李" }],
     });
+  });
+
+  it("labels notes as notes and only parking rows as alternative plans", () => {
+    const noteStop = itineraryStop(item({ notes: ["领取行李", "买西瓜卡", "确认末班车"] }), 1);
+    expect(noteStop.hasParking).toBe(false);
+    expect(noteStop.plans.map((p) => p.label)).toEqual(["提示", "备注", "备注"]);
+
+    const parkingStop = itineraryStop(
+      item({ parking: { primary: "P1", backup: "P2", warning: "限高 2.1m" } }),
+      1,
+    );
+    expect(parkingStop.hasParking).toBe(true);
+    expect(parkingStop.plans.map((p) => p.label)).toEqual(["主方案", "备用", "提醒"]);
   });
 
   it("preserves flight when editing another field in the transit category", () => {
