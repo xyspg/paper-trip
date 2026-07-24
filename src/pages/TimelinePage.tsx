@@ -1,4 +1,5 @@
 import { useTrip, useTripLiveSync } from "../trip/hooks";
+import { tripTravelers } from "../trip/roster";
 import { PaperTimeline } from "./PaperTimeline";
 
 const shortDate = (iso: string): string => {
@@ -58,7 +59,7 @@ export function TimelinePage({ tripId }: { tripId: string }) {
   const nextPlan = nextItem
     ? (nextItem.parking?.primary ?? nextItem.notes[0] ?? nextItem.location)
     : "";
-  const parkingCount = trip.items.filter((item) => item.parking?.primary).length;
+  const travelerCount = tripTravelers(trip).length;
   const dateRange = `${shortDate(trip.dates.start)}–${shortDate(trip.dates.end)}`;
 
   return (
@@ -68,7 +69,7 @@ export function TimelinePage({ tripId }: { tripId: string }) {
       stopNumbers={stopNumbers}
       nextItem={nextItem}
       nextPlan={nextPlan}
-      parkingCount={parkingCount}
+      travelerCount={travelerCount}
       dateRange={dateRange}
     />
   );

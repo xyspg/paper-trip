@@ -33,7 +33,7 @@ type PaperTimelineProps = {
   stopNumbers: Map<string, number>;
   nextItem?: TripItem;
   nextPlan: string;
-  parkingCount: number;
+  travelerCount: number;
   dateRange: string;
 };
 
@@ -90,7 +90,7 @@ export function PaperTimeline({
   stopNumbers,
   nextItem,
   nextPlan,
-  parkingCount,
+  travelerCount,
   dateRange,
 }: PaperTimelineProps) {
   const titleWords = trip.title.trim().split(/\s+/);
@@ -148,7 +148,7 @@ export function PaperTimeline({
             v={trip.items.length.toString()}
             sub={`停靠点 · 横跨 ${orderedDates.length} 天`}
           />
-          <Stat k="Parking" v={parkingCount.toString()} sub="停车方案 · Parking" />
+          <Stat k="Travelers" v={travelerCount.toString()} sub="同行人数 · Travelers" />
           <Stat k="Window" v={dateRange} sub="行程日期 · Travel dates" accent />
         </div>
       </header>
