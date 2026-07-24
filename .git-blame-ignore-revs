@@ -1,0 +1,9 @@
+# Commits to skip in `git blame` — bulk reformats with no behaviour change.
+#
+# Enable locally (once per clone):
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub applies this file automatically in its blame view.
+
+# style: format the repo with oxfmt
+78b4a179f2929649a3fcfd0e70b1156fe7ee3ae7
