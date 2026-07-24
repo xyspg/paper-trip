@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
-import { Icons } from "./AdminIcons"
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Icons } from "./AdminIcons";
 import {
   BTN,
   BTN_DANGER,
@@ -10,39 +10,39 @@ import {
   FIELD_INPUT,
   FIELD_LABEL,
   SectionHead,
-} from "./adminUi"
-import { useConfirm } from "./useConfirm"
-import type { ToastFn } from "./useAdminToasts"
-import { useDeleteTrip, usePatchTrip } from "../trip/hooks"
-import { useTripAccess } from "../components/TripLayout"
-import type { TripVisibility } from "../trip/api"
-import { TimezoneCombobox } from "./TimezoneCombobox"
+} from "./adminUi";
+import { useConfirm } from "./useConfirm";
+import type { ToastFn } from "./useAdminToasts";
+import { useDeleteTrip, usePatchTrip } from "../trip/hooks";
+import { useTripAccess } from "../components/TripLayout";
+import type { TripVisibility } from "../trip/api";
+import { TimezoneCombobox } from "./TimezoneCombobox";
 
 // Owner-only trip settings: registry metadata (title/dates/timezone), the
 // public/private switch, and the delete danger zone. The worker mirrors
 // metadata edits into the DO so every masthead updates live.
 export function SettingsSection({ toast }: { toast: ToastFn }) {
-  const { tripId, meta } = useTripAccess()
-  const patchTrip = usePatchTrip(tripId)
-  const deleteTrip = useDeleteTrip(tripId)
-  const { confirm, confirmModal } = useConfirm()
-  const navigate = useNavigate()
+  const { tripId, meta } = useTripAccess();
+  const patchTrip = usePatchTrip(tripId);
+  const deleteTrip = useDeleteTrip(tripId);
+  const { confirm, confirmModal } = useConfirm();
+  const navigate = useNavigate();
 
-  const [title, setTitle] = useState(meta.title)
-  const [startDate, setStartDate] = useState(meta.startDate ?? "")
-  const [endDate, setEndDate] = useState(meta.endDate ?? "")
-  const [timezone, setTimezone] = useState(meta.timezone)
+  const [title, setTitle] = useState(meta.title);
+  const [startDate, setStartDate] = useState(meta.startDate ?? "");
+  const [endDate, setEndDate] = useState(meta.endDate ?? "");
+  const [timezone, setTimezone] = useState(meta.timezone);
 
   const dirty =
     title.trim() !== meta.title ||
     (startDate || "") !== (meta.startDate ?? "") ||
     (endDate || "") !== (meta.endDate ?? "") ||
-    timezone.trim() !== meta.timezone
+    timezone.trim() !== meta.timezone;
 
   const save = async () => {
     if (!title.trim()) {
-      toast("行程名称不能为空", "warn")
-      return
+      toast("行程名称不能为空", "warn");
+      return;
     }
     try {
       await patchTrip.mutateAsync({
@@ -51,42 +51,40 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
         startDate: startDate || null,
         endDate: endDate || null,
         timezone: timezone.trim() || undefined,
-      })
-      toast("已保存行程设置")
+      });
+      toast("已保存行程设置");
     } catch {
-      toast("保存失败，请重试", "warn")
+      toast("保存失败，请重试", "warn");
     }
-  }
+  };
 
   const setVisibility = async (visibility: TripVisibility) => {
-    if (visibility === meta.visibility) return
+    if (visibility === meta.visibility) return;
     try {
-      await patchTrip.mutateAsync({ visibility })
-      toast(visibility === "public" ? "行程已设为公开" : "行程已设为私密")
+      await patchTrip.mutateAsync({ visibility });
+      toast(visibility === "public" ? "行程已设为公开" : "行程已设为私密");
     } catch {
-      toast("修改可见性失败，请重试", "warn")
+      toast("修改可见性失败，请重试", "warn");
     }
-  }
+  };
 
   const destroy = async () => {
     const ok = await confirm({
       title: "删除这个行程？",
       message: (
-        <span>
-          行程的全部内容（时间线、账目、建议、备份、操作记录）都会被永久删除，无法恢复。
-        </span>
+        <span>行程的全部内容（时间线、账目、建议、备份、操作记录）都会被永久删除，无法恢复。</span>
       ),
       confirmLabel: "永久删除",
       requirePhrase: meta.id,
-    })
-    if (!ok) return
+    });
+    if (!ok) return;
     try {
-      await deleteTrip.mutateAsync()
-      void navigate({ to: "/" })
+      await deleteTrip.mutateAsync();
+      void navigate({ to: "/" });
     } catch {
-      toast("删除失败，请重试", "warn")
+      toast("删除失败，请重试", "warn");
     }
-  }
+  };
 
   return (
     <div>
@@ -186,5 +184,5 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
 
       {confirmModal}
     </div>
-  )
+  );
 }

@@ -82,7 +82,9 @@ export function ModalHeader({
   const chip = tone === "alert" ? "bg-[#f7e9e4] text-[#c2553f]" : "bg-[#1c1b19] text-[#fafaf8]";
   return (
     <div className="flex items-center gap-3 px-[18px] py-4 border-b border-[#ebe9e3]">
-      <span className={`shrink-0 w-9 h-9 rounded-[10px] grid place-items-center [&_svg]:size-[17px] ${chip}`}>
+      <span
+        className={`shrink-0 w-9 h-9 rounded-[10px] grid place-items-center [&_svg]:size-[17px] ${chip}`}
+      >
         {icon}
       </span>
       <span className="font-sans font-bold text-[16px] tracking-tight">{title}</span>

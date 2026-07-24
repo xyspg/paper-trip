@@ -41,27 +41,28 @@ Content-Type: application/json
 
 One op per request. Allowed ops and their exact shapes:
 
-| Op | Body |
-| --- | --- |
-| Add itinerary stop | `{"type":"addItem","item":<TripItem>}` |
-| Edit stop (full replace by id) | `{"type":"updateItem","item":<TripItem>}` |
-| Delete stop | `{"type":"deleteItem","itemId":"<id>"}` |
-| Set stop status | `{"type":"setItemStatus","itemId":"<id>","status":"planned"\|"locked"\|"done"}` |
-| Check/uncheck checklist row | `{"type":"setChecklistItem","checklistId":"<id>","item":{"id":"<rowId>","label":"…","checked":true}}` |
-| Leave a suggestion on a stop | `{"type":"addSuggestion","suggestion":{"id":"<uuid>","itemId":"<stopId>","body":"…","status":"pending","createdAt":"<ISO>"}}` |
-| Resolve a suggestion | `{"type":"setSuggestionStatus","suggestionId":"<id>","status":"adopted"\|"ignored"}` |
-| Delete a suggestion | `{"type":"deleteSuggestion","suggestionId":"<id>"}` |
-| Add expense | `{"type":"addExpense","expense":<Expense>}` |
-| Edit expense (full replace by id) | `{"type":"updateExpense","expense":<Expense>}` |
-| Delete expense | `{"type":"deleteExpense","expenseId":"<id>"}` |
-| Set expense amount | `{"type":"setExpenseAmount","expenseId":"<id>","amount":123.45}` |
-| Set single payer | `{"type":"setExpensePayer","expenseId":"<id>","payer":"<memberId>"}` |
-| Set payer split | `{"type":"setExpenseSplit","expenseId":"<id>","payer":"<memberId>","split":{"mode":"percent"\|"amount","shares":{"<memberId>":80,"…":20}}}` |
-| Add traveler flight | `{"type":"addFlight","flight":<Flight>}` |
-| Edit traveler flight | `{"type":"updateFlight","flight":<Flight>}` |
-| Delete traveler flight | `{"type":"deleteFlight","flightId":"<id>","travelerId":"<memberId>"}` |
+| Op                                | Body                                                                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add itinerary stop                | `{"type":"addItem","item":<TripItem>}`                                                                                                      |
+| Edit stop (full replace by id)    | `{"type":"updateItem","item":<TripItem>}`                                                                                                   |
+| Delete stop                       | `{"type":"deleteItem","itemId":"<id>"}`                                                                                                     |
+| Set stop status                   | `{"type":"setItemStatus","itemId":"<id>","status":"planned"\|"locked"\|"done"}`                                                             |
+| Check/uncheck checklist row       | `{"type":"setChecklistItem","checklistId":"<id>","item":{"id":"<rowId>","label":"…","checked":true}}`                                       |
+| Leave a suggestion on a stop      | `{"type":"addSuggestion","suggestion":{"id":"<uuid>","itemId":"<stopId>","body":"…","status":"pending","createdAt":"<ISO>"}}`               |
+| Resolve a suggestion              | `{"type":"setSuggestionStatus","suggestionId":"<id>","status":"adopted"\|"ignored"}`                                                        |
+| Delete a suggestion               | `{"type":"deleteSuggestion","suggestionId":"<id>"}`                                                                                         |
+| Add expense                       | `{"type":"addExpense","expense":<Expense>}`                                                                                                 |
+| Edit expense (full replace by id) | `{"type":"updateExpense","expense":<Expense>}`                                                                                              |
+| Delete expense                    | `{"type":"deleteExpense","expenseId":"<id>"}`                                                                                               |
+| Set expense amount                | `{"type":"setExpenseAmount","expenseId":"<id>","amount":123.45}`                                                                            |
+| Set single payer                  | `{"type":"setExpensePayer","expenseId":"<id>","payer":"<memberId>"}`                                                                        |
+| Set payer split                   | `{"type":"setExpenseSplit","expenseId":"<id>","payer":"<memberId>","split":{"mode":"percent"\|"amount","shares":{"<memberId>":80,"…":20}}}` |
+| Add traveler flight               | `{"type":"addFlight","flight":<Flight>}`                                                                                                    |
+| Edit traveler flight              | `{"type":"updateFlight","flight":<Flight>}`                                                                                                 |
+| Delete traveler flight            | `{"type":"deleteFlight","flightId":"<id>","travelerId":"<memberId>"}`                                                                       |
 
 Notes:
+
 - `addItem` inserts in `(date, time)` order automatically and **replaces** an
   existing item with the same id, so retrying a failed call is safe.
 - `updateItem` / `updateExpense` replace the **whole** object — fetch first and
@@ -98,46 +99,46 @@ GET  /api/trips/<tripId>/backups   → list (restore/delete are human-only)
 
 ```ts
 type TripItem = {
-  id: string                 // kebab-case slug, e.g. "dinner-kagaya"
-  date: string               // "2027-08-16" — in the trip's own timezone (trip.base.timezone)
-  time: string               // "18:30" 24h — wall clock at the stop itself
-  timezone?: string          // IANA zone, ONLY when this stop is not in trip.base.timezone (cross-timezone trips)
-  title: string
-  category: "flight" | "food" | "event" | "hotel" | "drive" | "errand"
-  location: string           // venue name
-  address: string            // full street address
-  durationMinutes: number
-  status: "planned" | "locked" | "done"   // locked = booked/confirmed
-  priority: "low" | "medium" | "high"
-  costEstimate?: number      // USD
-  confirmation?: string      // booking confirmation code — only if the user gave one
-  leaveBy?: string           // "17:40" — when to depart for this stop
-  notes: string[]
-  links: { label: string; url: string }[]
-}
+  id: string; // kebab-case slug, e.g. "dinner-kagaya"
+  date: string; // "2027-08-16" — in the trip's own timezone (trip.base.timezone)
+  time: string; // "18:30" 24h — wall clock at the stop itself
+  timezone?: string; // IANA zone, ONLY when this stop is not in trip.base.timezone (cross-timezone trips)
+  title: string;
+  category: "flight" | "food" | "event" | "hotel" | "drive" | "errand";
+  location: string; // venue name
+  address: string; // full street address
+  durationMinutes: number;
+  status: "planned" | "locked" | "done"; // locked = booked/confirmed
+  priority: "low" | "medium" | "high";
+  costEstimate?: number; // USD
+  confirmation?: string; // booking confirmation code — only if the user gave one
+  leaveBy?: string; // "17:40" — when to depart for this stop
+  notes: string[];
+  links: { label: string; url: string }[];
+};
 
 type Expense = {
-  id: string
-  cat: "transit" | "food" | "event" | "stay" | "misc"
-  name: string               // display name
-  sub: string                // one-line detail
-  amount: number             // USD
-  credit: number             // statement credit offsetting it, usually 0
-  payer: string              // member id (trip.members[].id)
-  split?: { mode: "percent" | "amount"; shares: Record<string, number> }
-  items?: { name: string; quantity: number; price: number; who?: string[] }[]
-}
+  id: string;
+  cat: "transit" | "food" | "event" | "stay" | "misc";
+  name: string; // display name
+  sub: string; // one-line detail
+  amount: number; // USD
+  credit: number; // statement credit offsetting it, usually 0
+  payer: string; // member id (trip.members[].id)
+  split?: { mode: "percent" | "amount"; shares: Record<string, number> };
+  items?: { name: string; quantity: number; price: number; who?: string[] }[];
+};
 
 type Flight = {
-  id: string
-  travelerId: string          // trip.members[].id
-  airline: string
-  flightNumber: string
-  departure: { airport: string; date: string; time: string; timezone?: string }
-  arrival: { airport: string; date: string; time: string; timezone?: string }
-  confirmation?: string
-  notes?: string
-}
+  id: string;
+  travelerId: string; // trip.members[].id
+  airline: string;
+  flightNumber: string;
+  departure: { airport: string; date: string; time: string; timezone?: string };
+  arrival: { airport: string; date: string; time: string; timezone?: string };
+  confirmation?: string;
+  notes?: string;
+};
 ```
 
 Member ids for `payer`/`shares` come from `trip.members[].id`; checklist and

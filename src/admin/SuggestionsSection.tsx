@@ -82,7 +82,9 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
   const visibleIds = new Set(visible.map((s) => s.id));
   const selPending = [...sel]
     .map((id) => suggestions.find((s) => s.id === id))
-    .filter((s): s is TripSuggestion => Boolean(s) && s!.status === "pending" && visibleIds.has(s!.id));
+    .filter(
+      (s): s is TripSuggestion => Boolean(s) && s!.status === "pending" && visibleIds.has(s!.id),
+    );
 
   const dropFromSel = (ids: Set<string>) =>
     setSel((prev) => new Set([...prev].filter((id) => !ids.has(id))));
@@ -197,7 +199,10 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
                   <button className={`ml-auto ${BTN_SM} ${BTN_GHOST}`} onClick={() => undo(s)}>
                     撤销
                   </button>
-                  <button className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`} onClick={() => remove(s)}>
+                  <button
+                    className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`}
+                    onClick={() => remove(s)}
+                  >
                     <Icons.trash sw={2.2} />
                     删除
                   </button>
@@ -217,15 +222,24 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
                     </span>
                   </button>
                   <span className="ml-auto" />
-                  <button className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`} onClick={() => remove(s)}>
+                  <button
+                    className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`}
+                    onClick={() => remove(s)}
+                  >
                     <Icons.trash sw={2.2} />
                     删除
                   </button>
-                  <button className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`} onClick={() => ignore(s)}>
+                  <button
+                    className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`}
+                    onClick={() => ignore(s)}
+                  >
                     <Icons.x sw={2.4} />
                     忽略
                   </button>
-                  <button className={`${BTN_SM} ${BTN_ACCENT} [&_svg]:size-[13px]`} onClick={() => adopt(s)}>
+                  <button
+                    className={`${BTN_SM} ${BTN_ACCENT} [&_svg]:size-[13px]`}
+                    onClick={() => adopt(s)}
+                  >
                     <Icons.check sw={2.6} />
                     采纳
                   </button>

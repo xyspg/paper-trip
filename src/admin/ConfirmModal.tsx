@@ -1,23 +1,23 @@
-import { useState } from "react"
-import type { ReactNode } from "react"
-import { ROLE } from "baseui/modal"
-import { AdminModal } from "./AdminModal"
-import { Icons } from "./AdminIcons"
-import { BTN, BTN_GHOST, FIELD_INPUT, ModalFooter, ModalHeader } from "./adminUi"
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { ROLE } from "baseui/modal";
+import { AdminModal } from "./AdminModal";
+import { Icons } from "./AdminIcons";
+import { BTN, BTN_GHOST, FIELD_INPUT, ModalFooter, ModalHeader } from "./adminUi";
 
 export type ConfirmModalProps = {
-  isOpen: boolean
-  title?: string
-  message?: ReactNode
-  confirmLabel?: string
-  cancelLabel?: string
+  isOpen: boolean;
+  title?: string;
+  message?: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
   // When set, the confirm button stays disabled until the user types this exact
   // phrase, gating extra-destructive actions (e.g. restoring the whole ledger)
   // behind a deliberate keystroke-by-keystroke acknowledgement.
-  requirePhrase?: string
-  onConfirm: () => void
-  onClose: () => void
-}
+  requirePhrase?: string;
+  onConfirm: () => void;
+  onClose: () => void;
+};
 
 // Shared destructive-action confirmation. Uses the calm AdminModal shell but with
 // an alert-tinted icon header (explicit #c2553f, since the palette's magenta token
@@ -32,9 +32,9 @@ export function ConfirmModal({
   onConfirm,
   onClose,
 }: ConfirmModalProps) {
-  const [typed, setTyped] = useState("")
+  const [typed, setTyped] = useState("");
   // Trailing/leading whitespace is forgiving; the phrase itself must match exactly.
-  const phraseOk = !requirePhrase || typed.trim() === requirePhrase
+  const phraseOk = !requirePhrase || typed.trim() === requirePhrase;
 
   return (
     <AdminModal
@@ -86,5 +86,5 @@ export function ConfirmModal({
         </ModalFooter>
       </div>
     </AdminModal>
-  )
+  );
 }

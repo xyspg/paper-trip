@@ -95,10 +95,7 @@ export function PaperLedger({
   const ledger = trip.expenses;
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
-  const outstanding = balances.reduce(
-    (sum, balance) => sum + Math.max(0, -balance.balance),
-    0,
-  );
+  const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
   return (
@@ -352,9 +349,7 @@ export function PaperLedger({
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
                     已分配{" "}
                     <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(
-                        travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0),
-                      )}
+                      {fmtMoney(travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0))}
                     </b>
                   </span>
                 </div>

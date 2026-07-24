@@ -47,7 +47,9 @@ export const toMarkdown = (trip: Trip) => {
                 item.parking.validFrom && item.parking.validTo
                   ? `    - 有效时间：${item.parking.validFrom} - ${item.parking.validTo}`
                   : "",
-                typeof item.parking.price === "number" ? `    - 价格：$${item.parking.price.toFixed(2)}` : "",
+                typeof item.parking.price === "number"
+                  ? `    - 价格：$${item.parking.price.toFixed(2)}`
+                  : "",
                 item.parking.inOutAllowed ? "    - In & Out Allowed" : "",
                 item.parking.backup ? `    - 备用停车：${item.parking.backup}` : "",
                 item.parking.warning ? `    - 提醒：${item.parking.warning}` : "",

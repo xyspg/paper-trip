@@ -83,10 +83,10 @@ export function SplitSection({
       ),
       confirmLabel: "恢复原始",
       requirePhrase: "restore to original",
-    })
-    if (!ok) return
-    onReset()
-  }
+    });
+    if (!ok) return;
+    onReset();
+  };
 
   const handleDelete = async (e: Expense) => {
     const ok = await confirm({
@@ -122,10 +122,7 @@ export function SplitSection({
   const { subtotal, creditTotal, total } = expenseTotals(expenses);
   const balances = expenseBalances(expenses, travelerIds);
   const transfers = settlementTransfers(balances);
-  const outstanding = balances.reduce(
-    (sum, balance) => sum + Math.max(0, -balance.balance),
-    0,
-  );
+  const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
 
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const travelerBalances = travelers.map((m) => ({
@@ -148,11 +145,17 @@ export function SplitSection({
               <Icons.swap sw={2.2} />
               恢复原始
             </button>
-            <button className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={() => setScanOpen(true)}>
+            <button
+              className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`}
+              onClick={() => setScanOpen(true)}
+            >
               <Icons.camera sw={2.2} />
               扫描收据
             </button>
-            <button className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`} onClick={() => setAddOpen(true)}>
+            <button
+              className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`}
+              onClick={() => setAddOpen(true)}
+            >
               <Icons.plus sw={2.4} />
               新增条目
             </button>
@@ -190,7 +193,10 @@ export function SplitSection({
           const owedBy = expenseOwedBy(e, travelerIds);
           const responsible = travelers.filter((traveler) => (owedBy[traveler.id] ?? 0) > 0.005);
           return (
-            <div key={e.id} className="px-4 py-4 border-b border-dashed border-[#ebe9e3] last:border-0">
+            <div
+              key={e.id}
+              className="px-4 py-4 border-b border-dashed border-[#ebe9e3] last:border-0"
+            >
               <div className="flex items-start gap-3">
                 <span
                   className="shrink-0 w-9 h-9 rounded-[10px] grid place-items-center text-white [&_svg]:size-[18px]"
@@ -199,7 +205,9 @@ export function SplitSection({
                   <IconCmp />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block font-cjk font-bold text-[15px] leading-snug">{e.name}</span>
+                  <span className="block font-cjk font-bold text-[15px] leading-snug">
+                    {e.name}
+                  </span>
                   <span className="block font-cjk text-[12px] text-[#76726a] mt-0.5">{e.sub}</span>
                 </span>
                 <span className="shrink-0 inline-flex items-center border border-[#ebe9e3] rounded-[10px] bg-white px-2.5 py-1 focus-within:border-[#1c1b19] transition-colors">
@@ -261,7 +269,10 @@ export function SplitSection({
                   </span>
                 ) : null}
                 <span className="ml-auto font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                  实付 <b className="font-sans font-bold text-[#1c1b19] text-[14px]">{fmtMoney(netExpense(e))}</b>
+                  实付{" "}
+                  <b className="font-sans font-bold text-[#1c1b19] text-[14px]">
+                    {fmtMoney(netExpense(e))}
+                  </b>
                 </span>
                 <button
                   className="shrink-0 w-8 h-8 grid place-items-center border border-[#ebe9e3] rounded-[9px] bg-white text-[#76726a] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors [&_svg]:size-4"

@@ -1,12 +1,12 @@
-import { useState } from "react"
-import { AdminModal } from "./AdminModal"
-import type { Expense, StopCat } from "./adminData"
+import { useState } from "react";
+import { AdminModal } from "./AdminModal";
+import type { Expense, StopCat } from "./adminData";
 import type {
   ExpenseAllocation as ExpenseAllocationValue,
   ExpenseItem,
   ExpenseSplit,
-} from "../trip/types"
-import { Icons } from "./AdminIcons"
+} from "../trip/types";
+import { Icons } from "./AdminIcons";
 import {
   BTN,
   BTN_GHOST,
@@ -16,60 +16,60 @@ import {
   FIELD_LABEL,
   ModalFooter,
   ModalHeader,
-} from "./adminUi"
-import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit"
-import type { SplitValue } from "./PaymentSplit"
-import { useAdmin } from "./AdminContext"
-import { ExpenseAllocation } from "./ExpenseAllocation"
-import { expenseAllocationMatches } from "../trip/expenses"
+} from "./adminUi";
+import { PaymentSplit, defaultSplit, splitFromExpense, splitToExpense } from "./PaymentSplit";
+import type { SplitValue } from "./PaymentSplit";
+import { useAdmin } from "./AdminContext";
+import { ExpenseAllocation } from "./ExpenseAllocation";
+import { expenseAllocationMatches } from "../trip/expenses";
 
 export type NewExpenseInput = {
-  name: string
-  sub: string
-  amount: number
-  cat: StopCat
-  payer: string
-  split?: ExpenseSplit
-  owedBy?: ExpenseAllocationValue
+  name: string;
+  sub: string;
+  amount: number;
+  cat: StopCat;
+  payer: string;
+  split?: ExpenseSplit;
+  owedBy?: ExpenseAllocationValue;
   // Scanned-receipt breakdown, set only by the receipt scanner. The manual
   // add/edit form below never produces items.
-  items?: ExpenseItem[]
-}
+  items?: ExpenseItem[];
+};
 
 type Props = {
-  isOpen: boolean
-  onClose: () => void
-  onSubmit: (input: NewExpenseInput) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (input: NewExpenseInput) => void;
   // When set the modal opens in edit mode, pre-filled from the expense.
-  initial?: Expense | null
-}
+  initial?: Expense | null;
+};
 
 // Reset the form whenever the modal (re)opens or targets a different expense by
 // keying the parent; this inner component always starts from fresh defaults.
 function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
-  const { travelers } = useAdmin()
-  const editing = Boolean(initial)
-  const [name, setName] = useState(initial?.name ?? "")
-  const [sub, setSub] = useState(initial?.sub ?? "")
-  const [amount, setAmount] = useState(initial ? String(initial.amount) : "")
-  const [cat, setCat] = useState<StopCat>(initial?.cat ?? "event")
+  const { travelers } = useAdmin();
+  const editing = Boolean(initial);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [sub, setSub] = useState(initial?.sub ?? "");
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
+  const [cat, setCat] = useState<StopCat>(initial?.cat ?? "event");
   const [split, setSplit] = useState<SplitValue>(() =>
     initial ? splitFromExpense(initial) : defaultSplit(travelers),
-  )
+  );
   const [owedBy, setOwedBy] = useState<ExpenseAllocationValue | undefined>(() =>
     initial?.owedBy ? { ...initial.owedBy } : undefined,
-  )
+  );
 
-  const parsed = Math.max(0, parseFloat(amount) || 0)
-  const netAmount = Math.max(0, parsed - (initial?.credit ?? 0))
-  const travelerIds = travelers.map((m) => m.id)
-  const allocationValid = expenseAllocationMatches(owedBy, netAmount, travelerIds)
-  const canSubmit = name.trim().length > 0 && allocationValid
+  const parsed = Math.max(0, parseFloat(amount) || 0);
+  const netAmount = Math.max(0, parsed - (initial?.credit ?? 0));
+  const travelerIds = travelers.map((m) => m.id);
+  const allocationValid = expenseAllocationMatches(owedBy, netAmount, travelerIds);
+  const canSubmit = name.trim().length > 0 && allocationValid;
 
   const submit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!canSubmit) return
-    const { payer, split: splitField } = splitToExpense(split, travelerIds)
+    e.preventDefault();
+    if (!canSubmit) return;
+    const { payer, split: splitField } = splitToExpense(split, travelerIds);
     onSubmit({
       name: name.trim(),
       sub: sub.trim(),
@@ -78,8 +78,8 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
       payer,
       split: splitField,
       owedBy,
-    })
-  }
+    });
+  };
 
   return (
     <form className="flex flex-col" onSubmit={submit}>
@@ -165,13 +165,17 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           取消
         </button>
         <span className="ml-auto" />
-        <button type="submit" className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`} disabled={!canSubmit}>
+        <button
+          type="submit"
+          className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`}
+          disabled={!canSubmit}
+        >
           {editing ? <Icons.check sw={2.6} /> : <Icons.plus sw={2.6} />}
           {editing ? "保存修改" : "添加条目"}
         </button>
       </ModalFooter>
     </form>
-  )
+  );
 }
 
 export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
@@ -184,7 +188,7 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, initial }: Props) {
         initial={initial}
       />
     </AdminModal>
-  )
+  );
 }
 
 export function buildExpense(input: NewExpenseInput, id: string): Expense {
@@ -199,5 +203,5 @@ export function buildExpense(input: NewExpenseInput, id: string): Expense {
     split: input.split,
     owedBy: input.owedBy,
     items: input.items,
-  }
+  };
 }

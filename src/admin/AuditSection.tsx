@@ -72,11 +72,19 @@ export function AuditSection() {
 
       <div className="mt-7">
         {isLoading ? (
-          <AdminEmptyState title="加载中…" body="正在读取审计日志。" icon={<Icons.repo sw={2.2} />} />
+          <AdminEmptyState
+            title="加载中…"
+            body="正在读取审计日志。"
+            icon={<Icons.repo sw={2.2} />}
+          />
         ) : isError ? (
           <AdminEmptyState title="无法加载审计日志" body="请确认你已登录管理员账号后重试。" warn />
         ) : !entries || entries.length === 0 ? (
-          <AdminEmptyState title="暂无记录" body="发生写操作后，记录会出现在这里。" icon={<Icons.repo sw={2.2} />} />
+          <AdminEmptyState
+            title="暂无记录"
+            body="发生写操作后，记录会出现在这里。"
+            icon={<Icons.repo sw={2.2} />}
+          />
         ) : (
           <div className="grid gap-2">
             {entries.map((e) => (

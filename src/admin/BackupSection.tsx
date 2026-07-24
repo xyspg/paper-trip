@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { Icons } from "./AdminIcons"
-import { fmtTime } from "./adminData"
+import { useState } from "react";
+import { Icons } from "./AdminIcons";
+import { fmtTime } from "./adminData";
 import {
   AdminEmptyState,
   BTN,
@@ -12,66 +12,67 @@ import {
   FIELD_LABEL,
   RefreshButton,
   SectionHead,
-} from "./adminUi"
-import { useConfirm } from "./useConfirm"
-import type { ToastFn } from "./useAdminToasts"
+} from "./adminUi";
+import { useConfirm } from "./useConfirm";
+import type { ToastFn } from "./useAdminToasts";
 import {
   useBackups,
   useCreateBackup,
   useDeleteBackup,
   useRestoreBackup,
   useTrip,
-} from "../trip/hooks"
-import type { TripBackup } from "../trip/api"
-import { downloadText } from "../trip/exporters"
-import { useAdmin } from "./AdminContext"
+} from "../trip/hooks";
+import type { TripBackup } from "../trip/api";
+import { downloadText } from "../trip/exporters";
+import { useAdmin } from "./AdminContext";
 
 type Props = {
-  toast: ToastFn
-}
+  toast: ToastFn;
+};
 
 export function BackupSection({ toast }: Props) {
-  const { tripId } = useAdmin()
-  const [label, setLabel] = useState("")
-  const { data: tripSnap } = useTrip(tripId)
-  const { data: backups, isLoading, isError, refetch, isFetching } = useBackups(tripId)
-  const createBackup = useCreateBackup(tripId)
-  const restoreBackup = useRestoreBackup(tripId)
-  const deleteBackup = useDeleteBackup(tripId)
-  const { confirm, confirmModal } = useConfirm()
+  const { tripId } = useAdmin();
+  const [label, setLabel] = useState("");
+  const { data: tripSnap } = useTrip(tripId);
+  const { data: backups, isLoading, isError, refetch, isFetching } = useBackups(tripId);
+  const createBackup = useCreateBackup(tripId);
+  const restoreBackup = useRestoreBackup(tripId);
+  const deleteBackup = useDeleteBackup(tripId);
+  const { confirm, confirmModal } = useConfirm();
 
-  const busy = createBackup.isPending || restoreBackup.isPending || deleteBackup.isPending
+  const busy = createBackup.isPending || restoreBackup.isPending || deleteBackup.isPending;
 
   const create = async () => {
     try {
-      await createBackup.mutateAsync(label.trim() || undefined)
-      setLabel("")
-      toast("已创建备份")
+      await createBackup.mutateAsync(label.trim() || undefined);
+      setLabel("");
+      toast("已创建备份");
     } catch {
-      toast("创建备份失败，请重试", "warn")
+      toast("创建备份失败，请重试", "warn");
     }
-  }
+  };
 
   const restore = async (backup: TripBackup) => {
     const ok = await confirm({
       title: "恢复这个备份？",
       message: (
         <span>
-          将把当前行程恢复到 <b>rev {backup.rev}</b> 的快照。当前状态会被覆盖，但这次恢复动作会进入审计日志。
+          将把当前行程恢复到 <b>rev {backup.rev}</b>{" "}
+          的快照。当前状态会被覆盖，但这次恢复动作会进入审计日志。
         </span>
       ),
       confirmLabel: "恢复备份",
       requirePhrase: "RESTORE",
-    })
-    if (!ok) return
+    });
+    if (!ok) return;
 
     try {
-      await restoreBackup.mutateAsync(backup.id)
-      toast("已恢复备份")
+      await restoreBackup.mutateAsync(backup.id);
+      toast("已恢复备份");
     } catch {
-      toast("恢复失败，请重试", "warn")
+      toast("恢复失败，请重试", "warn");
     }
-  }
+  };
 
   const remove = async (backup: TripBackup) => {
     const ok = await confirm({
@@ -79,26 +80,26 @@ export function BackupSection({ toast }: Props) {
       message: "删除后不能从后台恢复这个快照。当前行程不会受影响。",
       confirmLabel: "删除备份",
       requirePhrase: "DELETE",
-    })
-    if (!ok) return
+    });
+    if (!ok) return;
 
     try {
-      await deleteBackup.mutateAsync(backup.id)
-      toast("已删除备份")
+      await deleteBackup.mutateAsync(backup.id);
+      toast("已删除备份");
     } catch {
-      toast("删除失败，请重试", "warn")
+      toast("删除失败，请重试", "warn");
     }
-  }
+  };
 
   const exportCurrent = () => {
-    if (!tripSnap) return
-    const stamp = new Date().toISOString().replaceAll(":", "-")
+    if (!tripSnap) return;
+    const stamp = new Date().toISOString().replaceAll(":", "-");
     downloadText(
       `papertrip-rev-${tripSnap.rev}-${stamp}.json`,
       JSON.stringify(tripSnap, null, 2),
       "application/json",
-    )
-  }
+    );
+  };
 
   return (
     <div>
@@ -142,7 +143,11 @@ export function BackupSection({ toast }: Props) {
 
       <section className="mt-5 grid gap-3">
         {isLoading ? (
-          <AdminEmptyState title="加载中…" body="正在读取备份列表。" icon={<Icons.repo sw={2.2} />} />
+          <AdminEmptyState
+            title="加载中…"
+            body="正在读取备份列表。"
+            icon={<Icons.repo sw={2.2} />}
+          />
         ) : isError ? (
           <AdminEmptyState title="无法加载备份" body="请确认你已登录管理员账号后重试。" warn />
         ) : !backups || backups.length === 0 ? (
@@ -195,7 +200,7 @@ export function BackupSection({ toast }: Props) {
 
       {confirmModal}
     </div>
-  )
+  );
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -204,5 +209,5 @@ function Fact({ label, value }: { label: string; value: string }) {
       <div className={FIELD_LABEL}>{label}</div>
       <div className="mt-1.5 font-cjk font-semibold text-[13px] truncate">{value}</div>
     </div>
-  )
+  );
 }

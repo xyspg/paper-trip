@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { Icons } from "./AdminIcons"
-import { Avatar } from "./Avatar"
+import { useState } from "react";
+import { Icons } from "./AdminIcons";
+import { Avatar } from "./Avatar";
 import {
   AdminEmptyState,
   BTN,
@@ -12,74 +12,81 @@ import {
   FIELD_LABEL,
   RefreshButton,
   SectionHead,
-} from "./adminUi"
-import { useConfirm } from "./useConfirm"
-import type { ToastFn } from "./useAdminToasts"
-import { useCreateInvite, useInvites, useMembers, useRemoveMember, useRevokeInvite } from "../trip/hooks"
-import { useTripAccess } from "../components/TripLayout"
-import type { AdminMember } from "./adminData"
-import type { CreatedInvite } from "../trip/api"
+} from "./adminUi";
+import { useConfirm } from "./useConfirm";
+import type { ToastFn } from "./useAdminToasts";
+import {
+  useCreateInvite,
+  useInvites,
+  useMembers,
+  useRemoveMember,
+  useRevokeInvite,
+} from "../trip/hooks";
+import { useTripAccess } from "../components/TripLayout";
+import type { AdminMember } from "./adminData";
+import type { CreatedInvite } from "../trip/api";
 
 // The trip's roster and, for owners, the email invite flow. The emailed link is
 // a bearer credential: any GitHub account that opens it may join.
 export function MembersSection({ toast }: { toast: ToastFn }) {
-  const { tripId, meta } = useTripAccess()
-  const isOwner = meta.role === "owner"
-  const { data, isLoading, isError, refetch, isFetching } = useMembers(tripId)
-  const removeMember = useRemoveMember(tripId)
-  const { confirm, confirmModal } = useConfirm()
-  const { data: invites } = useInvites(tripId, isOwner)
-  const createInvite = useCreateInvite(tripId)
-  const revokeInvite = useRevokeInvite(tripId)
-  const [email, setEmail] = useState("")
+  const { tripId, meta } = useTripAccess();
+  const isOwner = meta.role === "owner";
+  const { data, isLoading, isError, refetch, isFetching } = useMembers(tripId);
+  const removeMember = useRemoveMember(tripId);
+  const { confirm, confirmModal } = useConfirm();
+  const { data: invites } = useInvites(tripId, isOwner);
+  const createInvite = useCreateInvite(tripId);
+  const revokeInvite = useRevokeInvite(tripId);
+  const [email, setEmail] = useState("");
   // The accept link exists only in the create response (the server stores a
   // hash), so surface it once right after sending.
-  const [lastInvite, setLastInvite] = useState<CreatedInvite | null>(null)
+  const [lastInvite, setLastInvite] = useState<CreatedInvite | null>(null);
 
   const sendInvite = async () => {
-    const to = email.trim()
+    const to = email.trim();
     if (!to || !to.includes("@")) {
-      toast("请输入有效的邮箱地址", "warn")
-      return
+      toast("请输入有效的邮箱地址", "warn");
+      return;
     }
     try {
-      const created = await createInvite.mutateAsync(to)
-      setLastInvite(created)
-      setEmail("")
-      if (created.emailSent) toast("邀请邮件已发送")
-      else toast("已生成邀请链接（邮件未发出，可手动复制）", "warn")
+      const created = await createInvite.mutateAsync(to);
+      setLastInvite(created);
+      setEmail("");
+      if (created.emailSent) toast("邀请邮件已发送");
+      else toast("已生成邀请链接（邮件未发出，可手动复制）", "warn");
     } catch {
-      toast("发送邀请失败，请重试", "warn")
+      toast("发送邀请失败，请重试", "warn");
     }
-  }
+  };
 
   const copyAcceptUrl = async (url: string) => {
     try {
-      await navigator.clipboard.writeText(url)
-      toast("已复制邀请链接")
+      await navigator.clipboard.writeText(url);
+      toast("已复制邀请链接");
     } catch {
-      toast("复制失败，请手动选择复制", "warn")
+      toast("复制失败，请手动选择复制", "warn");
     }
-  }
+  };
 
   const remove = async (userId: string, name: string) => {
     const ok = await confirm({
       title: `移除 ${name}？`,
       message: (
         <span>
-          移除后 TA 将立即失去该行程的访问与编辑权限（含已签发的 agent token）。账目里已有的分摊记录不受影响。
+          移除后 TA 将立即失去该行程的访问与编辑权限（含已签发的 agent
+          token）。账目里已有的分摊记录不受影响。
         </span>
       ),
       confirmLabel: "移除成员",
-    })
-    if (!ok) return
+    });
+    if (!ok) return;
     try {
-      await removeMember.mutateAsync(userId)
-      toast("已移除成员")
+      await removeMember.mutateAsync(userId);
+      toast("已移除成员");
     } catch {
-      toast("移除失败，请重试", "warn")
+      toast("移除失败，请重试", "warn");
     }
-  }
+  };
 
   const avatarFor = (name: string, image: string | null, color: string | null): AdminMember => ({
     id: name,
@@ -90,7 +97,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
     traveler: true,
     initials: name.slice(0, 2).toUpperCase(),
     avatarUrl: image ?? undefined,
-  })
+  });
 
   return (
     <div>
@@ -116,7 +123,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
               placeholder="friend@example.com"
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") void sendInvite()
+                if (e.key === "Enter") void sendInvite();
               }}
             />
             <button
@@ -164,16 +171,18 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
                   <span
                     className={`shrink-0 font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] ${inv.expired ? "text-[#c2553f]" : "text-[#9b988f]"}`}
                   >
-                    {inv.expired ? "已过期" : `${new Date(inv.expiresAt).toLocaleDateString("zh-CN")} 到期`}
+                    {inv.expired
+                      ? "已过期"
+                      : `${new Date(inv.expiresAt).toLocaleDateString("zh-CN")} 到期`}
                   </span>
                   <button
                     className={`${BTN_SM} ${BTN_DANGER}`}
                     onClick={async () => {
                       try {
-                        await revokeInvite.mutateAsync(inv.id)
-                        toast("已撤销邀请")
+                        await revokeInvite.mutateAsync(inv.id);
+                        toast("已撤销邀请");
                       } catch {
-                        toast("撤销失败，请重试", "warn")
+                        toast("撤销失败，请重试", "warn");
                       }
                     }}
                     disabled={revokeInvite.isPending}
@@ -189,7 +198,11 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
 
       <div className="mt-7 max-w-[640px]">
         {isLoading ? (
-          <AdminEmptyState title="加载中…" body="正在读取成员列表。" icon={<Icons.users sw={2.2} />} />
+          <AdminEmptyState
+            title="加载中…"
+            body="正在读取成员列表。"
+            icon={<Icons.users sw={2.2} />}
+          />
         ) : isError || !data ? (
           <AdminEmptyState title="无法加载成员" body="请刷新重试。" warn />
         ) : (
@@ -231,5 +244,5 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
 
       {confirmModal}
     </div>
-  )
+  );
 }

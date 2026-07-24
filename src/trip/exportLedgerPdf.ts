@@ -374,10 +374,7 @@ function buildStatement(
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
-  const outstanding = balances.reduce(
-    (sum, balance) => sum + Math.max(0, -balance.balance),
-    0,
-  );
+  const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const timezone = trip.base.timezone;
   const today = todayIn(timezone);
   const generatedAt = stampIn(timezone);

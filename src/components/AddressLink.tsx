@@ -105,7 +105,10 @@ export function AddressLink({
       <Popover.Portal>
         <Popover.Positioner sideOffset={8} align="start">
           <Popover.Popup className="box-border min-w-56 p-2 bg-paper-2 border-[3px] border-ink rounded-[14px] shadow-hard-sm outline-none transition-[opacity,transform] duration-[140ms] ease-[ease] data-[starting-style]:opacity-0 data-[starting-style]:[transform:translateY(-4px)_scale(0.98)] data-[ending-style]:opacity-0 data-[ending-style]:[transform:translateY(-4px)_scale(0.98)]">
-            <Popover.Title render={<div />} className="px-2 pt-1 pb-2 font-grotesk text-[11px] font-bold tracking-[0.08em] uppercase text-ink-soft">
+            <Popover.Title
+              render={<div />}
+              className="px-2 pt-1 pb-2 font-grotesk text-[11px] font-bold tracking-[0.08em] uppercase text-ink-soft"
+            >
               在地图中打开
             </Popover.Title>
             <div className="grid gap-1.5">

@@ -40,10 +40,7 @@ export async function signAgentToken(claims: AgentClaims, secret: string): Promi
 // Signature, shape and expiry only. Authorization (is the minter still a
 // member of claims.tripId?) is a live D1 question answered in agentUser, so a
 // verified-but-revoked token still opens no doors.
-export async function verifyAgentToken(
-  token: string,
-  secret: string,
-): Promise<AgentClaims | null> {
+export async function verifyAgentToken(token: string, secret: string): Promise<AgentClaims | null> {
   if (!token.startsWith(PREFIX)) return null;
   const [body, sig] = token.slice(PREFIX.length).split(".");
   if (!body || !sig) return null;

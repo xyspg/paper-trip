@@ -72,7 +72,10 @@ export const Icons = {
     </Svg>
   ),
   sparkle: (p: IconProps) => (
-    <Svg {...p} d="M12 3l1.8 4.9L18.5 9.5l-4.7 1.6L12 16l-1.8-4.9L5.5 9.5l4.7-1.6ZM18.5 15l.8 2.1 2.2.7-2.2.7-.8 2.1-.8-2.1-2.2-.7 2.2-.7Z" />
+    <Svg
+      {...p}
+      d="M12 3l1.8 4.9L18.5 9.5l-4.7 1.6L12 16l-1.8-4.9L5.5 9.5l4.7-1.6ZM18.5 15l.8 2.1 2.2.7-2.2.7-.8 2.1-.8-2.1-2.2-.7 2.2-.7Z"
+    />
   ),
   x: (p: IconProps) => <Svg {...p} d="M6 6l12 12M18 6 6 18" />,
   trash: (p: IconProps) => (
@@ -81,7 +84,9 @@ export const Icons = {
       d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7"
     />
   ),
-  pencil: (p: IconProps) => <Svg {...p} d="M4 20l4.5-1L19 8.5a2 2 0 0 0-3-3L5.5 16 4 20ZM14.5 7l3 3" />,
+  pencil: (p: IconProps) => (
+    <Svg {...p} d="M4 20l4.5-1L19 8.5a2 2 0 0 0-3-3L5.5 16 4 20ZM14.5 7l3 3" />
+  ),
   users: (p: IconProps) => (
     <Svg {...p}>
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />

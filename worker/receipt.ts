@@ -124,7 +124,8 @@ receipt.post("/parse", async (c) => {
     .filter((it) => it && typeof it.name === "string" && Number.isFinite(Number(it.price)))
     .map((it) => ({
       name: it.name.trim(),
-      quantity: Number.isFinite(Number(it.quantity)) && Number(it.quantity) > 0 ? Number(it.quantity) : 1,
+      quantity:
+        Number.isFinite(Number(it.quantity)) && Number(it.quantity) > 0 ? Number(it.quantity) : 1,
       price: Math.max(0, Number(it.price)),
     }))
     .filter((it) => it.name.length > 0);

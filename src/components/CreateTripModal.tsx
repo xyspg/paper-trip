@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { AdminModal } from "../admin/AdminModal"
-import { Icons } from "../admin/AdminIcons"
+import { useState } from "react";
+import { AdminModal } from "../admin/AdminModal";
+import { Icons } from "../admin/AdminIcons";
 import {
   BTN,
   BTN_GHOST,
@@ -11,32 +11,32 @@ import {
   FIELD_LABEL,
   ModalFooter,
   ModalHeader,
-} from "../admin/adminUi"
-import { useCreateTrip } from "../trip/hooks"
-import type { TripMeta, TripVisibility } from "../trip/api"
+} from "../admin/adminUi";
+import { useCreateTrip } from "../trip/hooks";
+import type { TripMeta, TripVisibility } from "../trip/api";
 
 type Props = {
-  isOpen: boolean
-  onClose: () => void
-  onCreated: (trip: TripMeta) => void
-}
+  isOpen: boolean;
+  onClose: () => void;
+  onCreated: (trip: TripMeta) => void;
+};
 
 // Reset the form whenever the modal (re)opens by keying the inner component;
 // it always starts from fresh defaults.
 function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
-  const createTrip = useCreateTrip()
-  const [title, setTitle] = useState("")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [visibility, setVisibility] = useState<TripVisibility>("private")
-  const [error, setError] = useState("")
+  const createTrip = useCreateTrip();
+  const [title, setTitle] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [visibility, setVisibility] = useState<TripVisibility>("private");
+  const [error, setError] = useState("");
 
-  const canSubmit = title.trim().length > 0 && !createTrip.isPending
+  const canSubmit = title.trim().length > 0 && !createTrip.isPending;
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!canSubmit) return
-    setError("")
+    e.preventDefault();
+    if (!canSubmit) return;
+    setError("");
     try {
       const trip = await createTrip.mutateAsync({
         title: title.trim(),
@@ -47,12 +47,12 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
         // cross timezones carry their own (item.timezone).
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
         visibility,
-      })
-      onCreated(trip)
+      });
+      onCreated(trip);
     } catch {
-      setError("创建失败，请重试")
+      setError("创建失败，请重试");
     }
-  }
+  };
 
   return (
     <form className="flex flex-col" onSubmit={submit}>
@@ -126,13 +126,17 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
           取消
         </button>
         <span className="ml-auto" />
-        <button type="submit" className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`} disabled={!canSubmit}>
+        <button
+          type="submit"
+          className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`}
+          disabled={!canSubmit}
+        >
           <Icons.plus sw={2.6} />
           {createTrip.isPending ? "创建中…" : "创建行程"}
         </button>
       </ModalFooter>
     </form>
-  )
+  );
 }
 
 export function CreateTripModal({ isOpen, onClose, onCreated }: Props) {
@@ -140,5 +144,5 @@ export function CreateTripModal({ isOpen, onClose, onCreated }: Props) {
     <AdminModal isOpen={isOpen} onClose={onClose}>
       <Form key={String(isOpen)} onClose={onClose} onCreated={onCreated} />
     </AdminModal>
-  )
+  );
 }

@@ -6,8 +6,7 @@ const fromCents = (value: number): number => value / 100;
 // Expense ledger math shared by the public ledger and the admin split view so the
 // two surfaces can never disagree. A line's credit can only offset up to its own
 // amount, which keeps the totals reconciled: subtotal - creditTotal === total.
-export const appliedCredit = (e: Expense): number =>
-  Math.min(e.credit || 0, Number(e.amount) || 0);
+export const appliedCredit = (e: Expense): number => Math.min(e.credit || 0, Number(e.amount) || 0);
 
 export const netExpense = (e: Expense): number => (Number(e.amount) || 0) - appliedCredit(e);
 
@@ -66,31 +65,27 @@ export const allocateByWeight = (
     return { id, index, value: floor, remainder: raw - floor };
   });
   const remaining = target - rows.reduce((sum, row) => sum + row.value, 0);
-  const remainderOrder = [...rows].sort(
-    (a, b) => b.remainder - a.remainder || a.index - b.index,
-  );
+  const remainderOrder = [...rows].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
   for (let i = 0; i < remaining; i += 1) remainderOrder[i % remainderOrder.length].value += 1;
   for (const row of rows) out[row.id] = fromCents(row.value);
   return out;
 };
 
-export const evenExpenseAllocation = (
-  amount: number,
-  memberIds: string[],
-): ExpenseAllocation => allocateByWeight(amount, memberIds);
+export const evenExpenseAllocation = (amount: number, memberIds: string[]): ExpenseAllocation =>
+  allocateByWeight(amount, memberIds);
 
 export const expenseAllocationTotal = (
   allocation: ExpenseAllocation | undefined,
   memberIds: string[],
-): number =>
-  fromCents(memberIds.reduce((sum, id) => sum + cents(allocation?.[id] ?? 0), 0));
+): number => fromCents(memberIds.reduce((sum, id) => sum + cents(allocation?.[id] ?? 0), 0));
 
 export const expenseAllocationMatches = (
   allocation: ExpenseAllocation | undefined,
   amount: number,
   memberIds: string[],
 ): boolean =>
-  allocation === undefined || cents(expenseAllocationTotal(allocation, memberIds)) === cents(amount);
+  allocation === undefined ||
+  cents(expenseAllocationTotal(allocation, memberIds)) === cents(amount);
 
 // Resolve what each traveler ultimately owes for an expense. Explicit amounts
 // are used only when they reconcile to the net cost; malformed/stale external
@@ -98,9 +93,7 @@ export const expenseAllocationMatches = (
 export const expenseOwedBy = (e: Expense, memberIds: string[]): ExpenseAllocation => {
   const net = netExpense(e);
   if (e.owedBy && expenseAllocationMatches(e.owedBy, net, memberIds)) {
-    return Object.fromEntries(
-      memberIds.map((id) => [id, fromCents(cents(e.owedBy?.[id] ?? 0))]),
-    );
+    return Object.fromEntries(memberIds.map((id) => [id, fromCents(cents(e.owedBy?.[id] ?? 0))]));
   }
   return evenExpenseAllocation(net, memberIds);
 };

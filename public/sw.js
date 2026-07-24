@@ -1,6 +1,6 @@
 self.addEventListener("install", () => {
-  self.skipWaiting()
-})
+  self.skipWaiting();
+});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -10,5 +10,5 @@ self.addEventListener("activate", (event) => {
     ])
       .then(() => self.clients.matchAll({ type: "window" }))
       .then((clients) => Promise.all(clients.map((client) => client.navigate(client.url)))),
-  )
-})
+  );
+});

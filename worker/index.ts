@@ -246,8 +246,7 @@ app.post("/api/trips", async (c) => {
   if (!title) return c.json({ error: "title_required" }, 400);
   const startDate = asDate(body?.startDate);
   const endDate = asDate(body?.endDate);
-  const timezone =
-    typeof body?.timezone === "string" && body.timezone ? body.timezone : "UTC";
+  const timezone = typeof body?.timezone === "string" && body.timezone ? body.timezone : "UTC";
   const visibility = asVisibility(body?.visibility) ?? "private";
 
   // Retry the slug on collision; two failures in a row means something is

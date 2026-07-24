@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { mintAgentToken } from "../trip/api"
-import type { AgentTokenGrant } from "../trip/api"
+import { useState } from "react";
+import { mintAgentToken } from "../trip/api";
+import type { AgentTokenGrant } from "../trip/api";
 import {
   BTN,
   BTN_ACCENT,
@@ -10,26 +10,26 @@ import {
   CHIP_ON,
   FIELD_LABEL,
   SectionHead,
-} from "./adminUi"
-import type { ToastFn } from "./useAdminToasts"
-import { useAdmin } from "./AdminContext"
+} from "./adminUi";
+import type { ToastFn } from "./useAdminToasts";
+import { useAdmin } from "./AdminContext";
 
 type Props = {
-  toast: ToastFn
-}
+  toast: ToastFn;
+};
 
-const TTL_OPTIONS = [7, 30, 90] as const
+const TTL_OPTIONS = [7, 30, 90] as const;
 
 // Mint an agent bearer token and assemble the paste-into-agent prompt. The
 // token is shown only while this section stays mounted — we intentionally never
 // persist it client-side; regenerating is cheap and old tokens live until exp.
 export function AgentSection({ toast }: Props) {
-  const { tripId } = useAdmin()
-  const [ttlDays, setTtlDays] = useState<number>(90)
-  const [grant, setGrant] = useState<AgentTokenGrant | null>(null)
-  const [busy, setBusy] = useState(false)
+  const { tripId } = useAdmin();
+  const [ttlDays, setTtlDays] = useState<number>(90);
+  const [grant, setGrant] = useState<AgentTokenGrant | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const origin = window.location.origin
+  const origin = window.location.origin;
   const prompt = grant
     ? [
         `Read ${origin}/SKILL.md and follow it to manage my trip.`,
@@ -37,36 +37,32 @@ export function AgentSection({ toast }: Props) {
         `Trip id: ${tripId}`,
         `Token: ${grant.token}`,
       ].join("\n")
-    : ""
+    : "";
 
   const generate = async () => {
-    setBusy(true)
+    setBusy(true);
     try {
-      setGrant(await mintAgentToken(tripId, ttlDays))
-      toast("已生成 agent token")
+      setGrant(await mintAgentToken(tripId, ttlDays));
+      toast("已生成 agent token");
     } catch {
-      toast("生成失败（仅行程创建者可签发 token）", "warn")
+      toast("生成失败（仅行程创建者可签发 token）", "warn");
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   const copy = async (text: string, what: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      toast(`已复制${what}`)
+      await navigator.clipboard.writeText(text);
+      toast(`已复制${what}`);
     } catch {
-      toast("复制失败", "warn")
+      toast("复制失败", "warn");
     }
-  }
+  };
 
   return (
     <div>
-      <SectionHead
-        kicker="06 · Agent"
-        title="Agent 协作"
-        desc="让本地 agent 直接读写行程"
-      />
+      <SectionHead kicker="06 · Agent" title="Agent 协作" desc="让本地 agent 直接读写行程" />
 
       <section className="mt-6 bg-white border border-[#ebe9e3] rounded-[14px] p-5 grid gap-4">
         <p className="m-0 font-cjk text-[13.5px] leading-relaxed text-[#3b3833]">
@@ -120,5 +116,5 @@ export function AgentSection({ toast }: Props) {
         </section>
       )}
     </div>
-  )
+  );
 }
