@@ -71,27 +71,7 @@
         var recoveryParam = "_papertrip_recover";
         var recovering = false;
 
-        function showFailure() {
-          var root = document.getElementById("root");
-          if (!root) return;
-          root.innerHTML =
-            '<main style="box-sizing:border-box;max-width:520px;margin:12vh auto;padding:24px;font:15px/1.7 system-ui,sans-serif;color:#1c1b19">' +
-            '<h1 style="font-size:21px;margin:0 0 10px">Papertrip 资源加载失败</h1>' +
-            '<p style="margin:0">浏览器仍在使用旧版页面资源。请关闭这个页面后重新打开；如果你在应用内浏览器中，请选择「在 Safari 中打开」。</p>' +
-            "</main>";
-        }
-
-        function reloadWithFreshAssets() {
-          if (recovering) return;
-          recovering = true;
-
-          var url = new URL(window.location.href);
-          if (url.searchParams.has(recoveryParam)) {
-            showFailure();
-            return;
-          }
-          url.searchParams.set(recoveryParam, Date.now().toString(36));
-
+        function clearStaleState() {
           var cleanup = [];
           if ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations) {
             cleanup.push(
@@ -121,8 +101,43 @@
                 .catch(function () {}),
             );
           }
+          return Promise.all(cleanup);
+        }
 
-          Promise.all(cleanup).then(function () {
+        function showFailure() {
+          var root = document.getElementById("root");
+          if (!root) return;
+          root.innerHTML =
+            '<main style="box-sizing:border-box;max-width:520px;margin:12vh auto;padding:24px;font:15px/1.7 system-ui,sans-serif;color:#1c1b19">' +
+            '<h1 style="font-size:21px;margin:0 0 10px">Papertrip 页面加载失败</h1>' +
+            '<p style="margin:0">页面资源两次都没能加载完成，可能是网络不稳定，也可能是浏览器还在使用旧版资源。可以点击下方按钮重试；如果你在应用内浏览器中，请选择「在 Safari 中打开」。</p>' +
+            '<button id="papertrip-retry" style="margin-top:18px;padding:10px 22px;font:600 15px system-ui,sans-serif;color:#fafaf8;background:#1c1b19;border:0;border-radius:8px">重新加载</button>' +
+            "</main>";
+          var retry = document.getElementById("papertrip-retry");
+          if (retry) {
+            retry.addEventListener("click", function () {
+              retry.disabled = true;
+              clearStaleState().then(function () {
+                var url = new URL(window.location.href);
+                url.searchParams.set(recoveryParam, Date.now().toString(36));
+                window.location.replace(url.toString());
+              });
+            });
+          }
+        }
+
+        function reloadWithFreshAssets() {
+          if (recovering) return;
+          recovering = true;
+
+          var url = new URL(window.location.href);
+          if (url.searchParams.has(recoveryParam)) {
+            showFailure();
+            return;
+          }
+          url.searchParams.set(recoveryParam, Date.now().toString(36));
+
+          clearStaleState().then(function () {
             window.location.replace(url.toString());
           });
         }
@@ -169,15 +184,24 @@
           }
         }
 
-        // Boot watchdog: if nothing has rendered into #root a few seconds after
-        // the page finishes loading, the app failed to boot before React could
-        // mount (poisoned entry chunk, HTML served for a JS request, a hung
-        // dependency) — a failure the React-level error boundary can't catch.
-        // Recover once; a second failure renders a readable message via
-        // reloadWithFreshAssets() instead of leaving a blank screen.
+        // Boot watchdog: if the entry module never executed and nothing has
+        // rendered into #root, the app failed to boot before React could mount
+        // (poisoned entry chunk, HTML served for a JS request) — a failure the
+        // React-level error boundary can't catch. Recover once; a second
+        // failure renders a readable message via reloadWithFreshAssets().
+        //
+        // __papertripEntryExecuted is set by main.tsx the moment the entry
+        // module runs. Once it is set, an empty #root only means code-split
+        // route chunks or data are still in flight — the load event does not
+        // wait for dynamic imports, so on a slow network #root can stay empty
+        // well past any fixed deadline. Recovering then aborts the in-flight
+        // chunks and turns "slow" into a fake "stale assets" failure (the exact
+        // loop that dead-ended real users on flaky mobile connections), so the
+        // watchdog must stand down and let the requests finish.
         var bootChecked = false;
         var checkBoot = function () {
           if (bootChecked) return;
+          if (window.__papertripEntryExecuted) return;
           var root = document.getElementById("root");
           if (root && root.childElementCount === 0) {
             bootChecked = true;

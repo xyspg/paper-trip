@@ -6,6 +6,17 @@ import "./index.css";
 import { routeTree } from "./routeTree.gen";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
+declare global {
+  interface Window {
+    // Read by the boot watchdog in index.html: once the entry module has
+    // executed, an empty #root means chunks/data are still loading, not that
+    // the build is poisoned, so the watchdog must not clear caches and reload.
+    __papertripEntryExecuted?: boolean;
+  }
+}
+
+window.__papertripEntryExecuted = true;
+
 if (new URL(window.location.href).searchParams.has("_papertrip_recover")) {
   window.setTimeout(() => {
     const recoveredUrl = new URL(window.location.href);
