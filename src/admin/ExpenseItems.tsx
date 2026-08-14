@@ -10,9 +10,12 @@ import type { ExpenseItem } from "../trip/types";
 export function ExpenseItems({
   items,
   travelers,
+  currency,
 }: {
   items?: ExpenseItem[];
   travelers: AdminMember[];
+  // The parent expense's recorded currency (item prices share it).
+  currency?: string;
 }) {
   if (!items || items.length === 0) return null;
   return (
@@ -45,7 +48,7 @@ export function ExpenseItems({
               </span>
             )}
             <span className="shrink-0 text-ink font-mono text-[12.5px] font-bold">
-              {fmtMoney(it.price)}
+              {fmtMoney(it.price, currency)}
             </span>
           </li>
         );

@@ -17,6 +17,8 @@ export type TripMeta = {
   startDate: string | null;
   endDate: string | null;
   timezone: string;
+  // ISO 4217 settlement currency the trip's totals/balances are stated in.
+  currency: string;
   createdAt: string;
   role: TripRole | null;
 };
@@ -53,6 +55,7 @@ export type NewTripInput = {
   startDate?: string | null;
   endDate?: string | null;
   timezone?: string;
+  currency?: string;
   visibility?: TripVisibility;
 };
 

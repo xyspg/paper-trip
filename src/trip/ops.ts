@@ -211,13 +211,14 @@ export function emptyTrip(seed: {
   title: string;
   dates: { start: string; end: string };
   timezone: string;
+  currency?: string;
 }): Trip {
   return {
     id: seed.id,
     title: seed.title,
     subtitle: "",
     dates: { ...seed.dates },
-    base: { hotel: "", car: "", timezone: seed.timezone },
+    base: { hotel: "", car: "", timezone: seed.timezone, currency: seed.currency ?? "USD" },
     items: [],
     checklists: [],
     documents: [],

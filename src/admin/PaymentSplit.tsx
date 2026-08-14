@@ -1,5 +1,6 @@
 import { fmtMoney, round2 } from "./adminData";
 import type { AdminMember } from "./adminData";
+import { DEFAULT_CURRENCY, currencySymbol } from "../trip/currency";
 import type { Expense, ExpenseSplit } from "../trip/types";
 import { expensePaidBy } from "../trip/expenses";
 import { Avatar } from "./Avatar";
@@ -47,7 +48,7 @@ export const splitFromExpense = (e: { payer: string; split?: ExpenseSplit }): Sp
 const MODES: { key: SplitValue["mode"]; label: string }[] = [
   { key: "single", label: "单人付款" },
   { key: "percent", label: "按比例 %" },
-  { key: "amount", label: "按金额 $" },
+  { key: "amount", label: "按金额" },
 ];
 
 // Even percentage seed (e.g. 50 / 50 for two travelers), remainder on the last.
@@ -70,16 +71,18 @@ const evenAmount = (ids: string[], amount: number): Record<string, number> => {
 type Props = {
   value: SplitValue;
   onChange: (v: SplitValue) => void;
-  // Net amount the split is divided over, used only for the live $ preview.
+  // Net amount the split is divided over, used only for the live money preview.
   amount: number;
   // The trip's roster the money can be split across.
   travelers: AdminMember[];
+  // Currency the amounts are recorded in (the expense's own currency).
+  currency?: string;
 };
 
 // Lets an admin record who fronted an expense: a single payer (default 100%) or
-// a proportional split by percentage or dollar amount. The numbers are
-// normalized, so "80 / 20" and "300 / 10" both just describe proportions.
-export function PaymentSplit({ value, onChange, amount, travelers }: Props) {
+// a proportional split by percentage or amount. The numbers are normalized, so
+// "80 / 20" and "300 / 10" both just describe proportions.
+export function PaymentSplit({ value, onChange, amount, travelers, currency }: Props) {
   const travelerIds = travelers.map((m) => m.id);
   const mode = value.mode;
   const shares = mode === "single" ? {} : value.shares;
@@ -216,11 +219,11 @@ export function PaymentSplit({ value, onChange, amount, travelers }: Props) {
                     }}
                   />
                   <span className="font-grotesk font-semibold text-[12px] text-[#9b988f]">
-                    {mode === "percent" ? "%" : "$"}
+                    {mode === "percent" ? "%" : currencySymbol(currency ?? DEFAULT_CURRENCY)}
                   </span>
                 </span>
                 <span className="font-grotesk font-semibold text-[12px] text-[#3f6f5b] ml-auto">
-                  {fmtMoney(contributions[m.id] ?? 0)}
+                  {fmtMoney(contributions[m.id] ?? 0, currency)}
                 </span>
               </div>
             );
@@ -232,7 +235,7 @@ export function PaymentSplit({ value, onChange, amount, travelers }: Props) {
               ? "请为至少一人填写分摊"
               : mode === "percent"
                 ? `合计 ${weightSum}%（按比例折算）`
-                : `输入合计 ${fmtMoney(weightSum)}（按比例折算到实付）`}
+                : `输入合计 ${fmtMoney(weightSum, currency)}（按比例折算到实付）`}
           </div>
         </div>
       )}

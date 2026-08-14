@@ -3,7 +3,9 @@ import { describe, expect, it } from "bun:test";
 import {
   evenExpenseAllocation,
   expenseBalances,
+  expenseFxRate,
   expenseOwedBy,
+  expenseTotals,
   settlementTransfers,
 } from "../src/trip/expenses";
 import { applyOp, emptyTrip } from "../src/trip/ops";
@@ -78,6 +80,53 @@ describe("expense responsibility allocations", () => {
       amount: 120,
     });
     expect(updated.expenses[0].owedBy).toEqual({ a: 36, b: 84 });
+  });
+});
+
+describe("multi-currency aggregation", () => {
+  it("treats missing or invalid fx rates as base-currency entries", () => {
+    expect(expenseFxRate(expense())).toBe(1);
+    expect(expenseFxRate(expense({ fxRate: 0 }))).toBe(1);
+    expect(expenseFxRate(expense({ fxRate: Number.NaN }))).toBe(1);
+    expect(expenseFxRate(expense({ currency: "JPY", fxRate: 0.007 }))).toBe(0.007);
+  });
+
+  it("states totals in the base currency via each line's captured rate", () => {
+    const totals = expenseTotals([
+      expense({ amount: 100 }),
+      // ¥10,000 dinner with a ¥1,000 credit at 0.007 base per yen.
+      expense({ id: "expense-2", amount: 10_000, credit: 1_000, currency: "JPY", fxRate: 0.007 }),
+    ]);
+    expect(totals.subtotal).toBeCloseTo(170, 10);
+    expect(totals.creditTotal).toBeCloseTo(7, 10);
+    expect(totals.total).toBeCloseTo(163, 10);
+  });
+
+  it("keeps balances reconciled across mixed currencies", () => {
+    const balances = expenseBalances(
+      [
+        // a fronts a $100 base-currency expense, split AA.
+        expense({ amount: 100 }),
+        // b fronts ¥10,000 (= $70), owed entirely by a.
+        expense({
+          id: "expense-2",
+          amount: 10_000,
+          payer: "b",
+          currency: "JPY",
+          fxRate: 0.007,
+          owedBy: { a: 10_000, b: 0 },
+        }),
+      ],
+      ["a", "b"],
+    );
+
+    expect(balances[0].paid).toBeCloseTo(100, 10);
+    expect(balances[0].share).toBeCloseTo(120, 10);
+    expect(balances[1].paid).toBeCloseTo(70, 10);
+    expect(balances[1].share).toBeCloseTo(50, 10);
+    // Conversion happens per expense, so paid and owed still cancel out.
+    expect(balances[0].balance + balances[1].balance).toBeCloseTo(0, 10);
+    expect(balances[0].balance).toBeCloseTo(-20, 10);
   });
 });
 

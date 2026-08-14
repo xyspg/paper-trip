@@ -20,7 +20,9 @@ import {
 import { PaymentSplit, defaultSplit, splitToExpense } from "./PaymentSplit";
 import type { SplitValue } from "./PaymentSplit";
 import type { NewExpenseInput } from "./AddExpenseModal";
+import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { deriveShares, parseReceipt } from "./receipt";
+import { currencySymbol, normalizeCurrency, roundFxRate } from "../trip/currency";
 import type { ExpenseItem } from "../trip/types";
 
 type Props = {
@@ -48,7 +50,7 @@ const isAA = (who: string[], travelerIds: string[]) =>
 type Phase = "pick" | "loading" | "review" | "error";
 
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
-  const { tripId, travelers } = useAdmin();
+  const { tripId, travelers, currency: baseCurrency } = useAdmin();
   const travelerIds = travelers.map((m) => m.id);
   // Two inputs so the user picks the source instead of iOS forcing the camera:
   // the album input omits `capture` (opens the photo library / file picker),
@@ -60,6 +62,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const [error, setError] = useState("");
 
   const [merchant, setMerchant] = useState("");
+  // The receipt's own currency (every number on this modal is in it), seeded
+  // from the OCR result and correctable by hand. fxOverride pins a manual
+  // rate; null falls back to the live quote.
+  const [currency, setCurrency] = useState(baseCurrency);
+  const [fxOverride, setFxOverride] = useState<number | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   // Tax (+ service fees) and tip are tracked separately — tipping is a choice
   // you make at the table, tax isn't. Both are spread proportionally on top of
@@ -99,6 +106,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         r.tax ??
         (typeof r.total === "number" ? Math.max(0, r.total - sumPrices(r.items) - printedTip) : 0);
       setMerchant(r.merchant || "餐厅收据");
+      setCurrency(normalizeCurrency(r.currency) ?? baseCurrency);
+      setFxOverride(null);
       setRows(
         r.items.map((it) => ({
           id: uid("ri"),
@@ -199,9 +208,13 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     setRecalc((n) => n + 1);
   };
 
+  const foreign = currency !== baseCurrency;
+  const fxRate = useEntryFxRate(baseCurrency, currency, fxOverride);
+  const symbol = currencySymbol(currency);
+
   // Drop blank scratch rows (no name, no price) before persisting / counting.
   const cleanRows = rows.filter((r) => r.name.trim() !== "" || r.price > 0);
-  const canSubmit = cleanRows.length > 0 && grandTotal > 0;
+  const canSubmit = cleanRows.length > 0 && grandTotal > 0 && (!foreign || fxRate != null);
 
   const submit = () => {
     if (!canSubmit) return;
@@ -222,6 +235,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       amount: grandTotal,
       cat: "food",
       payer,
+      currency: foreign ? currency : undefined,
+      fxRate: foreign && fxRate != null ? roundFxRate(fxRate) : undefined,
       split,
       owedBy: shares,
       items,
@@ -304,6 +319,24 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </label>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+              <span className={FIELD_LABEL}>收据币种（识别自小票，可修改）</span>
+              <CurrencySelect
+                value={currency}
+                onChange={(next) => {
+                  setCurrency(next);
+                  setFxOverride(null);
+                }}
+              />
+              <FxRateRow
+                base={baseCurrency}
+                currency={currency}
+                rate={foreign ? fxRate : null}
+                onRate={setFxOverride}
+                amount={grandTotal}
+              />
+            </div>
+
+            <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <span className={FIELD_LABEL}>
                 菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）
               </span>
@@ -344,7 +377,9 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           onChange={(e) => patchRow(row.id, { name: e.target.value })}
                         />
                         <span className="inline-flex items-center gap-[2px] shrink-0 w-[92px] px-2 py-[5px] border border-[#ebe9e3] rounded-lg bg-white transition-colors focus-within:border-[#1c1b19]">
-                          <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                          <span className="font-grotesk font-semibold text-[#9b988f]">
+                            {symbol}
+                          </span>
                           <input
                             className="w-full border-none bg-transparent outline-none font-grotesk font-semibold text-sm text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
                             type="number"
@@ -412,7 +447,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <span className={FIELD_LABEL}>税费 / 服务费（按比例分摊）</span>
               <div className="inline-flex items-center gap-1 max-w-[180px]">
-                <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                 <input
                   key={`tax-${recalc}-${tax}`}
                   className={FIELD_INPUT}
@@ -473,13 +508,13 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
               {tipMode === "percent" && tipPct != null && (
                 <span className="font-cjk text-[12px] text-[#76726a]">
-                  按菜品小计 {tipPct}% = {fmtMoney(tip)}
+                  按菜品小计 {tipPct}% = {fmtMoney(tip, currency)}
                 </span>
               )}
 
               {tipMode === "amount" && (
                 <div className="inline-flex items-center gap-1 max-w-[180px]">
-                  <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                  <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                   <input
                     key={`tip-${recalc}-${tipAmount}`}
                     className={FIELD_INPUT}
@@ -514,12 +549,13 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           className={`font-grotesk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${on ? CHIP_ON : CHIP_OFF}`}
                           onClick={() => setTotalTarget(n)}
                         >
-                          付 ${n}
+                          付 {symbol}
+                          {n}
                         </button>
                       );
                     })}
                     <span className="inline-flex items-center gap-1 max-w-[140px]">
-                      <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                      <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                       <input
                         key={`target-${recalc}-${totalTarget}`}
                         className={FIELD_INPUT}
@@ -543,10 +579,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   </div>
                   <span className="font-cjk text-[12px] text-[#76726a]">
                     {totalTarget == null
-                      ? `税后合计 ${fmtMoney(preTip)}，选一个凑整数或直接填实付金额`
+                      ? `税后合计 ${fmtMoney(preTip, currency)}，选一个凑整数或直接填实付金额`
                       : totalTarget < preTip
-                        ? `低于税后合计 ${fmtMoney(preTip)}，小费按 $0 计`
-                        : `付 ${fmtMoney(totalTarget)} → 小费 ${fmtMoney(tip)}`}
+                        ? `低于税后合计 ${fmtMoney(preTip, currency)}，小费按 ${fmtMoney(0, currency)} 计`
+                        : `付 ${fmtMoney(totalTarget, currency)} → 小费 ${fmtMoney(tip, currency)}`}
                   </span>
                 </>
               )}
@@ -559,6 +595,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                 onChange={setPayment}
                 amount={grandTotal}
                 travelers={travelers}
+                currency={currency}
               />
             </div>
 
@@ -590,7 +627,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                       className={`inline-flex items-center gap-[3px] border rounded-[10px] px-2.5 py-[5px] transition-colors ${manual[m.id] != null ? "border-[#5b7a99] bg-[#eef2f6]" : "border-[#ebe9e3] bg-white"}`}
                     >
                       <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">
-                        $
+                        {symbol}
                       </span>
                       <input
                         key={`${m.id}-${recalc}-${round2(auto[m.id] ?? 0)}`}
@@ -618,11 +655,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             <div className="flex flex-col gap-[5px] px-3.5 py-3 border border-[#ebe9e3] rounded-xl bg-[#fdfdfb] col-span-full">
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>菜品小计</span>
-                <span className="font-sans font-semibold">{fmtMoney(lineSubtotal)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(lineSubtotal, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>税费 / 服务费</span>
-                <span className="font-sans font-semibold">{fmtMoney(tax)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(tax, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>
@@ -630,14 +667,22 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   {tipMode === "percent" && tipPct != null && ` · ${tipPct}%`}
                   {tipMode === "total" &&
                     totalTarget != null &&
-                    ` · 凑整到 ${fmtMoney(totalTarget)}`}
+                    ` · 凑整到 ${fmtMoney(totalTarget, currency)}`}
                 </span>
-                <span className="font-sans font-semibold">{fmtMoney(tip)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(tip, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-bold text-base text-[#1c1b19] mt-1 pt-2 border-t border-dashed border-[#ebe9e3]">
                 <span>合计</span>
-                <span className="font-sans font-bold">{fmtMoney(grandTotal)}</span>
+                <span className="font-sans font-bold">{fmtMoney(grandTotal, currency)}</span>
               </div>
+              {foreign && fxRate != null && (
+                <div className="flex items-center justify-between font-cjk font-medium text-[12px] text-[#9b988f]">
+                  <span>折合本位币</span>
+                  <span className="font-sans font-semibold">
+                    {fmtMoney(grandTotal * fxRate, baseCurrency)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

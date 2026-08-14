@@ -122,9 +122,11 @@ type Expense = {
   cat: "transit" | "food" | "event" | "stay" | "misc";
   name: string; // display name
   sub: string; // one-line detail
-  amount: number; // USD
-  credit: number; // statement credit offsetting it, usually 0
+  amount: number; // in `currency` (falls back to trip.base.currency when absent)
+  credit: number; // statement credit offsetting it, usually 0 — same currency as amount
   payer: string; // member id (trip.members[].id)
+  currency?: string; // ISO 4217 code, ONLY when not trip.base.currency
+  fxRate?: number; // trip.base.currency units per 1 unit of `currency`, captured at entry
   split?: { mode: "percent" | "amount"; shares: Record<string, number> };
   items?: { name: string; quantity: number; price: number; who?: string[] }[];
 };
@@ -158,3 +160,7 @@ document shapes: read them from the live GET instead of guessing.
    timeline can label it. Dates must fall inside `trip.dates`.
 6. Don't touch `trip.suggestions` entries you didn't create; don't delete
    items/expenses unless the user asked.
+7. An expense in a foreign currency sets `currency` and `fxRate` together, and
+   every money field on it (amount, credit, item prices, shares in amount mode)
+   is in that currency. `GET /api/rates/<BASE>` (public) returns live quotes —
+   `fxRate = 1 / rates[currency]` — when the user didn't state a rate.

@@ -10,16 +10,28 @@ export const appliedCredit = (e: Expense): number => Math.min(e.credit || 0, Num
 
 export const netExpense = (e: Expense): number => (Number(e.amount) || 0) - appliedCredit(e);
 
+// Base-currency units per unit of the expense's own currency. 1 for expenses
+// recorded directly in the base currency (or with a missing/invalid rate), so
+// pre-multi-currency data aggregates unchanged.
+export const expenseFxRate = (e: Expense): number => {
+  const rate = Number(e.fxRate);
+  return Number.isFinite(rate) && rate > 0 ? rate : 1;
+};
+
 export type ExpenseTotals = { subtotal: number; creditTotal: number; total: number };
 
+// Totals are stated in the trip's base currency: each line converts at its own
+// captured fxRate. Reconciliation survives the conversion because it holds per
+// line before multiplying: (amount - credit) * rate = amount*rate - credit*rate.
 export const expenseTotals = (expenses: Expense[]): ExpenseTotals => {
   let subtotal = 0;
   let creditTotal = 0;
   let total = 0;
   for (const e of expenses) {
-    subtotal += Number(e.amount) || 0;
-    creditTotal += appliedCredit(e);
-    total += netExpense(e);
+    const rate = expenseFxRate(e);
+    subtotal += (Number(e.amount) || 0) * rate;
+    creditTotal += appliedCredit(e) * rate;
+    total += netExpense(e) * rate;
   }
   return { subtotal, creditTotal, total };
 };
@@ -111,16 +123,20 @@ export type SettlementTransfer = {
   amount: number;
 };
 
+// Balances are stated in the trip's base currency. Per-expense paid/owed maps
+// each sum to the expense's own net (in its own currency), so converting both
+// with the same fxRate keeps total paid === total owed across any currency mix.
 export const expenseBalances = (expenses: Expense[], memberIds: string[]): ExpenseBalance[] => {
   const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
   const owed = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
   for (const e of expenses) {
+    const rate = expenseFxRate(e);
     const by = expensePaidBy(e, memberIds);
     const allocation = expenseOwedBy(e, memberIds);
     for (const id of memberIds) {
-      paid[id] += by[id];
-      owed[id] += allocation[id];
+      paid[id] += by[id] * rate;
+      owed[id] += allocation[id] * rate;
     }
   }
 

@@ -5,11 +5,13 @@ import type { TripMeta } from "./api";
 import {
   appliedCredit,
   expenseBalances,
+  expenseFxRate,
   expenseOwedBy,
   expensePaidBy,
   expenseTotals,
   netExpense,
 } from "./expenses";
+import { expenseCurrency, fmtFxRate, tripCurrency } from "./currency";
 import type { Trip } from "./types";
 
 // Bank-statement-style PDF export for the public ledger, patterned after a
@@ -250,7 +252,10 @@ type ActivityRow = {
   detail?: boolean;
 };
 
-function activityTable(groups: { label: string; rows: ActivityRow[] }[]): HTMLDivElement {
+function activityTable(
+  groups: { label: string; rows: ActivityRow[] }[],
+  baseCurrency: string,
+): HTMLDivElement {
   const columns = "120px minmax(0, 1fr) 110px";
   const table = el("div", {
     width: "100%",
@@ -265,7 +270,7 @@ function activityTable(groups: { label: string; rows: ActivityRow[] }[]): HTMLDi
   [
     { label: "Category", align: "left" },
     { label: "Merchant Name or Transaction Description", align: "left" },
-    { label: "$ Amount", align: "right" },
+    { label: `Amount (${baseCurrency})`, align: "right" },
   ].forEach((column) => {
     headRow.append(
       el(
@@ -371,6 +376,11 @@ function buildStatement(
   const ledger = trip.expenses;
   const travelerIds = travelers.map((m) => m.id);
   const nameById = Object.fromEntries(travelers.map((m) => [m.id, m.name]));
+  // The statement is stated entirely in the trip's base currency; expenses
+  // recorded in another currency convert at their captured rate, with the
+  // original figure noted on the row.
+  const baseCurrency = tripCurrency(trip);
+  const money = (n: number) => fmtMoney(n, baseCurrency);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
   const balances = expenseBalances(ledger, travelerIds);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
@@ -397,6 +407,9 @@ function buildStatement(
     const owedBy = expenseOwedBy(item, travelerIds);
     const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
     const isSplit = payers.length > 1;
+    const rowCurrency = expenseCurrency(item, baseCurrency);
+    const rate = expenseFxRate(item);
+    const foreign = rowCurrency !== baseCurrency;
 
     const payerText = payers
       .map((m) => {
@@ -407,7 +420,7 @@ function buildStatement(
       .join(" / ");
     const allocationText = travelers
       .filter((m) => (owedBy[m.id] ?? 0) > 0.005)
-      .map((m) => `${m.name} ${fmtMoney(owedBy[m.id] ?? 0)}`)
+      .map((m) => `${m.name} ${money((owedBy[m.id] ?? 0) * rate)}`)
       .join(" / ");
     purchaseRows.push({
       category: categoryLabels[item.cat] ?? item.cat,
@@ -416,6 +429,7 @@ function buildStatement(
         el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
           [
             item.sub,
+            foreign ? `RECORDED ${fmtMoney(item.amount, rowCurrency)} @ ${fmtFxRate(rate)}` : "",
             payerText ? `PAID BY ${payerText}` : "",
             allocationText ? `ALLOCATED TO ${allocationText}` : "",
           ]
@@ -423,7 +437,7 @@ function buildStatement(
             .join("  ·  "),
         ]),
       ]),
-      amount: fmtMoney(item.amount),
+      amount: money(item.amount * rate),
     });
 
     if (item.items && item.items.length > 0) {
@@ -439,7 +453,7 @@ function buildStatement(
         purchaseRows.push({
           category: "",
           description:
-            `Receipt detail: ${qty}${li.name} · ${fmtMoney(li.price)}` +
+            `Receipt detail: ${qty}${li.name} · ${fmtMoney(li.price, rowCurrency)}` +
             (sharers ? ` · ${sharers}` : ""),
           amount: "",
           detail: true,
@@ -457,7 +471,7 @@ function buildStatement(
             "CREDIT APPLIED TO TRIP PURCHASE",
           ]),
         ]),
-        amount: "-" + fmtMoney(credit),
+        amount: "-" + money(credit * rate),
       });
     }
   }
@@ -527,19 +541,19 @@ function buildStatement(
   ]);
 
   const headlineFigures = el("div", { minWidth: "0", display: "grid", gap: "10px" }, [
-    bannerFigure("New Balance", fmtMoney(grand)),
-    bannerFigure("Settlement Due", fmtMoney(outstanding)),
+    bannerFigure("New Balance", money(grand)),
+    bannerFigure("Settlement Due", money(outstanding)),
     bannerFigure("Statement Date", fmtShortDate(today), "18px"),
   ]);
 
   const balanceSummary = el("div", { minWidth: "0" }, [
     heading("Trip Balance Summary"),
     summaryPanel([
-      { label: "Previous balance", value: fmtMoney(0) },
-      { label: "Purchases", value: "+" + fmtMoney(subtotal) },
-      { label: "Credits", value: "-" + fmtMoney(creditTotal) },
-      { label: "Fees charged", value: fmtMoney(0) },
-      { label: "Interest charged", value: fmtMoney(0) },
+      { label: "Previous balance", value: money(0) },
+      { label: "Purchases", value: "+" + money(subtotal) },
+      { label: "Credits", value: "-" + money(creditTotal) },
+      { label: "Fees charged", value: money(0) },
+      { label: "Interest charged", value: money(0) },
       { label: "Travelers", value: String(travelers.length) },
     ]),
     el(
@@ -559,7 +573,7 @@ function buildStatement(
       },
       [
         el("span", { minWidth: "0", fontSize: "16px", lineHeight: "1.15" }, ["Total trip balance"]),
-        el("span", { fontSize: "20px", lineHeight: "1.15", textAlign: "right" }, [fmtMoney(grand)]),
+        el("span", { fontSize: "20px", lineHeight: "1.15", textAlign: "right" }, [money(grand)]),
       ],
     ),
   ]);
@@ -616,18 +630,18 @@ function buildStatement(
           heading("Account Summary"),
           summaryPanel([
             { label: "Trip Account", value: trip.id },
-            { label: "Previous Balance", value: fmtMoney(0) },
-            { label: "Purchases", value: "+" + fmtMoney(subtotal) },
-            { label: "Credits Applied", value: "-" + fmtMoney(creditTotal) },
-            { label: "Fees Charged", value: fmtMoney(0) },
-            { label: "Interest Charged", value: fmtMoney(0) },
-            { label: "New Balance", value: fmtMoney(grand), strong: true },
+            { label: "Previous Balance", value: money(0) },
+            { label: "Purchases", value: "+" + money(subtotal) },
+            { label: "Credits Applied", value: "-" + money(creditTotal) },
+            { label: "Fees Charged", value: money(0) },
+            { label: "Interest Charged", value: money(0) },
+            { label: "New Balance", value: money(grand), strong: true },
             {
               label: "Opening/Closing Date",
               value: `${fmtShortDate(trip.dates.start)} - ${fmtShortDate(trip.dates.end)}`,
             },
             { label: "Travelers", value: String(travelers.length) },
-            { label: "Allocated Balance", value: fmtMoney(grand) },
+            { label: "Allocated Balance", value: money(grand) },
           ]),
         ]),
         el("div", { minWidth: "0" }, [
@@ -671,9 +685,9 @@ function buildStatement(
             el("div", { fontWeight: "700" }, [m.name]),
             el("div", { fontSize: "9.5px", color: MUTED }, [`@${m.handle}`]),
           ]),
-          fmtMoney(b?.paid ?? 0),
-          fmtMoney(b?.share ?? 0),
-          settled ? fmtMoney(0) : (net < 0 ? "-" : "+") + fmtMoney(Math.abs(net)),
+          money(b?.paid ?? 0),
+          money(b?.share ?? 0),
+          settled ? money(0) : (net < 0 ? "-" : "+") + money(Math.abs(net)),
           status,
         ];
       }),
@@ -682,10 +696,13 @@ function buildStatement(
     ),
 
     heading("Account Activity"),
-    activityTable([
-      { label: "Payments and Other Credits", rows: creditRows },
-      { label: "Purchases", rows: purchaseRows },
-    ]),
+    activityTable(
+      [
+        { label: "Payments and Other Credits", rows: creditRows },
+        { label: "Purchases", rows: purchaseRows },
+      ],
+      baseCurrency,
+    ),
   );
 
   const totalsYear = trip.dates.start.slice(0, 4) || today.slice(0, 4);
@@ -720,8 +737,8 @@ function buildStatement(
         ),
         el("div", { height: "1px", background: RULE }),
         el("div", { padding: "4px 0" }, [
-          totalsRow(`Total charges posted in ${totalsYear}`, fmtMoney(subtotal)),
-          totalsRow(`Total credits applied in ${totalsYear}`, "-" + fmtMoney(creditTotal)),
+          totalsRow(`Total charges posted in ${totalsYear}`, money(subtotal)),
+          totalsRow(`Total credits applied in ${totalsYear}`, "-" + money(creditTotal)),
         ]),
       ]),
     ]),
@@ -753,7 +770,9 @@ function buildStatement(
         disclosureParagraph(
           "Each expense may allocate exact responsibility amounts to individual travelers; " +
             "entries without a custom allocation use an equal split. Applied credits reduce the " +
-            "net amount of the expense they are attached to. All amounts are stated in U.S. dollars.",
+            `net amount of the expense they are attached to. All amounts are stated in ${baseCurrency}; ` +
+            "expenses recorded in another currency are converted at the exchange rate captured " +
+            "when the expense was entered (noted on the row).",
         ),
       ]),
       el("div", {}, [
