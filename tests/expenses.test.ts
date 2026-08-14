@@ -6,6 +6,7 @@ import {
   expenseFxRate,
   expenseOwedBy,
   expenseTotals,
+  rebaseExpenses,
   settlementTransfers,
 } from "../src/trip/expenses";
 import { applyOp, emptyTrip } from "../src/trip/ops";
@@ -127,6 +128,63 @@ describe("multi-currency aggregation", () => {
     // Conversion happens per expense, so paid and owed still cancel out.
     expect(balances[0].balance + balances[1].balance).toBeCloseTo(0, 10);
     expect(balances[0].balance).toBeCloseTo(-20, 10);
+  });
+
+  it("ignores a stray fxRate on rows that resolve to the base currency", () => {
+    const rows = [expense({ amount: 100, fxRate: 0.007 })];
+    expect(expenseTotals(rows, "USD").total).toBeCloseTo(100, 10);
+    expect(expenseBalances(rows, ["a"], "USD")[0].paid).toBeCloseTo(100, 10);
+  });
+
+  it("allocates zero-decimal currencies in whole units", () => {
+    expect(evenExpenseAllocation(101, ["a", "b"], 0)).toEqual({ a: 51, b: 50 });
+    expect(
+      expenseOwedBy(expense({ amount: 10_000, currency: "JPY", fxRate: 0.007 }), ["a", "b", "c"]),
+    ).toEqual({ a: 3334, b: 3333, c: 3333 });
+  });
+
+  it("settles mixed-currency ledgers with exact transfers", () => {
+    const balances = expenseBalances(
+      [
+        expense({ amount: 100 }),
+        expense({
+          id: "expense-2",
+          amount: 10_000,
+          payer: "b",
+          currency: "JPY",
+          fxRate: 0.007,
+          owedBy: { a: 10_000, b: 0 },
+        }),
+      ],
+      ["a", "b"],
+      "USD",
+    );
+    expect(settlementTransfers(balances)).toEqual([{ from: "a", to: "b", amount: 20 }]);
+  });
+});
+
+describe("base-currency rebase", () => {
+  it("stamps implicit rows and restates captured rates, never amounts", () => {
+    const out = rebaseExpenses(
+      [
+        expense({ amount: 100 }),
+        expense({ id: "e2", amount: 10_000, currency: "JPY", fxRate: 0.0068 }),
+        expense({ id: "e3", amount: 50, currency: "EUR", fxRate: 1.08 }),
+      ],
+      "USD",
+      "EUR",
+      0.9259,
+    );
+    // Implicit USD rows become explicit USD at the cross rate.
+    expect(out[0].currency).toBe("USD");
+    expect(out[0].fxRate).toBeCloseTo(0.9259, 6);
+    // Foreign rows keep their currency; the captured rate is restated.
+    expect(out[1].currency).toBe("JPY");
+    expect(out[1].fxRate).toBeCloseTo(0.0068 * 0.9259, 8);
+    // Rows already recorded in the new base become implicit again.
+    expect(out[2].currency).toBeUndefined();
+    expect(out[2].fxRate).toBeUndefined();
+    expect(out.map((e) => e.amount)).toEqual([100, 10_000, 50]);
   });
 });
 

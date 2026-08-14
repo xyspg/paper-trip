@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Trip, TripMember } from "../src/trip/types";
 import { applyOp, emptyTrip, type TripOp } from "../src/trip/ops";
+import { rebaseExpenses } from "../src/trip/expenses";
 import type { TripBackup } from "../src/trip/types";
 import type { Env } from "./env";
 
@@ -334,7 +335,9 @@ export class TripDurableObject extends DurableObject<Env> {
 
   // Mirror registry metadata edits (title/dates/timezone/currency) into the
   // document so the masthead everyone renders never drifts from what settings
-  // shows.
+  // shows. A currency change also restates the ledger's captured conversion
+  // rates via the fxRebase cross rate the worker fetched (rebaseExpenses), so
+  // stored amounts are never silently relabeled in a new unit.
   private async setMeta(req: Request): Promise<Response> {
     if (!this.trip) return TripDurableObject.uninitialized();
     const body = (await req.json().catch(() => null)) as {
@@ -342,9 +345,18 @@ export class TripDurableObject extends DurableObject<Env> {
       dates?: { start?: unknown; end?: unknown };
       timezone?: unknown;
       currency?: unknown;
+      fxRebase?: unknown;
     } | null;
     if (!body) return Response.json({ error: "bad_request" }, { status: 400 });
     const at = new Date().toISOString();
+    const prevCurrency = this.trip.base.currency ?? "USD";
+    const nextCurrency =
+      typeof body.currency === "string" && body.currency ? body.currency : prevCurrency;
+    const rebase = Number(body.fxRebase);
+    const expenses =
+      nextCurrency !== prevCurrency && Number.isFinite(rebase) && rebase > 0
+        ? rebaseExpenses(this.trip.expenses ?? [], prevCurrency, nextCurrency, rebase)
+        : this.trip.expenses;
     this.trip = {
       ...this.trip,
       title: typeof body.title === "string" && body.title ? body.title : this.trip.title,
@@ -358,11 +370,9 @@ export class TripDurableObject extends DurableObject<Env> {
           typeof body.timezone === "string" && body.timezone
             ? body.timezone
             : this.trip.base.timezone,
-        currency:
-          typeof body.currency === "string" && body.currency
-            ? body.currency
-            : this.trip.base.currency,
+        currency: nextCurrency,
       },
+      expenses,
       updatedAt: at,
     };
     this.rev += 1;

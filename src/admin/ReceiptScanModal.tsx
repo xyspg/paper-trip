@@ -22,7 +22,13 @@ import type { SplitValue } from "./PaymentSplit";
 import type { NewExpenseInput } from "./AddExpenseModal";
 import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { deriveShares, parseReceipt } from "./receipt";
-import { currencySymbol, normalizeCurrency, roundFxRate } from "../trip/currency";
+import {
+  currencyDecimals,
+  currencySymbol,
+  normalizeCurrency,
+  roundAmount,
+  roundFxRate,
+} from "../trip/currency";
 import type { ExpenseItem } from "../trip/types";
 
 type Props = {
@@ -106,7 +112,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         r.tax ??
         (typeof r.total === "number" ? Math.max(0, r.total - sumPrices(r.items) - printedTip) : 0);
       setMerchant(r.merchant || "餐厅收据");
-      setCurrency(normalizeCurrency(r.currency) ?? baseCurrency);
+      // Adopt the OCR currency up front so the tax/tip seeds below round at
+      // that currency's own precision (whole yen, not hundredths).
+      const cur = normalizeCurrency(r.currency) ?? baseCurrency;
+      setCurrency(cur);
       setFxOverride(null);
       setRows(
         r.items.map((it) => ({
@@ -117,12 +126,12 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           who: [...travelerIds], // default AA
         })),
       );
-      setTax(round2(Math.max(0, taxGuess)));
+      setTax(roundAmount(Math.max(0, taxGuess), cur));
       if (r.suggestedTips?.length) setSuggestedPcts(r.suggestedTips);
       // A tip already printed on the receipt (service charge, pre-added
       // gratuity) starts in amount mode; otherwise wait for a percent pick.
       setTipMode(printedTip > 0 ? "amount" : "percent");
-      setTipAmount(printedTip > 0 ? round2(printedTip) : 0);
+      setTipAmount(printedTip > 0 ? roundAmount(printedTip, cur) : 0);
       setTipPct(null);
       setTotalTarget(null);
       setManual({});
@@ -154,34 +163,44 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...travelerIds] },
     ]);
 
-  const lineSubtotal = round2(sumPrices(rows));
+  // Every figure on this modal rounds at the receipt currency's own precision:
+  // whole units for JPY/KRW, cents otherwise.
+  const decimals = currencyDecimals(currency);
+  const rDec = (n: number) => roundAmount(n, currency);
+  // Money input affordances matched to that precision.
+  const moneyStep = decimals ? "0.01" : "1";
+  const moneyZero = decimals ? "0.00" : "0";
+
+  const lineSubtotal = rDec(sumPrices(rows));
   // Pre-tip bill: what the round-up targets are measured against.
-  const preTip = round2(lineSubtotal + tax);
+  const preTip = rDec(lineSubtotal + tax);
   const tip =
     tipMode === "percent"
       ? tipPct
-        ? round2((lineSubtotal * tipPct) / 100)
+        ? rDec((lineSubtotal * tipPct) / 100)
         : 0
       : tipMode === "amount"
         ? tipAmount
-        : Math.max(0, round2((totalTarget ?? preTip) - preTip));
-  const extra = round2(tax + tip);
-  // Round-number cash targets: next dollar, next $5, next $10 above the
-  // pre-tip bill (deduped — e.g. $106.22 → 107 / 110 / 120).
+        : Math.max(0, rDec((totalTarget ?? preTip) - preTip));
+  const extra = rDec(tax + tip);
+  // Round-number cash targets above the pre-tip bill, stepped at 1/5/10 units
+  // scaled to the bill's magnitude so they stay "round" in any currency
+  // (deduped — $106.22 → 107 / 110 / 120, ¥10,820 → 10,900 / 11,000 / 12,000).
+  const unit = 10 ** Math.max(0, Math.floor(Math.log10(Math.max(1, preTip))) - 2);
   const roundTargets = [
     ...new Set([
-      Math.ceil(preTip),
-      Math.ceil(preTip / 5) * 5,
-      Math.ceil(preTip / 10) * 10,
-      Math.ceil(preTip / 10) * 10 + 10,
+      Math.ceil(preTip / unit) * unit,
+      Math.ceil(preTip / (5 * unit)) * 5 * unit,
+      Math.ceil(preTip / (10 * unit)) * 10 * unit,
+      Math.ceil(preTip / (10 * unit)) * 10 * unit + 10 * unit,
     ]),
   ]
     .filter((n) => n > 0)
     .slice(0, 3);
 
-  const auto = deriveShares(rows, travelerIds, extra);
+  const auto = deriveShares(rows, travelerIds, extra, decimals);
   const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0;
-  const grandTotal = round2(travelerIds.reduce((s, id) => s + finalOf(id), 0));
+  const grandTotal = rDec(travelerIds.reduce((s, id) => s + finalOf(id), 0));
   const hasOverride = Object.keys(manual).length > 0;
 
   const setManualAmount = (id: string, raw: string) => {
@@ -200,7 +219,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       setRecalc((k) => k + 1);
       return;
     }
-    setManual((prev) => ({ ...prev, [id]: round2(n) }));
+    setManual((prev) => ({ ...prev, [id]: roundAmount(n, currency) }));
   };
 
   const clearOverrides = () => {
@@ -225,7 +244,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       return {
         name: r.name.trim() || "未命名",
         quantity: r.quantity,
-        price: round2(r.price),
+        price: rDec(r.price),
         who: isAA(who, travelerIds) ? undefined : who,
       };
     });
@@ -384,15 +403,15 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                             className="w-full border-none bg-transparent outline-none font-grotesk font-semibold text-sm text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
                             type="number"
                             inputMode="decimal"
-                            step="0.01"
+                            step={moneyStep}
                             min="0"
                             defaultValue={row.price || ""}
                             aria-label="价格"
-                            placeholder="0.00"
+                            placeholder={moneyZero}
                             onBlur={(e) => {
                               const n = parseFloat(e.target.value);
                               patchRow(row.id, {
-                                price: Number.isFinite(n) && n >= 0 ? round2(n) : 0,
+                                price: Number.isFinite(n) && n >= 0 ? rDec(n) : 0,
                               });
                             }}
                             onKeyDown={(e) => {
@@ -453,15 +472,15 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   className={FIELD_INPUT}
                   type="number"
                   inputMode="decimal"
-                  step="0.01"
+                  step={moneyStep}
                   defaultValue={tax || ""}
                   autoComplete="off"
                   data-1p-ignore
                   data-lpignore="true"
-                  placeholder="0.00"
+                  placeholder={moneyZero}
                   onBlur={(e) => {
                     const n = parseFloat(e.target.value);
-                    setTax(Number.isFinite(n) ? Math.max(0, round2(n)) : 0);
+                    setTax(Number.isFinite(n) ? Math.max(0, rDec(n)) : 0);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur();
@@ -520,15 +539,15 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                     className={FIELD_INPUT}
                     type="number"
                     inputMode="decimal"
-                    step="0.01"
+                    step={moneyStep}
                     defaultValue={tipAmount || ""}
                     autoComplete="off"
                     data-1p-ignore
                     data-lpignore="true"
-                    placeholder="0.00"
+                    placeholder={moneyZero}
                     onBlur={(e) => {
                       const n = parseFloat(e.target.value);
-                      setTipAmount(Number.isFinite(n) ? Math.max(0, round2(n)) : 0);
+                      setTipAmount(Number.isFinite(n) ? Math.max(0, rDec(n)) : 0);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") e.currentTarget.blur();
@@ -569,7 +588,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         placeholder="最终付了多少"
                         onBlur={(e) => {
                           const n = parseFloat(e.target.value);
-                          setTotalTarget(Number.isFinite(n) && n > 0 ? round2(n) : null);
+                          setTotalTarget(Number.isFinite(n) && n > 0 ? rDec(n) : null);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") e.currentTarget.blur();
@@ -634,9 +653,9 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
                         type="number"
                         inputMode="decimal"
-                        step="0.01"
+                        step={moneyStep}
                         min="0"
-                        defaultValue={round2(finalOf(m.id))}
+                        defaultValue={rDec(finalOf(m.id))}
                         autoComplete="off"
                         data-1p-ignore
                         data-lpignore="true"

@@ -1,4 +1,4 @@
-import { round2 } from "./adminData";
+import { allocateByWeight } from "../trip/expenses";
 
 // Client for the admin receipt scanner. Downscales the photo in-browser (camera
 // shots are multi-MB; Gemini bills by pixels and the upload is faster small),
@@ -89,11 +89,16 @@ export async function parseReceipt(tripId: string, file: File): Promise<ParsedRe
 // is divided equally among the travelers it is assigned to (an empty assignment
 // falls back to everyone, so money is never silently dropped). Extras (tax + tip
 // + any rounding gap to the receipt total) are spread proportionally to each
-// traveler's item subtotal, or evenly when there are no items yet.
+// traveler's item subtotal, or evenly when there are no items yet. The shares
+// are settled at the currency's own precision (`decimals`, 0 for JPY/KRW) and
+// always sum exactly to the rounded bill — allocateByWeight hands out the
+// rounding remainder — so zero-decimal currencies never persist fractional
+// units like 3333.33 yen.
 export function deriveShares(
   items: { price: number; who: string[] }[],
   travelerIds: string[],
   extra: number,
+  decimals: number = 2,
 ): Record<string, number> {
   const base: Record<string, number> = Object.fromEntries(travelerIds.map((id) => [id, 0]));
   for (const it of items) {
@@ -104,11 +109,13 @@ export function deriveShares(
   }
 
   const baseSum = travelerIds.reduce((s, id) => s + base[id], 0);
-  const out: Record<string, number> = {};
+  const raw: Record<string, number> = {};
   for (const id of travelerIds) {
     const extraShare =
       baseSum > 0 ? (extra * base[id]) / baseSum : extra / (travelerIds.length || 1);
-    out[id] = round2(base[id] + extraShare);
+    raw[id] = base[id] + extraShare;
   }
-  return out;
+  const factor = 10 ** decimals;
+  const total = Math.round((baseSum + extra) * factor) / factor;
+  return allocateByWeight(total, travelerIds, raw, decimals);
 }

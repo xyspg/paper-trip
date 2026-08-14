@@ -123,8 +123,8 @@ export function SplitSection({
     onSetSplit(e.id, payer, split);
   };
 
-  const { subtotal, creditTotal, total } = expenseTotals(expenses);
-  const balances = expenseBalances(expenses, travelerIds);
+  const { subtotal, creditTotal, total } = expenseTotals(expenses, currency);
+  const balances = expenseBalances(expenses, travelerIds, currency);
   const transfers = settlementTransfers(balances);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
 

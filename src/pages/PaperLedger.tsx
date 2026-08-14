@@ -94,8 +94,8 @@ export function PaperLedger({
   const travelerCount = travelerIds.length;
   const baseCurrency = tripCurrency(trip);
   const ledger = trip.expenses;
-  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
-  const balances = expenseBalances(ledger, travelerIds);
+  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
+  const balances = expenseBalances(ledger, travelerIds, baseCurrency);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 

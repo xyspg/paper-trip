@@ -1,7 +1,16 @@
 import type { Expense, ExpenseAllocation } from "./types";
+import { currencyDecimals, expenseCurrency, normalizeCurrency, roundFxRate } from "./currency";
 
 const cents = (value: number): number => Math.round(Math.max(0, Number(value) || 0) * 100);
 const fromCents = (value: number): number => value / 100;
+
+// Decimal precision of the currency an expense's own numbers are recorded in.
+// Entries without an explicit currency are legacy/base-currency lines; those
+// keep cent precision, which is a safe superset for every base currency.
+export const expenseDecimals = (e: Expense): number => {
+  const code = normalizeCurrency(e.currency);
+  return code ? currencyDecimals(code) : 2;
+};
 
 // Expense ledger math shared by the public ledger and the admin split view so the
 // two surfaces can never disagree. A line's credit can only offset up to its own
@@ -18,17 +27,24 @@ export const expenseFxRate = (e: Expense): number => {
   return Number.isFinite(rate) && rate > 0 ? rate : 1;
 };
 
+// The rate a line contributes to base-currency aggregation. When the trip base
+// is known, a line that resolves to the base itself always converts at exactly
+// 1, so a stray fxRate on a base-currency row (malformed agent data) can never
+// pull totals away from what the row visibly shows.
+const aggregationRate = (e: Expense, base?: string): number =>
+  base !== undefined && expenseCurrency(e, base) === base ? 1 : expenseFxRate(e);
+
 export type ExpenseTotals = { subtotal: number; creditTotal: number; total: number };
 
 // Totals are stated in the trip's base currency: each line converts at its own
 // captured fxRate. Reconciliation survives the conversion because it holds per
 // line before multiplying: (amount - credit) * rate = amount*rate - credit*rate.
-export const expenseTotals = (expenses: Expense[]): ExpenseTotals => {
+export const expenseTotals = (expenses: Expense[], base?: string): ExpenseTotals => {
   let subtotal = 0;
   let creditTotal = 0;
   let total = 0;
   for (const e of expenses) {
-    const rate = expenseFxRate(e);
+    const rate = aggregationRate(e, base);
     subtotal += (Number(e.amount) || 0) * rate;
     creditTotal += appliedCredit(e) * rate;
     total += netExpense(e) * rate;
@@ -49,22 +65,25 @@ export const expensePaidBy = (e: Expense, memberIds: string[]): Record<string, n
   if (shares) {
     let sum = 0;
     for (const id of memberIds) sum += Math.max(0, Number(shares[id]) || 0);
-    if (sum > 0) return allocateByWeight(net, memberIds, shares);
+    if (sum > 0) return allocateByWeight(net, memberIds, shares, expenseDecimals(e));
   }
   if (e.payer in out) out[e.payer] = net;
   return out;
 };
 
 // Allocate an amount using arbitrary non-negative weights while keeping the
-// result exact to the cent. Fractional remainders are handed out in stable
+// result exact to the currency's smallest unit (cents by default, whole units
+// for zero-decimal currencies). Fractional remainders are handed out in stable
 // member order, so the returned amounts always add up to `amount`.
 export const allocateByWeight = (
   amount: number,
   memberIds: string[],
   weights?: Record<string, number>,
+  decimals: number = 2,
 ): ExpenseAllocation => {
   const out: ExpenseAllocation = Object.fromEntries(memberIds.map((id) => [id, 0]));
-  const target = cents(amount);
+  const factor = 10 ** decimals;
+  const target = Math.round(Math.max(0, Number(amount) || 0) * factor);
   if (memberIds.length === 0 || target === 0) return out;
 
   const safeWeights = memberIds.map((id) => Math.max(0, Number(weights?.[id]) || 0));
@@ -79,12 +98,15 @@ export const allocateByWeight = (
   const remaining = target - rows.reduce((sum, row) => sum + row.value, 0);
   const remainderOrder = [...rows].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
   for (let i = 0; i < remaining; i += 1) remainderOrder[i % remainderOrder.length].value += 1;
-  for (const row of rows) out[row.id] = fromCents(row.value);
+  for (const row of rows) out[row.id] = row.value / factor;
   return out;
 };
 
-export const evenExpenseAllocation = (amount: number, memberIds: string[]): ExpenseAllocation =>
-  allocateByWeight(amount, memberIds);
+export const evenExpenseAllocation = (
+  amount: number,
+  memberIds: string[],
+  decimals: number = 2,
+): ExpenseAllocation => allocateByWeight(amount, memberIds, undefined, decimals);
 
 export const expenseAllocationTotal = (
   allocation: ExpenseAllocation | undefined,
@@ -107,7 +129,7 @@ export const expenseOwedBy = (e: Expense, memberIds: string[]): ExpenseAllocatio
   if (e.owedBy && expenseAllocationMatches(e.owedBy, net, memberIds)) {
     return Object.fromEntries(memberIds.map((id) => [id, fromCents(cents(e.owedBy?.[id] ?? 0))]));
   }
-  return evenExpenseAllocation(net, memberIds);
+  return evenExpenseAllocation(net, memberIds, expenseDecimals(e));
 };
 
 export type ExpenseBalance = {
@@ -126,12 +148,16 @@ export type SettlementTransfer = {
 // Balances are stated in the trip's base currency. Per-expense paid/owed maps
 // each sum to the expense's own net (in its own currency), so converting both
 // with the same fxRate keeps total paid === total owed across any currency mix.
-export const expenseBalances = (expenses: Expense[], memberIds: string[]): ExpenseBalance[] => {
+export const expenseBalances = (
+  expenses: Expense[],
+  memberIds: string[],
+  base?: string,
+): ExpenseBalance[] => {
   const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
   const owed = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
   for (const e of expenses) {
-    const rate = expenseFxRate(e);
+    const rate = aggregationRate(e, base);
     const by = expensePaidBy(e, memberIds);
     const allocation = expenseOwedBy(e, memberIds);
     for (const id of memberIds) {
@@ -176,3 +202,24 @@ export const settlementTransfers = (balances: ExpenseBalance[]): SettlementTrans
 
   return transfers;
 };
+
+// Restate a ledger for a base-currency change from `oldBase` to `newBase`.
+// Recorded original-currency figures never change; only the base conversion is
+// restated: rows implicitly in the old base become explicit `oldBase` rows at
+// `rebaseRate` (newBase units per 1 oldBase unit), every foreign row's captured
+// rate is multiplied by it, and rows already recorded in the new base become
+// implicit again (conversion to itself is exactly 1 by definition).
+export const rebaseExpenses = (
+  expenses: Expense[],
+  oldBase: string,
+  newBase: string,
+  rebaseRate: number,
+): Expense[] =>
+  expenses.map((e) => {
+    const currency = normalizeCurrency(e.currency) ?? oldBase;
+    if (currency === newBase) return { ...e, currency: undefined, fxRate: undefined };
+    // A row recorded in the old base converted at exactly 1; foreign rows keep
+    // their captured old-base rate as the starting point.
+    const captured = currency === oldBase ? 1 : expenseFxRate(e);
+    return { ...e, currency, fxRate: roundFxRate(captured * rebaseRate) };
+  });

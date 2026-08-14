@@ -18,7 +18,7 @@ import type { Env } from "./env";
 
 const CACHE_TTL_SECONDS = 6 * 3600;
 
-type RatesPayload = {
+export type RatesPayload = {
   base: string;
   // Provider-reported publication stamp, passed through verbatim.
   date: string;
@@ -70,28 +70,39 @@ async function fromFrankfurter(base: string): Promise<RatesPayload | null> {
   };
 }
 
+// Quotes for one base, through the shared 6h cache. Used by the public
+// /api/rates endpoint and by the trip PATCH handler when a base-currency
+// change needs a cross rate to restate captured fxRates.
+export async function loadRates(base: string, ctx: ExecutionContext): Promise<RatesPayload | null> {
+  // Cache API keyed on a canonical per-base URL (the request URL would work
+  // too, but a fixed key ignores stray query params).
+  const cacheKey = new Request(`https://rates.papertrip.internal/${base}`);
+  const cache = caches.default;
+  const hit = await cache.match(cacheKey);
+  if (hit) return (await hit.json().catch(() => null)) as RatesPayload | null;
+
+  const payload =
+    (await fromErApi(base).catch(() => null)) ?? (await fromFrankfurter(base).catch(() => null));
+  if (!payload) return null;
+
+  const res = Response.json(payload, {
+    headers: { "cache-control": `public, max-age=${CACHE_TTL_SECONDS}` },
+  });
+  ctx.waitUntil(cache.put(cacheKey, res));
+  return payload;
+}
+
 const rates = new Hono<{ Bindings: Env }>();
 
 rates.get("/:base", async (c) => {
   const base = c.req.param("base").toUpperCase();
   if (!/^[A-Z]{3}$/.test(base)) return c.json({ error: "bad_base" }, 400);
 
-  // Cache API keyed on a canonical per-base URL (the request URL would work
-  // too, but a fixed key ignores stray query params).
-  const cacheKey = new Request(`https://rates.papertrip.internal/${base}`);
-  const cache = caches.default;
-  const hit = await cache.match(cacheKey);
-  if (hit) return hit;
-
-  const payload =
-    (await fromErApi(base).catch(() => null)) ?? (await fromFrankfurter(base).catch(() => null));
+  const payload = await loadRates(base, c.executionCtx);
   if (!payload) return c.json({ error: "unavailable" }, 502);
-
-  const res = Response.json(payload, {
+  return Response.json(payload, {
     headers: { "cache-control": `public, max-age=${CACHE_TTL_SECONDS}` },
   });
-  c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()));
-  return res;
 });
 
 export default rates;

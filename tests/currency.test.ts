@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  currencyDecimals,
   expenseCurrency,
   fmtCurrency,
   fmtCurrencyNumber,
   normalizeCurrency,
+  roundAmount,
   roundFxRate,
   tripCurrency,
 } from "../src/trip/currency";
@@ -15,10 +17,13 @@ describe("currency codes", () => {
     expect(normalizeCurrency(" jpy ")).toBe("JPY");
     expect(normalizeCurrency("RMB")).toBe("CNY");
     expect(normalizeCurrency("US$")).toBe("USD");
+    expect(normalizeCurrency("YEN")).toBe("JPY");
+    expect(normalizeCurrency("won")).toBe("KRW");
+    expect(normalizeCurrency("EURO")).toBe("EUR");
     expect(normalizeCurrency("$")).toBeNull();
     expect(normalizeCurrency("")).toBeNull();
     expect(normalizeCurrency(undefined)).toBeNull();
-    expect(normalizeCurrency("EURO")).toBeNull();
+    expect(normalizeCurrency("DOLLARS")).toBeNull();
   });
 
   it("falls back to USD for trips persisted before multi-currency", () => {
@@ -54,5 +59,12 @@ describe("currency formatting", () => {
   it("keeps captured rates to ~6 significant digits", () => {
     expect(roundFxRate(1 / 147)).toBeCloseTo(0.00680272, 8);
     expect(roundFxRate(7.233123456)).toBe(7.23312);
+  });
+
+  it("rounds amounts at each currency's own precision", () => {
+    expect(currencyDecimals("KRW")).toBe(0);
+    expect(currencyDecimals("USD")).toBe(2);
+    expect(roundAmount(3333.33, "JPY")).toBe(3333);
+    expect(roundAmount(12.345, "USD")).toBe(12.35);
   });
 });

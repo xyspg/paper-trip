@@ -381,8 +381,8 @@ function buildStatement(
   // original figure noted on the row.
   const baseCurrency = tripCurrency(trip);
   const money = (n: number) => fmtMoney(n, baseCurrency);
-  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
-  const balances = expenseBalances(ledger, travelerIds);
+  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
+  const balances = expenseBalances(ledger, travelerIds, baseCurrency);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const timezone = trip.base.timezone;
@@ -408,8 +408,10 @@ function buildStatement(
     const payers = travelers.filter((m) => (paidBy[m.id] ?? 0) > 0.005);
     const isSplit = payers.length > 1;
     const rowCurrency = expenseCurrency(item, baseCurrency);
-    const rate = expenseFxRate(item);
     const foreign = rowCurrency !== baseCurrency;
+    // Rows that resolve to the base currency always convert at exactly 1,
+    // matching the aggregation gate in expenseTotals/expenseBalances.
+    const rate = foreign ? expenseFxRate(item) : 1;
 
     const payerText = payers
       .map((m) => {

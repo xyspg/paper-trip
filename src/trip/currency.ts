@@ -39,7 +39,14 @@ export const CURRENCIES: CurrencyInfo[] = [
 const byCode = new Map(CURRENCIES.map((c) => [c.code, c]));
 
 // Receipt OCR sometimes returns trade names instead of ISO codes.
-const CODE_ALIASES: Record<string, string> = { RMB: "CNY", US$: "USD", NTD: "TWD" };
+const CODE_ALIASES: Record<string, string> = {
+  RMB: "CNY",
+  US$: "USD",
+  NTD: "TWD",
+  YEN: "JPY",
+  WON: "KRW",
+  EURO: "EUR",
+};
 
 // Uppercase 3-letter ISO 4217 code, or null when the input isn't one.
 export function normalizeCurrency(v: unknown): string | null {
@@ -53,6 +60,16 @@ export const currencyInfo = (code: string): CurrencyInfo =>
   byCode.get(code) ?? { code, symbol: `${code} `, label: code, decimals: 2 };
 
 export const currencySymbol = (code: string): string => currencyInfo(code).symbol;
+
+export const currencyDecimals = (code: string): number => currencyInfo(code).decimals;
+
+// Round an amount to the currency's own precision — whole units for
+// zero-decimal currencies (JPY/KRW/…), cents otherwise — so entry surfaces
+// never persist sub-unit noise like 3333.33 yen.
+export const roundAmount = (n: number, code: string): number => {
+  const factor = 10 ** currencyInfo(code).decimals;
+  return Math.round((Number(n) || 0) * factor) / factor;
+};
 
 // Grouped amount at the currency's own precision, without the symbol — for
 // layouts that render the symbol as its own styled node.

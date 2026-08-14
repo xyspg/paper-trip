@@ -110,7 +110,7 @@ type TripItem = {
   durationMinutes: number;
   status: "planned" | "locked" | "done"; // locked = booked/confirmed
   priority: "low" | "medium" | "high";
-  costEstimate?: number; // USD
+  costEstimate?: number; // in trip.base.currency
   confirmation?: string; // booking confirmation code — only if the user gave one
   leaveBy?: string; // "17:40" — when to depart for this stop
   notes: string[];

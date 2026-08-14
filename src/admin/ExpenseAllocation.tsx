@@ -8,7 +8,7 @@ import {
 import { Avatar } from "./Avatar";
 import type { AdminMember } from "./adminData";
 import { fmtMoney, round2 } from "./adminData";
-import { DEFAULT_CURRENCY, currencySymbol } from "../trip/currency";
+import { DEFAULT_CURRENCY, currencyDecimals, currencySymbol } from "../trip/currency";
 import { BTN_GHOST, BTN_SM } from "./adminUi";
 import { Icons } from "./AdminIcons";
 
@@ -25,17 +25,20 @@ function AllocationInput({
   member,
   value,
   symbol,
+  decimals,
   onCommit,
 }: {
   member: AdminMember;
   value: number;
   symbol: string;
+  decimals: number;
   onCommit: (value: number) => void;
 }) {
   const [draft, setDraft] = useState(value ? String(value) : "");
+  const factor = 10 ** decimals;
   const commit = () => {
     const parsed = parseFloat(draft);
-    const next = Number.isFinite(parsed) ? round2(Math.max(0, parsed)) : 0;
+    const next = Number.isFinite(parsed) ? Math.round(Math.max(0, parsed) * factor) / factor : 0;
     setDraft(next ? String(next) : "");
     onCommit(next);
   };
@@ -52,14 +55,14 @@ function AllocationInput({
           className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
           type="number"
           inputMode="decimal"
-          step="0.01"
+          step={decimals ? "0.01" : "1"}
           min="0"
           value={draft}
           autoComplete="off"
           data-1p-ignore
           data-lpignore="true"
           aria-label={`${member.name} 承担金额`}
-          placeholder="0.00"
+          placeholder={decimals ? "0.00" : "0"}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commit}
           onKeyDown={(event) => {
@@ -76,7 +79,8 @@ function AllocationInput({
 export function ExpenseAllocation({ amount, travelers, value, onChange, currency }: Props) {
   const memberIds = travelers.map((member) => member.id);
   const symbol = currencySymbol(currency ?? DEFAULT_CURRENCY);
-  const allocation = value ?? evenExpenseAllocation(amount, memberIds);
+  const decimals = currencyDecimals(currency ?? DEFAULT_CURRENCY);
+  const allocation = value ?? evenExpenseAllocation(amount, memberIds, decimals);
   const total = expenseAllocationTotal(allocation, memberIds);
   const matches = expenseAllocationMatches(value, amount, memberIds);
   const difference = round2(amount - total);
@@ -114,6 +118,7 @@ export function ExpenseAllocation({ amount, travelers, value, onChange, currency
             member={member}
             value={allocation[member.id] ?? 0}
             symbol={symbol}
+            decimals={decimals}
             onCommit={(next) => onChange({ ...allocation, [member.id]: next })}
           />
         ))}

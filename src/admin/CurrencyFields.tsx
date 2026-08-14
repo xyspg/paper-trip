@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fmtMoney } from "./adminData";
 import { FIELD_INPUT } from "./adminUi";
 import { CURRENCIES, fmtFxRate, roundFxRate } from "../trip/currency";
@@ -69,27 +70,36 @@ export function FxRateRow({
   // Amount in `currency`, for the converted preview.
   amount: number;
 }) {
+  // Draft-while-editing: the field mirrors the effective rate except while the
+  // user is actually typing (draft non-null between focus and blur), so an
+  // async quote arriving mid-entry can never wipe what's being typed — the old
+  // keyed-remount approach did exactly that when the quote resolved.
+  const [draft, setDraft] = useState<string | null>(null);
   if (currency === base) return null;
+  const shown = draft ?? (rate != null ? fmtFxRate(rate) : "");
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 font-cjk text-[12px] text-[#76726a]">
       <span className="whitespace-nowrap">汇率 1 {currency} =</span>
       <span className="inline-flex items-center gap-1 border border-[#ebe9e3] rounded-[9px] bg-white py-[3px] px-2 focus-within:border-[#1c1b19] transition-colors">
         <input
-          key={`${currency}-${rate ?? "pending"}`}
+          key={currency}
           className="w-[86px] border-none outline-none bg-transparent font-sans font-semibold text-[13px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
           type="number"
           inputMode="decimal"
           step="any"
           min="0"
-          defaultValue={rate != null ? fmtFxRate(rate) : ""}
+          value={shown}
           autoComplete="off"
           data-1p-ignore
           data-lpignore="true"
           placeholder="获取中…"
           aria-label={`1 ${currency} 折合 ${base}`}
+          onFocus={() => setDraft(shown)}
+          onChange={(e) => setDraft(e.target.value)}
           onBlur={(e) => {
             const n = parseFloat(e.target.value);
             onRate(Number.isFinite(n) && n > 0 ? roundFxRate(n) : null);
+            setDraft(null);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();

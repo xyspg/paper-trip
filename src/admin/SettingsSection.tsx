@@ -48,6 +48,22 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
       toast("行程名称不能为空", "warn");
       return;
     }
+    // A base-currency change restates the whole ledger (each entry keeps its
+    // recorded currency and amount; the conversion re-rates at today's cross
+    // rate), so it deserves a deliberate second tap before anything is written.
+    if (currency !== (meta.currency || DEFAULT_CURRENCY)) {
+      const ok = await confirm({
+        title: "更改记账本位币？",
+        message: (
+          <span>
+            合计、余额与结算将改按 <b>{currency}</b>{" "}
+            显示。已有账目保留原币种与金额不变，折算到新本位币的汇率会按当前汇率重新计算。
+          </span>
+        ),
+        confirmLabel: "更改本位币",
+      });
+      if (!ok) return;
+    }
     try {
       await patchTrip.mutateAsync({
         title: title.trim(),

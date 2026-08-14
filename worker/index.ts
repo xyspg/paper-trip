@@ -33,9 +33,10 @@ import { bytesToB64url } from "./b64";
 import type { Member, TripRow, TripVisibility } from "./registry";
 import { sessionUser } from "./auth";
 import receipt from "./receipt";
-import rates from "./rates";
+import rates, { loadRates } from "./rates";
 import type { Env } from "./env";
 import { tripDocumentMetadata } from "../src/trip/metadata";
+import { normalizeCurrency } from "../src/trip/currency";
 import type { TripOp } from "../src/trip/ops";
 
 export { TripDurableObject } from "./TripDurableObject";
@@ -95,10 +96,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const asDate = (v: unknown): string | null => (typeof v === "string" && DATE_RE.test(v) ? v : null);
 const asVisibility = (v: unknown): TripVisibility | null =>
   v === "public" || v === "private" ? v : null;
-// ISO 4217 shape only; unknown-but-well-formed codes are allowed (the client
-// curates its own picker list) so the registry never blocks a currency.
-const asCurrency = (v: unknown): string | null =>
-  typeof v === "string" && /^[A-Za-z]{3}$/.test(v.trim()) ? v.trim().toUpperCase() : null;
+// Currency codes go through the shared normalizeCurrency (src/trip/currency),
+// so the registry and the ledger agree on aliases like RMB → CNY. Unknown but
+// well-formed ISO codes are allowed — the client curates its own picker list.
 
 // Short random slug; ~51 bits, plenty for a friend-circle registry (creation
 // retries on the astronomically unlikely collision).
@@ -255,7 +255,7 @@ app.post("/api/trips", async (c) => {
   const startDate = asDate(body?.startDate);
   const endDate = asDate(body?.endDate);
   const timezone = typeof body?.timezone === "string" && body.timezone ? body.timezone : "UTC";
-  const currency = asCurrency(body?.currency) ?? "USD";
+  const currency = normalizeCurrency(body?.currency) ?? "USD";
   const visibility = asVisibility(body?.visibility) ?? "private";
 
   // Retry the slug on collision; two failures in a row means something is
@@ -336,6 +336,9 @@ app.patch("/api/trips/:tripId", async (c) => {
   // Dates: absent key = keep, explicit null = clear, valid "YYYY-MM-DD" = set.
   const patchDate = (v: unknown): string | null | undefined =>
     v === null ? null : (asDate(v) ?? undefined);
+  const nextCurrency = normalizeCurrency(body.currency) ?? undefined;
+  const oldCurrency = normalizeCurrency(trip.currency) ?? "USD";
+  const currencyChanged = nextCurrency !== undefined && nextCurrency !== oldCurrency;
   const patch = {
     title:
       typeof body.title === "string" && body.title.trim()
@@ -345,8 +348,23 @@ app.patch("/api/trips/:tripId", async (c) => {
     startDate: patchDate(body.startDate),
     endDate: patchDate(body.endDate),
     timezone: typeof body.timezone === "string" && body.timezone ? body.timezone : undefined,
-    currency: asCurrency(body.currency) ?? undefined,
+    currency: currencyChanged ? nextCurrency : undefined,
   };
+
+  // A base-currency change restates the ledger's captured conversion rates, so
+  // it needs today's cross rate (new-base units per 1 old-base unit) up front.
+  // Fail closed before writing anything: silently relabeling stored amounts in
+  // a new currency would misstate every total and balance.
+  let fxRebase: number | undefined;
+  if (currencyChanged) {
+    const quotes = await loadRates(nextCurrency, c.executionCtx);
+    const perNew = Number(quotes?.rates[oldCurrency]);
+    if (!Number.isFinite(perNew) || perNew <= 0) {
+      return c.json({ error: "rates_unavailable" }, 503);
+    }
+    fxRebase = 1 / perNew;
+  }
+
   await updateTrip(c.env.DB, tripId, patch);
 
   // Mirror document-visible metadata into the DO so mastheads update live
@@ -370,6 +388,7 @@ app.patch("/api/trips/:tripId", async (c) => {
           },
           timezone: patch.timezone,
           currency: patch.currency,
+          fxRebase,
         }),
       }),
     );

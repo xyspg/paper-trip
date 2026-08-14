@@ -23,7 +23,7 @@ import { useAdmin } from "./AdminContext";
 import { ExpenseAllocation } from "./ExpenseAllocation";
 import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { expenseAllocationMatches } from "../trip/expenses";
-import { expenseCurrency, roundFxRate } from "../trip/currency";
+import { currencyDecimals, expenseCurrency, roundFxRate } from "../trip/currency";
 
 export type NewExpenseInput = {
   name: string;
@@ -73,6 +73,8 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
 
   const foreign = currency !== baseCurrency;
   const fxRate = useEntryFxRate(baseCurrency, currency, fxOverride);
+  // Zero-decimal currencies (JPY/KRW/…) step and hint in whole units.
+  const decimals = currencyDecimals(currency);
   const changeCurrency = (next: string) => {
     setCurrency(next);
     // Back on the original currency, restore its captured rate; any other
@@ -147,13 +149,13 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
               className={FIELD_INPUT}
               type="number"
               inputMode="decimal"
-              step="0.01"
+              step={decimals ? "0.01" : "1"}
               min="0"
               value={amount}
               autoComplete="off"
               data-1p-ignore
               data-lpignore="true"
-              placeholder="0.00"
+              placeholder={decimals ? "0.00" : "0"}
               aria-label="金额"
               onChange={(e) => setAmount(e.target.value)}
             />
