@@ -8,6 +8,7 @@ import {
 import { Avatar } from "./Avatar";
 import type { AdminMember } from "./adminData";
 import { fmtMoney, round2 } from "./adminData";
+import { DEFAULT_CURRENCY, currencyDecimals, currencySymbol } from "../trip/currency";
 import { BTN_GHOST, BTN_SM } from "./adminUi";
 import { Icons } from "./AdminIcons";
 
@@ -16,21 +17,28 @@ type Props = {
   travelers: AdminMember[];
   value?: ExpenseAllocationValue;
   onChange: (value?: ExpenseAllocationValue) => void;
+  // Currency the amounts are recorded in (the expense's own currency).
+  currency?: string;
 };
 
 function AllocationInput({
   member,
   value,
+  symbol,
+  decimals,
   onCommit,
 }: {
   member: AdminMember;
   value: number;
+  symbol: string;
+  decimals: number;
   onCommit: (value: number) => void;
 }) {
   const [draft, setDraft] = useState(value ? String(value) : "");
+  const factor = 10 ** decimals;
   const commit = () => {
     const parsed = parseFloat(draft);
-    const next = Number.isFinite(parsed) ? round2(Math.max(0, parsed)) : 0;
+    const next = Number.isFinite(parsed) ? Math.round(Math.max(0, parsed) * factor) / factor : 0;
     setDraft(next ? String(next) : "");
     onCommit(next);
   };
@@ -42,19 +50,19 @@ function AllocationInput({
         <span className="truncate">{member.name}</span>
       </span>
       <span className="inline-flex items-center gap-[3px] border border-[#ebe9e3] rounded-[10px] px-2.5 py-[5px] bg-white transition-colors focus-within:border-[#1c1b19]">
-        <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">$</span>
+        <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">{symbol}</span>
         <input
           className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
           type="number"
           inputMode="decimal"
-          step="0.01"
+          step={decimals ? "0.01" : "1"}
           min="0"
           value={draft}
           autoComplete="off"
           data-1p-ignore
           data-lpignore="true"
           aria-label={`${member.name} 承担金额`}
-          placeholder="0.00"
+          placeholder={decimals ? "0.00" : "0"}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commit}
           onKeyDown={(event) => {
@@ -68,9 +76,11 @@ function AllocationInput({
 
 // `undefined` is the durable AA default. A concrete map is a custom allocation
 // whose cents must reconcile to the expense's net amount before it can be saved.
-export function ExpenseAllocation({ amount, travelers, value, onChange }: Props) {
+export function ExpenseAllocation({ amount, travelers, value, onChange, currency }: Props) {
   const memberIds = travelers.map((member) => member.id);
-  const allocation = value ?? evenExpenseAllocation(amount, memberIds);
+  const symbol = currencySymbol(currency ?? DEFAULT_CURRENCY);
+  const decimals = currencyDecimals(currency ?? DEFAULT_CURRENCY);
+  const allocation = value ?? evenExpenseAllocation(amount, memberIds, decimals);
   const total = expenseAllocationTotal(allocation, memberIds);
   const matches = expenseAllocationMatches(value, amount, memberIds);
   const difference = round2(amount - total);
@@ -107,6 +117,8 @@ export function ExpenseAllocation({ amount, travelers, value, onChange }: Props)
             key={`${member.id}-${allocation[member.id] ?? 0}`}
             member={member}
             value={allocation[member.id] ?? 0}
+            symbol={symbol}
+            decimals={decimals}
             onCommit={(next) => onChange({ ...allocation, [member.id]: next })}
           />
         ))}
@@ -120,11 +132,11 @@ export function ExpenseAllocation({ amount, travelers, value, onChange }: Props)
           {matches
             ? "已完整分配"
             : difference > 0
-              ? `还需分配 ${fmtMoney(difference)}`
-              : `已超出 ${fmtMoney(Math.abs(difference))}`}
+              ? `还需分配 ${fmtMoney(difference, currency)}`
+              : `已超出 ${fmtMoney(Math.abs(difference), currency)}`}
         </span>
         <span className="font-sans">
-          {fmtMoney(total)} / {fmtMoney(amount)}
+          {fmtMoney(total, currency)} / {fmtMoney(amount, currency)}
         </span>
       </div>
     </div>

@@ -15,11 +15,13 @@ import type { SplitValue } from "./PaymentSplit";
 import {
   appliedCredit,
   expenseBalances,
+  expenseFxRate,
   expenseOwedBy,
   expenseTotals,
   netExpense,
   settlementTransfers,
 } from "../trip/expenses";
+import { currencySymbol, expenseCurrency } from "../trip/currency";
 import type { ExpenseSplit } from "../trip/types";
 
 type Props = {
@@ -41,7 +43,7 @@ export function SplitSection({
   onDelete,
   onReset,
 }: Props) {
-  const { travelers } = useAdmin();
+  const { travelers, currency } = useAdmin();
   const travelerIds = travelers.map((m) => m.id);
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
@@ -66,6 +68,8 @@ export function SplitSection({
       sub: input.sub,
       amount: input.amount,
       payer: input.payer,
+      currency: input.currency,
+      fxRate: input.fxRate,
       split: input.split,
       owedBy: input.owedBy,
       items: input.amount === editing.amount ? editing.items : undefined,
@@ -119,8 +123,8 @@ export function SplitSection({
     onSetSplit(e.id, payer, split);
   };
 
-  const { subtotal, creditTotal, total } = expenseTotals(expenses);
-  const balances = expenseBalances(expenses, travelerIds);
+  const { subtotal, creditTotal, total } = expenseTotals(expenses, currency);
+  const balances = expenseBalances(expenses, travelerIds, currency);
   const transfers = settlementTransfers(balances);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
 
@@ -165,10 +169,14 @@ export function SplitSection({
 
       <Metrics
         items={[
-          { k: "实付合计", v: fmtMoney(total), sub: `已抵扣 credit ${fmtMoney(creditTotal)}` },
+          {
+            k: `实付合计 (${currency})`,
+            v: fmtMoney(total, currency),
+            sub: `已抵扣 credit ${fmtMoney(creditTotal, currency)}`,
+          },
           {
             k: "待结算",
-            v: fmtMoney(outstanding),
+            v: fmtMoney(outstanding, currency),
             sub: transfers.length > 0 ? `${transfers.length} 笔转账可结清` : "已结清",
             color: outstanding > 0.005 ? "#c2553f" : "#3f6f5b",
           },
@@ -192,6 +200,10 @@ export function SplitSection({
           const IconCmp = Icons[EXP_ICON[e.id] ?? "wallet"];
           const owedBy = expenseOwedBy(e, travelerIds);
           const responsible = travelers.filter((traveler) => (owedBy[traveler.id] ?? 0) > 0.005);
+          // The row's own recorded currency; foreign rows also show the
+          // base-currency equivalent at the captured rate.
+          const rowCurrency = expenseCurrency(e, currency);
+          const foreign = rowCurrency !== currency;
           return (
             <div
               key={e.id}
@@ -211,7 +223,9 @@ export function SplitSection({
                   <span className="block font-cjk text-[12px] text-[#76726a] mt-0.5">{e.sub}</span>
                 </span>
                 <span className="shrink-0 inline-flex items-center border border-[#ebe9e3] rounded-[10px] bg-white px-2.5 py-1 focus-within:border-[#1c1b19] transition-colors">
-                  <span className="font-sans text-[14px] text-[#9b988f]">$</span>
+                  <span className="font-sans text-[14px] text-[#9b988f]">
+                    {currencySymbol(rowCurrency)}
+                  </span>
                   <input
                     key={`${e.id}-${e.amount}`}
                     className="w-[84px] border-0 outline-none bg-transparent font-sans font-bold text-[15px] text-right text-[#1c1b19] [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:m-0"
@@ -231,7 +245,7 @@ export function SplitSection({
                   />
                 </span>
               </div>
-              <ExpenseItems items={e.items} travelers={travelers} />
+              <ExpenseItems items={e.items} travelers={travelers} currency={rowCurrency} />
               <div className="flex flex-col items-start gap-2 mt-3">
                 <span className="font-grotesk text-[10px] tracking-[0.1em] uppercase text-[#9b988f]">
                   谁承担
@@ -245,7 +259,7 @@ export function SplitSection({
                       <Avatar m={traveler} size="xs" />
                       {traveler.name}
                       <b className="font-sans font-bold text-[#1c1b19]">
-                        {fmtMoney(owedBy[traveler.id] ?? 0)}
+                        {fmtMoney(owedBy[traveler.id] ?? 0, rowCurrency)}
                       </b>
                     </span>
                   ))}
@@ -261,18 +275,25 @@ export function SplitSection({
                     value={splitFromExpense(e)}
                     onChange={(v) => commitSplit(e, v)}
                     amount={netExpense(e)}
+                    currency={rowCurrency}
                   />
                 </span>
                 {e.credit ? (
                   <span className="inline-flex items-center gap-1.5 font-grotesk text-[10px] tracking-[0.06em] uppercase whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full px-2.5 py-1">
-                    Credit <span className="font-sans">−{fmtMoney(appliedCredit(e))}</span>
+                    Credit{" "}
+                    <span className="font-sans">−{fmtMoney(appliedCredit(e), rowCurrency)}</span>
                   </span>
                 ) : null}
                 <span className="ml-auto font-cjk font-semibold text-[12.5px] text-[#76726a]">
                   实付{" "}
                   <b className="font-sans font-bold text-[#1c1b19] text-[14px]">
-                    {fmtMoney(netExpense(e))}
+                    {fmtMoney(netExpense(e), rowCurrency)}
                   </b>
+                  {foreign && (
+                    <span className="ml-1.5 font-sans text-[11.5px] text-[#9b988f]">
+                      ≈ {fmtMoney(netExpense(e) * expenseFxRate(e), currency)}
+                    </span>
+                  )}
                 </span>
                 <button
                   className="shrink-0 w-8 h-8 grid place-items-center border border-[#ebe9e3] rounded-[9px] bg-white text-[#76726a] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors [&_svg]:size-4"
@@ -297,16 +318,16 @@ export function SplitSection({
 
         <div className="bg-[#eef4f0] border-t border-[#ebe9e3]">
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px]">
-            <span>小计 Subtotal</span>
-            <span className="font-sans">{fmtMoney(subtotal)}</span>
+            <span>小计 Subtotal ({currency})</span>
+            <span className="font-sans">{fmtMoney(subtotal, currency)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
             <span>抵扣 Credit</span>
-            <span className="font-sans">−{fmtMoney(creditTotal)}</span>
+            <span className="font-sans">−{fmtMoney(creditTotal, currency)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-3.5 bg-[#1c1b19] text-[#fafaf8] font-sans font-bold tracking-[0.02em] text-[16px]">
             <span>实付合计 Net Total</span>
-            <span className="font-sans text-[20px] text-white">{fmtMoney(total)}</span>
+            <span className="font-sans text-[20px] text-white">{fmtMoney(total, currency)}</span>
           </div>
         </div>
       </div>
@@ -335,11 +356,11 @@ export function SplitSection({
               <div className="grid gap-1.5 mt-3.5">
                 <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
                   <span>已垫付</span>
-                  <span className="font-sans text-[#1c1b19]">{fmtMoney(p)}</span>
+                  <span className="font-sans text-[#1c1b19]">{fmtMoney(p, currency)}</span>
                 </div>
                 <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
                   <span>应承担</span>
-                  <span className="font-sans text-[#1c1b19]">{fmtMoney(sh)}</span>
+                  <span className="font-sans text-[#1c1b19]">{fmtMoney(sh, currency)}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[13.5px]">
@@ -348,7 +369,7 @@ export function SplitSection({
                   className="font-sans text-[16px]"
                   style={{ color: settled ? undefined : owe ? "#c2553f" : "#3f6f5b" }}
                 >
-                  {fmtMoney(Math.abs(bal))}
+                  {fmtMoney(Math.abs(bal), currency)}
                 </span>
               </div>
             </div>
@@ -383,7 +404,7 @@ export function SplitSection({
                     <Avatar m={to} size="xs" />
                     {to.name}
                   </span>
-                  转 <b className="font-sans text-white">{fmtMoney(transfer.amount)}</b>
+                  转 <b className="font-sans text-white">{fmtMoney(transfer.amount, currency)}</b>
                 </span>
               );
             })}

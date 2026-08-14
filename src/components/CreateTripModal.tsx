@@ -14,6 +14,8 @@ import {
 } from "../admin/adminUi";
 import { useCreateTrip } from "../trip/hooks";
 import type { TripMeta, TripVisibility } from "../trip/api";
+import { CurrencySelect } from "../admin/CurrencyFields";
+import { DEFAULT_CURRENCY } from "../trip/currency";
 
 type Props = {
   isOpen: boolean;
@@ -29,6 +31,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [visibility, setVisibility] = useState<TripVisibility>("private");
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [error, setError] = useState("");
 
   const canSubmit = title.trim().length > 0 && !createTrip.isPending;
@@ -46,6 +49,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
         // is right now; the owner can refine it in settings, and stops that
         // cross timezones carry their own (item.timezone).
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
+        currency,
         visibility,
       });
       onCreated(trip);
@@ -91,6 +95,11 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
+        </label>
+
+        <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className={FIELD_LABEL}>记账本位币</span>
+          <CurrencySelect value={currency} onChange={setCurrency} />
         </label>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">

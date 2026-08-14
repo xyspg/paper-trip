@@ -16,6 +16,9 @@ export type AdminContextValue = {
   flights: Flight[];
   // The trip's roster (from trip.members) — who money can be split across.
   travelers: AdminMember[];
+  // The trip's settlement currency (trip.base.currency) — what totals,
+  // balances, and settle-up amounts are stated in.
+  currency: string;
   tripOp: ReturnType<typeof useTripOp>;
 };
 

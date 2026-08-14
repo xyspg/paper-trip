@@ -129,6 +129,13 @@ export type ExpenseItem = {
 // Edited from the admin split view, shown read-only on the public ledger.
 // `items` is the optional scanned-receipt breakdown, rendered read-only on both
 // the admin and public ledgers (and PDF).
+//
+// Multi-currency: every money field on one expense (`amount`, `credit`,
+// `owedBy`, `items[].price`, amount-mode split shares) is recorded in ONE
+// currency — `currency`, defaulting to the trip's base currency when absent.
+// `fxRate` is the base-currency units per 1 unit of `currency`, captured when
+// the expense was entered; aggregations multiply by it (expenses.ts), so the
+// recorded original amounts are never rewritten by later rate moves.
 export type Expense = {
   id: string;
   cat: ExpenseCategory;
@@ -137,6 +144,8 @@ export type Expense = {
   amount: number;
   credit: number;
   payer: string;
+  currency?: string;
+  fxRate?: number;
   split?: ExpenseSplit;
   owedBy?: ExpenseAllocation;
   items?: ExpenseItem[];
@@ -190,6 +199,9 @@ export type Trip = {
     hotel: string;
     car: string;
     timezone: string;
+    // ISO 4217 settlement currency for totals/balances. Absent on state
+    // persisted before multi-currency; readers treat that as USD.
+    currency?: string;
   };
   items: TripItem[];
   checklists: Checklist[];

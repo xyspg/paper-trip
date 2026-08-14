@@ -9,7 +9,7 @@ import type {
   TripItem,
   TripSuggestion,
 } from "./types";
-import { allocateByWeight, appliedCredit } from "./expenses";
+import { allocateByWeight, appliedCredit, expenseDecimals } from "./expenses";
 
 export type TripOp =
   | { type: "setItemStatus"; itemId: string; status: ItemStatus }
@@ -129,7 +129,12 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
           const memberIds = Object.keys(e.owedBy);
           return {
             ...next,
-            owedBy: allocateByWeight(amount - appliedCredit(next), memberIds, e.owedBy),
+            owedBy: allocateByWeight(
+              amount - appliedCredit(next),
+              memberIds,
+              e.owedBy,
+              expenseDecimals(e),
+            ),
           };
         }),
       };
@@ -211,13 +216,14 @@ export function emptyTrip(seed: {
   title: string;
   dates: { start: string; end: string };
   timezone: string;
+  currency?: string;
 }): Trip {
   return {
     id: seed.id,
     title: seed.title,
     subtitle: "",
     dates: { ...seed.dates },
-    base: { hotel: "", car: "", timezone: seed.timezone },
+    base: { hotel: "", car: "", timezone: seed.timezone, currency: seed.currency ?? "USD" },
     items: [],
     checklists: [],
     documents: [],

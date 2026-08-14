@@ -20,6 +20,7 @@ export type TripRow = {
   start_date: string | null;
   end_date: string | null;
   timezone: string;
+  currency: string;
   created_by: string | null;
   created_at: string;
 };
@@ -51,7 +52,7 @@ export { MEMBER_COLORS } from "../src/trip/roster";
 export function getTrip(db: D1Database, id: string): Promise<TripRow | null> {
   return db
     .prepare(
-      "SELECT id, title, visibility, start_date, end_date, timezone, created_by, created_at FROM trips WHERE id = ?1",
+      "SELECT id, title, visibility, start_date, end_date, timezone, currency, created_by, created_at FROM trips WHERE id = ?1",
     )
     .bind(id)
     .first<TripRow>();
@@ -63,7 +64,7 @@ export async function listTripsForUser(
 ): Promise<(TripRow & { role: TripRole })[]> {
   const rows = await db
     .prepare(
-      "SELECT t.id, t.title, t.visibility, t.start_date, t.end_date, t.timezone, t.created_by, t.created_at, m.role FROM trips t JOIN trip_members m ON m.trip_id = t.id WHERE m.user_id = ?1 ORDER BY t.created_at DESC",
+      "SELECT t.id, t.title, t.visibility, t.start_date, t.end_date, t.timezone, t.currency, t.created_by, t.created_at, m.role FROM trips t JOIN trip_members m ON m.trip_id = t.id WHERE m.user_id = ?1 ORDER BY t.created_at DESC",
     )
     .bind(userId)
     .all<TripRow & { role: TripRole }>();
@@ -79,12 +80,13 @@ export async function createTrip(
     startDate: string | null;
     endDate: string | null;
     timezone: string;
+    currency: string;
     createdBy: string;
   },
 ): Promise<void> {
   await db
     .prepare(
-      "INSERT INTO trips (id, title, visibility, start_date, end_date, timezone, created_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+      "INSERT INTO trips (id, title, visibility, start_date, end_date, timezone, currency, created_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
     )
     .bind(
       trip.id,
@@ -93,6 +95,7 @@ export async function createTrip(
       trip.startDate,
       trip.endDate,
       trip.timezone,
+      trip.currency,
       trip.createdBy,
     )
     .run();
@@ -109,6 +112,7 @@ export async function updateTrip(
     startDate?: string | null;
     endDate?: string | null;
     timezone?: string;
+    currency?: string;
   },
 ): Promise<void> {
   const sets: string[] = [];
@@ -122,6 +126,7 @@ export async function updateTrip(
   if (patch.startDate !== undefined) add("start_date", patch.startDate);
   if (patch.endDate !== undefined) add("end_date", patch.endDate);
   if (patch.timezone !== undefined) add("timezone", patch.timezone);
+  if (patch.currency !== undefined) add("currency", patch.currency);
   if (sets.length === 0) return;
   await db
     .prepare(`UPDATE trips SET ${sets.join(", ")} WHERE id = ?1`)

@@ -47,6 +47,7 @@ const PROMPT = [
   "Read the receipt image and extract every ordered line item (dish or product).",
   "For each item return: name (keep the original language, including Chinese), quantity (default 1), and price = the line-item TOTAL for that row (quantity * unit price).",
   "Also return subtotal, tax, tip (0 if none), and total when printed.",
+  "Always return the receipt's currency as its 3-letter ISO 4217 code in `currency` (e.g. USD, JPY, CNY, EUR, KRW) — infer it from the currency symbol, language, or address when no code is printed.",
   "If the receipt prints suggested tip / gratuity options, return their percentages as numbers in suggestedTips (e.g. [18, 20, 22]); otherwise return an empty array.",
   "All money values are plain numbers with no currency symbols or thousands separators.",
   "Do not invent items, do not include subtotal/tax/total as line items, and ignore non-purchase text (server name, table, address).",

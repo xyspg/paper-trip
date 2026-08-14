@@ -1,3 +1,5 @@
+import { fmtCurrency } from "../trip/currency";
+
 export type StopCat = "transit" | "food" | "event" | "stay" | "misc";
 
 export type AdminMember = {
@@ -34,12 +36,10 @@ export const CAT_KEYS = Object.keys(CATS) as StopCat[];
 // (deriveShares, PaymentSplit) so every surface rounds identically.
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
-export const fmtMoney = (n: number): string =>
-  "$" +
-  (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+// Money display, currency-aware. The default keeps legacy call sites on USD —
+// the unit pre-multi-currency data is recorded in; surfaces that know their
+// trip/expense currency pass it explicitly.
+export const fmtMoney = (n: number, currency?: string): string => fmtCurrency(n, currency);
 
 // Absolute local time with seconds, shared by the audit log and backup list.
 // Falls back to the raw string if the ISO input ever fails to parse.

@@ -20,7 +20,15 @@ import {
 import { PaymentSplit, defaultSplit, splitToExpense } from "./PaymentSplit";
 import type { SplitValue } from "./PaymentSplit";
 import type { NewExpenseInput } from "./AddExpenseModal";
+import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { deriveShares, parseReceipt } from "./receipt";
+import {
+  currencyDecimals,
+  currencySymbol,
+  normalizeCurrency,
+  roundAmount,
+  roundFxRate,
+} from "../trip/currency";
 import type { ExpenseItem } from "../trip/types";
 
 type Props = {
@@ -48,7 +56,7 @@ const isAA = (who: string[], travelerIds: string[]) =>
 type Phase = "pick" | "loading" | "review" | "error";
 
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
-  const { tripId, travelers } = useAdmin();
+  const { tripId, travelers, currency: baseCurrency } = useAdmin();
   const travelerIds = travelers.map((m) => m.id);
   // Two inputs so the user picks the source instead of iOS forcing the camera:
   // the album input omits `capture` (opens the photo library / file picker),
@@ -60,6 +68,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const [error, setError] = useState("");
 
   const [merchant, setMerchant] = useState("");
+  // The receipt's own currency (every number on this modal is in it), seeded
+  // from the OCR result and correctable by hand. fxOverride pins a manual
+  // rate; null falls back to the live quote.
+  const [currency, setCurrency] = useState(baseCurrency);
+  const [fxOverride, setFxOverride] = useState<number | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   // Tax (+ service fees) and tip are tracked separately — tipping is a choice
   // you make at the table, tax isn't. Both are spread proportionally on top of
@@ -99,6 +112,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         r.tax ??
         (typeof r.total === "number" ? Math.max(0, r.total - sumPrices(r.items) - printedTip) : 0);
       setMerchant(r.merchant || "餐厅收据");
+      // Adopt the OCR currency up front so the tax/tip seeds below round at
+      // that currency's own precision (whole yen, not hundredths).
+      const cur = normalizeCurrency(r.currency) ?? baseCurrency;
+      setCurrency(cur);
+      setFxOverride(null);
       setRows(
         r.items.map((it) => ({
           id: uid("ri"),
@@ -108,12 +126,12 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
           who: [...travelerIds], // default AA
         })),
       );
-      setTax(round2(Math.max(0, taxGuess)));
+      setTax(roundAmount(Math.max(0, taxGuess), cur));
       if (r.suggestedTips?.length) setSuggestedPcts(r.suggestedTips);
       // A tip already printed on the receipt (service charge, pre-added
       // gratuity) starts in amount mode; otherwise wait for a percent pick.
       setTipMode(printedTip > 0 ? "amount" : "percent");
-      setTipAmount(printedTip > 0 ? round2(printedTip) : 0);
+      setTipAmount(printedTip > 0 ? roundAmount(printedTip, cur) : 0);
       setTipPct(null);
       setTotalTarget(null);
       setManual({});
@@ -145,34 +163,44 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       { id: uid("ri"), name: "", quantity: 1, price: 0, who: [...travelerIds] },
     ]);
 
-  const lineSubtotal = round2(sumPrices(rows));
+  // Every figure on this modal rounds at the receipt currency's own precision:
+  // whole units for JPY/KRW, cents otherwise.
+  const decimals = currencyDecimals(currency);
+  const rDec = (n: number) => roundAmount(n, currency);
+  // Money input affordances matched to that precision.
+  const moneyStep = decimals ? "0.01" : "1";
+  const moneyZero = decimals ? "0.00" : "0";
+
+  const lineSubtotal = rDec(sumPrices(rows));
   // Pre-tip bill: what the round-up targets are measured against.
-  const preTip = round2(lineSubtotal + tax);
+  const preTip = rDec(lineSubtotal + tax);
   const tip =
     tipMode === "percent"
       ? tipPct
-        ? round2((lineSubtotal * tipPct) / 100)
+        ? rDec((lineSubtotal * tipPct) / 100)
         : 0
       : tipMode === "amount"
         ? tipAmount
-        : Math.max(0, round2((totalTarget ?? preTip) - preTip));
-  const extra = round2(tax + tip);
-  // Round-number cash targets: next dollar, next $5, next $10 above the
-  // pre-tip bill (deduped — e.g. $106.22 → 107 / 110 / 120).
+        : Math.max(0, rDec((totalTarget ?? preTip) - preTip));
+  const extra = rDec(tax + tip);
+  // Round-number cash targets above the pre-tip bill, stepped at 1/5/10 units
+  // scaled to the bill's magnitude so they stay "round" in any currency
+  // (deduped — $106.22 → 107 / 110 / 120, ¥10,820 → 10,900 / 11,000 / 12,000).
+  const unit = 10 ** Math.max(0, Math.floor(Math.log10(Math.max(1, preTip))) - 2);
   const roundTargets = [
     ...new Set([
-      Math.ceil(preTip),
-      Math.ceil(preTip / 5) * 5,
-      Math.ceil(preTip / 10) * 10,
-      Math.ceil(preTip / 10) * 10 + 10,
+      Math.ceil(preTip / unit) * unit,
+      Math.ceil(preTip / (5 * unit)) * 5 * unit,
+      Math.ceil(preTip / (10 * unit)) * 10 * unit,
+      Math.ceil(preTip / (10 * unit)) * 10 * unit + 10 * unit,
     ]),
   ]
     .filter((n) => n > 0)
     .slice(0, 3);
 
-  const auto = deriveShares(rows, travelerIds, extra);
+  const auto = deriveShares(rows, travelerIds, extra, decimals);
   const finalOf = (id: string) => manual[id] ?? auto[id] ?? 0;
-  const grandTotal = round2(travelerIds.reduce((s, id) => s + finalOf(id), 0));
+  const grandTotal = rDec(travelerIds.reduce((s, id) => s + finalOf(id), 0));
   const hasOverride = Object.keys(manual).length > 0;
 
   const setManualAmount = (id: string, raw: string) => {
@@ -191,7 +219,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       setRecalc((k) => k + 1);
       return;
     }
-    setManual((prev) => ({ ...prev, [id]: round2(n) }));
+    setManual((prev) => ({ ...prev, [id]: roundAmount(n, currency) }));
   };
 
   const clearOverrides = () => {
@@ -199,9 +227,13 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     setRecalc((n) => n + 1);
   };
 
+  const foreign = currency !== baseCurrency;
+  const fxRate = useEntryFxRate(baseCurrency, currency, fxOverride);
+  const symbol = currencySymbol(currency);
+
   // Drop blank scratch rows (no name, no price) before persisting / counting.
   const cleanRows = rows.filter((r) => r.name.trim() !== "" || r.price > 0);
-  const canSubmit = cleanRows.length > 0 && grandTotal > 0;
+  const canSubmit = cleanRows.length > 0 && grandTotal > 0 && (!foreign || fxRate != null);
 
   const submit = () => {
     if (!canSubmit) return;
@@ -212,7 +244,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       return {
         name: r.name.trim() || "未命名",
         quantity: r.quantity,
-        price: round2(r.price),
+        price: rDec(r.price),
         who: isAA(who, travelerIds) ? undefined : who,
       };
     });
@@ -222,6 +254,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       amount: grandTotal,
       cat: "food",
       payer,
+      currency: foreign ? currency : undefined,
+      fxRate: foreign && fxRate != null ? roundFxRate(fxRate) : undefined,
       split,
       owedBy: shares,
       items,
@@ -304,6 +338,24 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </label>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
+              <span className={FIELD_LABEL}>收据币种（识别自小票，可修改）</span>
+              <CurrencySelect
+                value={currency}
+                onChange={(next) => {
+                  setCurrency(next);
+                  setFxOverride(null);
+                }}
+              />
+              <FxRateRow
+                base={baseCurrency}
+                currency={currency}
+                rate={foreign ? fxRate : null}
+                onRate={setFxOverride}
+                amount={grandTotal}
+              />
+            </div>
+
+            <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <span className={FIELD_LABEL}>
                 菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）
               </span>
@@ -344,20 +396,22 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           onChange={(e) => patchRow(row.id, { name: e.target.value })}
                         />
                         <span className="inline-flex items-center gap-[2px] shrink-0 w-[92px] px-2 py-[5px] border border-[#ebe9e3] rounded-lg bg-white transition-colors focus-within:border-[#1c1b19]">
-                          <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                          <span className="font-grotesk font-semibold text-[#9b988f]">
+                            {symbol}
+                          </span>
                           <input
                             className="w-full border-none bg-transparent outline-none font-grotesk font-semibold text-sm text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
                             type="number"
                             inputMode="decimal"
-                            step="0.01"
+                            step={moneyStep}
                             min="0"
                             defaultValue={row.price || ""}
                             aria-label="价格"
-                            placeholder="0.00"
+                            placeholder={moneyZero}
                             onBlur={(e) => {
                               const n = parseFloat(e.target.value);
                               patchRow(row.id, {
-                                price: Number.isFinite(n) && n >= 0 ? round2(n) : 0,
+                                price: Number.isFinite(n) && n >= 0 ? rDec(n) : 0,
                               });
                             }}
                             onKeyDown={(e) => {
@@ -412,21 +466,21 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <span className={FIELD_LABEL}>税费 / 服务费（按比例分摊）</span>
               <div className="inline-flex items-center gap-1 max-w-[180px]">
-                <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                 <input
                   key={`tax-${recalc}-${tax}`}
                   className={FIELD_INPUT}
                   type="number"
                   inputMode="decimal"
-                  step="0.01"
+                  step={moneyStep}
                   defaultValue={tax || ""}
                   autoComplete="off"
                   data-1p-ignore
                   data-lpignore="true"
-                  placeholder="0.00"
+                  placeholder={moneyZero}
                   onBlur={(e) => {
                     const n = parseFloat(e.target.value);
-                    setTax(Number.isFinite(n) ? Math.max(0, round2(n)) : 0);
+                    setTax(Number.isFinite(n) ? Math.max(0, rDec(n)) : 0);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur();
@@ -473,27 +527,27 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
               {tipMode === "percent" && tipPct != null && (
                 <span className="font-cjk text-[12px] text-[#76726a]">
-                  按菜品小计 {tipPct}% = {fmtMoney(tip)}
+                  按菜品小计 {tipPct}% = {fmtMoney(tip, currency)}
                 </span>
               )}
 
               {tipMode === "amount" && (
                 <div className="inline-flex items-center gap-1 max-w-[180px]">
-                  <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                  <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                   <input
                     key={`tip-${recalc}-${tipAmount}`}
                     className={FIELD_INPUT}
                     type="number"
                     inputMode="decimal"
-                    step="0.01"
+                    step={moneyStep}
                     defaultValue={tipAmount || ""}
                     autoComplete="off"
                     data-1p-ignore
                     data-lpignore="true"
-                    placeholder="0.00"
+                    placeholder={moneyZero}
                     onBlur={(e) => {
                       const n = parseFloat(e.target.value);
-                      setTipAmount(Number.isFinite(n) ? Math.max(0, round2(n)) : 0);
+                      setTipAmount(Number.isFinite(n) ? Math.max(0, rDec(n)) : 0);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") e.currentTarget.blur();
@@ -514,12 +568,13 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           className={`font-grotesk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${on ? CHIP_ON : CHIP_OFF}`}
                           onClick={() => setTotalTarget(n)}
                         >
-                          付 ${n}
+                          付 {symbol}
+                          {n}
                         </button>
                       );
                     })}
                     <span className="inline-flex items-center gap-1 max-w-[140px]">
-                      <span className="font-grotesk font-semibold text-[#9b988f]">$</span>
+                      <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                       <input
                         key={`target-${recalc}-${totalTarget}`}
                         className={FIELD_INPUT}
@@ -533,7 +588,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         placeholder="最终付了多少"
                         onBlur={(e) => {
                           const n = parseFloat(e.target.value);
-                          setTotalTarget(Number.isFinite(n) && n > 0 ? round2(n) : null);
+                          setTotalTarget(Number.isFinite(n) && n > 0 ? rDec(n) : null);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") e.currentTarget.blur();
@@ -543,10 +598,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   </div>
                   <span className="font-cjk text-[12px] text-[#76726a]">
                     {totalTarget == null
-                      ? `税后合计 ${fmtMoney(preTip)}，选一个凑整数或直接填实付金额`
+                      ? `税后合计 ${fmtMoney(preTip, currency)}，选一个凑整数或直接填实付金额`
                       : totalTarget < preTip
-                        ? `低于税后合计 ${fmtMoney(preTip)}，小费按 $0 计`
-                        : `付 ${fmtMoney(totalTarget)} → 小费 ${fmtMoney(tip)}`}
+                        ? `低于税后合计 ${fmtMoney(preTip, currency)}，小费按 ${fmtMoney(0, currency)} 计`
+                        : `付 ${fmtMoney(totalTarget, currency)} → 小费 ${fmtMoney(tip, currency)}`}
                   </span>
                 </>
               )}
@@ -559,6 +614,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                 onChange={setPayment}
                 amount={grandTotal}
                 travelers={travelers}
+                currency={currency}
               />
             </div>
 
@@ -590,16 +646,16 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                       className={`inline-flex items-center gap-[3px] border rounded-[10px] px-2.5 py-[5px] transition-colors ${manual[m.id] != null ? "border-[#5b7a99] bg-[#eef2f6]" : "border-[#ebe9e3] bg-white"}`}
                     >
                       <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">
-                        $
+                        {symbol}
                       </span>
                       <input
                         key={`${m.id}-${recalc}-${round2(auto[m.id] ?? 0)}`}
                         className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
                         type="number"
                         inputMode="decimal"
-                        step="0.01"
+                        step={moneyStep}
                         min="0"
-                        defaultValue={round2(finalOf(m.id))}
+                        defaultValue={rDec(finalOf(m.id))}
                         autoComplete="off"
                         data-1p-ignore
                         data-lpignore="true"
@@ -618,11 +674,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             <div className="flex flex-col gap-[5px] px-3.5 py-3 border border-[#ebe9e3] rounded-xl bg-[#fdfdfb] col-span-full">
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>菜品小计</span>
-                <span className="font-sans font-semibold">{fmtMoney(lineSubtotal)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(lineSubtotal, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>税费 / 服务费</span>
-                <span className="font-sans font-semibold">{fmtMoney(tax)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(tax, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>
@@ -630,14 +686,22 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   {tipMode === "percent" && tipPct != null && ` · ${tipPct}%`}
                   {tipMode === "total" &&
                     totalTarget != null &&
-                    ` · 凑整到 ${fmtMoney(totalTarget)}`}
+                    ` · 凑整到 ${fmtMoney(totalTarget, currency)}`}
                 </span>
-                <span className="font-sans font-semibold">{fmtMoney(tip)}</span>
+                <span className="font-sans font-semibold">{fmtMoney(tip, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-bold text-base text-[#1c1b19] mt-1 pt-2 border-t border-dashed border-[#ebe9e3]">
                 <span>合计</span>
-                <span className="font-sans font-bold">{fmtMoney(grandTotal)}</span>
+                <span className="font-sans font-bold">{fmtMoney(grandTotal, currency)}</span>
               </div>
+              {foreign && fxRate != null && (
+                <div className="flex items-center justify-between font-cjk font-medium text-[12px] text-[#9b988f]">
+                  <span>折合本位币</span>
+                  <span className="font-sans font-semibold">
+                    {fmtMoney(grandTotal * fxRate, baseCurrency)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

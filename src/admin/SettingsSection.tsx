@@ -17,6 +17,8 @@ import { useDeleteTrip, usePatchTrip } from "../trip/hooks";
 import { useTripAccess } from "../components/TripLayout";
 import type { TripVisibility } from "../trip/api";
 import { TimezoneCombobox } from "./TimezoneCombobox";
+import { CurrencySelect } from "./CurrencyFields";
+import { DEFAULT_CURRENCY } from "../trip/currency";
 
 // Owner-only trip settings: registry metadata (title/dates/timezone), the
 // public/private switch, and the delete danger zone. The worker mirrors
@@ -32,17 +34,35 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
   const [startDate, setStartDate] = useState(meta.startDate ?? "");
   const [endDate, setEndDate] = useState(meta.endDate ?? "");
   const [timezone, setTimezone] = useState(meta.timezone);
+  const [currency, setCurrency] = useState(meta.currency || DEFAULT_CURRENCY);
 
   const dirty =
     title.trim() !== meta.title ||
     (startDate || "") !== (meta.startDate ?? "") ||
     (endDate || "") !== (meta.endDate ?? "") ||
-    timezone.trim() !== meta.timezone;
+    timezone.trim() !== meta.timezone ||
+    currency !== (meta.currency || DEFAULT_CURRENCY);
 
   const save = async () => {
     if (!title.trim()) {
       toast("行程名称不能为空", "warn");
       return;
+    }
+    // A base-currency change restates the whole ledger (each entry keeps its
+    // recorded currency and amount; the conversion re-rates at today's cross
+    // rate), so it deserves a deliberate second tap before anything is written.
+    if (currency !== (meta.currency || DEFAULT_CURRENCY)) {
+      const ok = await confirm({
+        title: "更改记账本位币？",
+        message: (
+          <span>
+            合计、余额与结算将改按 <b>{currency}</b>{" "}
+            显示。已有账目保留原币种与金额不变，折算到新本位币的汇率会按当前汇率重新计算。
+          </span>
+        ),
+        confirmLabel: "更改本位币",
+      });
+      if (!ok) return;
     }
     try {
       await patchTrip.mutateAsync({
@@ -51,6 +71,7 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
         startDate: startDate || null,
         endDate: endDate || null,
         timezone: timezone.trim() || undefined,
+        currency,
       });
       toast("已保存行程设置");
     } catch {
@@ -91,7 +112,7 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
       <SectionHead
         kicker="07 · Settings"
         title="行程设置"
-        desc="名称 / 日期 / 时区 / 可见性 · 仅创建者可修改"
+        desc="名称 / 日期 / 时区 / 本位币 / 可见性 · 仅创建者可修改"
       />
 
       <div className="mt-7 max-w-[560px] flex flex-col gap-[15px]">
@@ -127,6 +148,14 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
         </div>
 
         <TimezoneCombobox value={timezone} onValueChange={setTimezone} />
+
+        <label className="flex flex-col gap-[7px]">
+          <span className={FIELD_LABEL}>记账本位币</span>
+          <CurrencySelect value={currency} onChange={setCurrency} />
+          <span className="font-cjk text-[12px] text-[#9b988f] leading-relaxed">
+            合计与结算按本位币显示；各笔花销可用其他币种记录，按录入时的汇率折算。
+          </span>
+        </label>
 
         <div>
           <button

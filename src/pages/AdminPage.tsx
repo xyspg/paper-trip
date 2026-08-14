@@ -1,6 +1,7 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { AdminMember } from "../admin/adminData";
 import { useAudit, useBackups, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
+import { tripCurrency } from "../trip/currency";
 import { tripTravelers } from "../trip/roster";
 import { Avatar } from "../admin/Avatar";
 import { Icons } from "../admin/AdminIcons";
@@ -68,6 +69,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
   const expenses = trip?.expenses ?? [];
   const flights = trip?.flights ?? [];
   const travelers = trip ? tripTravelers(trip) : [];
+  const currency = tripCurrency(trip);
 
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
   // `null` = this section has no meaningful count, so the sidebar hides the chip.
@@ -161,6 +163,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
         expenses,
         flights,
         travelers,
+        currency,
         tripOp,
       }}
     >

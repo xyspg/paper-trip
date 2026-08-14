@@ -11,19 +11,19 @@ import { tripTravelers } from "../trip/roster";
 import {
   appliedCredit,
   expenseBalances,
+  expenseFxRate,
   expenseOwedBy,
   expensePaidBy,
   expenseTotals,
   netExpense,
 } from "../trip/expenses";
+import { currencySymbol, expenseCurrency, fmtCurrencyNumber, tripCurrency } from "../trip/currency";
 import type { Trip } from "../trip/types";
 
 // Ledger page driven only by the current trip's expenses and roster. It keeps
-// per-person balances, split payers, receipt items, and PDF export.
-
-function amountParts(value: number): string {
-  return fmtMoney(value).replace(/^\$/, "");
-}
+// per-person balances, split payers, receipt items, and PDF export. Rows render
+// in each expense's own recorded currency; totals and balances are stated in
+// the trip's base currency (converted at each row's captured rate).
 
 async function exportPdf(trip: Trip, context: StatementContext) {
   try {
@@ -92,9 +92,10 @@ export function PaperLedger({
   const travelers = tripTravelers(trip);
   const travelerIds = travelers.map((m) => m.id);
   const travelerCount = travelerIds.length;
+  const baseCurrency = tripCurrency(trip);
   const ledger = trip.expenses;
-  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger);
-  const balances = expenseBalances(ledger, travelerIds);
+  const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
+  const balances = expenseBalances(ledger, travelerIds, baseCurrency);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
 
@@ -118,14 +119,16 @@ export function PaperLedger({
       <section className="grid grid-cols-2 mt-[22px] overflow-hidden border border-[#ebe9e3] rounded-[16px] max-[480px]:grid-cols-1">
         <div className="p-[20px_22px] border-r border-[#ebe9e3] max-[480px]:border-r-0 max-[480px]:border-b">
           <div className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.12em] text-[#76726a]">
-            实付合计 Total
+            实付合计 Total ({baseCurrency})
           </div>
           <div className="mt-3 font-sans font-extrabold text-[clamp(26px,6vw,36px)] leading-none tracking-[-0.02em]">
-            {fmtMoney(grand)}
+            {fmtMoney(grand, baseCurrency)}
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
             已抵扣 Credit{" "}
-            <span className="font-sans font-bold text-[#3f6f5b]">−{fmtMoney(creditTotal)}</span>
+            <span className="font-sans font-bold text-[#3f6f5b]">
+              −{fmtMoney(creditTotal, baseCurrency)}
+            </span>
           </div>
         </div>
         <div className="p-[20px_22px] bg-[#eef4f0]">
@@ -133,7 +136,7 @@ export function PaperLedger({
             待结算 Outstanding
           </div>
           <div className="mt-3 font-sans font-extrabold text-[clamp(26px,6vw,36px)] leading-none tracking-[-0.02em] text-[#3f6f5b]">
-            {fmtMoney(outstanding)}
+            {fmtMoney(outstanding, baseCurrency)}
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
             {travelerCount > 0 ? `${travelerCount} 位同行人按明细分别承担` : "邀请同行人后计算"}
@@ -168,7 +171,7 @@ export function PaperLedger({
                     {label}
                   </div>
                   <div className="mt-0.5 font-sans font-bold text-[17px]" style={{ color: tone }}>
-                    {fmtMoney(Math.abs(net))}
+                    {fmtMoney(Math.abs(net), baseCurrency)}
                   </div>
                 </div>
               </div>
@@ -176,13 +179,13 @@ export function PaperLedger({
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   已垫付
                   <b className="font-sans font-bold text-[#1c1b19]">
-                    {fmtMoney(balance?.paid ?? 0)}
+                    {fmtMoney(balance?.paid ?? 0, baseCurrency)}
                   </b>
                 </span>
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
                   应承担
                   <b className="font-sans font-bold text-[#1c1b19]">
-                    {fmtMoney(balance?.share ?? 0)}
+                    {fmtMoney(balance?.share ?? 0, baseCurrency)}
                   </b>
                 </span>
               </div>
@@ -240,6 +243,8 @@ export function PaperLedger({
             const isSplit = payers.length > 1;
             const owedBy = expenseOwedBy(item, travelerIds);
             const responsible = travelers.filter((m) => (owedBy[m.id] ?? 0) > 0.005);
+            const rowCurrency = expenseCurrency(item, baseCurrency);
+            const foreign = rowCurrency !== baseCurrency;
             return (
               <div
                 key={item.id}
@@ -259,15 +264,22 @@ export function PaperLedger({
                   </span>
                   <span className="shrink-0 max-[480px]:w-full max-[480px]:pl-[51px] max-[480px]:mt-1.5">
                     <span className="inline-flex items-center gap-1 py-[5px] pr-[11px] pl-[9px] bg-[#fafaf8] border border-[#ebe9e3] rounded-[10px]">
-                      <span className="font-sans text-[14px] text-[#9b988f]">$</span>
+                      <span className="font-sans text-[14px] text-[#9b988f]">
+                        {currencySymbol(rowCurrency)}
+                      </span>
                       <span className="font-sans font-bold text-[15px] text-[#1c1b19]">
-                        {amountParts(item.amount)}
+                        {fmtCurrencyNumber(item.amount, rowCurrency)}
                       </span>
                     </span>
+                    {foreign && (
+                      <span className="block mt-1 text-right font-sans text-[11px] text-[#9b988f] max-[480px]:text-left">
+                        ≈ {fmtMoney(item.amount * expenseFxRate(item), baseCurrency)}
+                      </span>
+                    )}
                   </span>
                 </div>
 
-                <ExpenseItems items={item.items} travelers={travelers} />
+                <ExpenseItems items={item.items} travelers={travelers} currency={rowCurrency} />
 
                 {item.credit > 0 && (
                   <div className="flex gap-2 items-center justify-end mt-2.5 max-[480px]:justify-start max-[480px]:pl-[51px]">
@@ -275,7 +287,7 @@ export function PaperLedger({
                       Credit
                     </span>
                     <span className="font-sans font-bold text-[13px] text-[#3f6f5b]">
-                      −{fmtMoney(appliedCredit(item))}
+                      −{fmtMoney(appliedCredit(item), rowCurrency)}
                     </span>
                   </div>
                 )}
@@ -305,7 +317,7 @@ export function PaperLedger({
                               </span>
                             )}
                             <b className="font-sans font-bold text-[12.5px] text-[#1c1b19]">
-                              {fmtMoney(amt)}
+                              {fmtMoney(amt, rowCurrency)}
                             </b>
                           </span>
                         );
@@ -331,7 +343,7 @@ export function PaperLedger({
                           />
                           <span className="font-cjk font-semibold text-[12px]">{m.name}</span>
                           <b className="font-sans font-bold text-[12.5px] text-[#1c1b19]">
-                            {fmtMoney(owedBy[m.id] ?? 0)}
+                            {fmtMoney(owedBy[m.id] ?? 0, rowCurrency)}
                           </b>
                         </span>
                       ))}
@@ -343,13 +355,16 @@ export function PaperLedger({
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
                     实付{" "}
                     <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(net)}
+                      {fmtMoney(net, rowCurrency)}
                     </b>
                   </span>
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
                     已分配{" "}
                     <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0))}
+                      {fmtMoney(
+                        travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0),
+                        rowCurrency,
+                      )}
                     </b>
                   </span>
                 </div>
@@ -361,23 +376,23 @@ export function PaperLedger({
         {/* TOTALS */}
         <div className="bg-[#eef4f0] border-t border-[#ebe9e3]">
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px]">
-            <span>小计 Subtotal</span>
-            <span className="font-sans font-bold">{fmtMoney(subtotal)}</span>
+            <span>小计 Subtotal ({baseCurrency})</span>
+            <span className="font-sans font-bold">{fmtMoney(subtotal, baseCurrency)}</span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
             <span>抵扣 Credit</span>
-            <span className="font-sans font-bold">−{fmtMoney(creditTotal)}</span>
+            <span className="font-sans font-bold">−{fmtMoney(creditTotal, baseCurrency)}</span>
           </div>
           <div className="flex items-center justify-between py-[15px] px-[18px] bg-[#1c1b19] text-[#fafaf8] font-sans font-extrabold tracking-[0.01em] text-[clamp(15px,3vw,17px)]">
             <span>实付合计 Net Total</span>
             <span className="font-sans text-white text-[clamp(18px,4vw,22px)]">
-              {fmtMoney(grand)}
+              {fmtMoney(grand, baseCurrency)}
             </span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] bg-white border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[14px]">
             <span>承担合计 Allocated</span>
             <span className="font-sans font-bold text-[#3f6f5b] text-[16px]">
-              {fmtMoney(grand)}
+              {fmtMoney(grand, baseCurrency)}
             </span>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Trip, TripMember } from "../src/trip/types";
 import { applyOp, emptyTrip, type TripOp } from "../src/trip/ops";
+import { rebaseExpenses } from "../src/trip/expenses";
 import type { TripBackup } from "../src/trip/types";
 import type { Env } from "./env";
 
@@ -129,6 +130,8 @@ export class TripDurableObject extends DurableObject<Env> {
       this.trip.suggestions ??= [];
       this.trip.expenses ??= [];
       this.trip.flights ??= [];
+      // Pre-multi-currency trips settled in the app's hardcoded USD.
+      this.trip.base.currency ??= "USD";
       scrubPassUrls(this.trip);
       // Persist the backfill so the SQL row (and dashboard Query panel) reflects it.
       if (JSON.stringify(this.trip) !== before) this.persist();
@@ -286,6 +289,7 @@ export class TripDurableObject extends DurableObject<Env> {
       title?: unknown;
       dates?: { start?: unknown; end?: unknown };
       timezone?: unknown;
+      currency?: unknown;
     } | null;
     if (!body || typeof body.tripId !== "string" || typeof body.title !== "string") {
       return Response.json({ error: "bad_request" }, { status: 400 });
@@ -305,6 +309,7 @@ export class TripDurableObject extends DurableObject<Env> {
         end: typeof body.dates?.end === "string" ? body.dates.end : "",
       },
       timezone: typeof body.timezone === "string" ? body.timezone : "UTC",
+      currency: typeof body.currency === "string" ? body.currency : undefined,
     });
     this.rev = 0;
     this.persist();
@@ -328,17 +333,30 @@ export class TripDurableObject extends DurableObject<Env> {
     return Response.json({ rev: this.rev, trip: this.trip } satisfies Snapshot);
   }
 
-  // Mirror registry metadata edits (title/dates/timezone) into the document so
-  // the masthead everyone renders never drifts from what settings shows.
+  // Mirror registry metadata edits (title/dates/timezone/currency) into the
+  // document so the masthead everyone renders never drifts from what settings
+  // shows. A currency change also restates the ledger's captured conversion
+  // rates via the fxRebase cross rate the worker fetched (rebaseExpenses), so
+  // stored amounts are never silently relabeled in a new unit.
   private async setMeta(req: Request): Promise<Response> {
     if (!this.trip) return TripDurableObject.uninitialized();
     const body = (await req.json().catch(() => null)) as {
       title?: unknown;
       dates?: { start?: unknown; end?: unknown };
       timezone?: unknown;
+      currency?: unknown;
+      fxRebase?: unknown;
     } | null;
     if (!body) return Response.json({ error: "bad_request" }, { status: 400 });
     const at = new Date().toISOString();
+    const prevCurrency = this.trip.base.currency ?? "USD";
+    const nextCurrency =
+      typeof body.currency === "string" && body.currency ? body.currency : prevCurrency;
+    const rebase = Number(body.fxRebase);
+    const expenses =
+      nextCurrency !== prevCurrency && Number.isFinite(rebase) && rebase > 0
+        ? rebaseExpenses(this.trip.expenses ?? [], prevCurrency, nextCurrency, rebase)
+        : this.trip.expenses;
     this.trip = {
       ...this.trip,
       title: typeof body.title === "string" && body.title ? body.title : this.trip.title,
@@ -352,7 +370,9 @@ export class TripDurableObject extends DurableObject<Env> {
           typeof body.timezone === "string" && body.timezone
             ? body.timezone
             : this.trip.base.timezone,
+        currency: nextCurrency,
       },
+      expenses,
       updatedAt: at,
     };
     this.rev += 1;

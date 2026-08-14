@@ -12,7 +12,7 @@
     "typecheck:worker": "tsc -p tsconfig.worker.json",
     "preview": "vite preview",
     "worker:dev": "wrangler dev",
-    "worker:deploy": "wrangler deploy",
+    "worker:deploy": "wrangler d1 migrations apply papertrip --remote && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
