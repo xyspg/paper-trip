@@ -381,8 +381,9 @@ function buildStatement(
   // original figure noted on the row.
   const baseCurrency = tripCurrency(trip);
   const money = (n: number) => fmtMoney(n, baseCurrency);
+  const payments = trip.payments ?? [];
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
-  const balances = expenseBalances(ledger, travelerIds, baseCurrency);
+  const balances = expenseBalances(ledger, travelerIds, baseCurrency, payments);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const timezone = trip.base.timezone;
@@ -476,6 +477,34 @@ function buildStatement(
         amount: "-" + money(credit * rate),
       });
     }
+  }
+
+  // Member settle-up payments post alongside statement credits: informational
+  // rows that shift traveler balances without changing the trip's totals.
+  for (const payment of payments) {
+    const rowCurrency = expenseCurrency(payment, baseCurrency);
+    const rate = rowCurrency !== baseCurrency ? expenseFxRate(payment) : 1;
+    const fromName = nameById[payment.from] ?? payment.from;
+    const toName = nameById[payment.to] ?? payment.to;
+    creditRows.push({
+      category: "Payment",
+      description: el("div", {}, [
+        el("div", { fontWeight: "600" }, [`Member payment: ${fromName} to ${toName}`]),
+        el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
+          [
+            "SETTLE-UP TRANSFER · DOES NOT CHANGE TRIP TOTAL",
+            payment.date ?? "",
+            payment.note ?? "",
+            rowCurrency !== baseCurrency
+              ? `RECORDED ${fmtMoney(payment.amount, rowCurrency)} @ ${fmtFxRate(rate)}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("  ·  "),
+        ]),
+      ]),
+      amount: money(payment.amount * rate),
+    });
   }
 
   // This node deliberately contains the statement body only. A crisp vector
@@ -676,10 +705,12 @@ function buildStatement(
   container.append(
     heading("Settlement Summary"),
     statementTable(
-      ["Traveler", "Paid", "Allocated Amount", "Balance", "Status"],
+      ["Traveler", "Paid", "Allocated Amount", "Payments", "Balance", "Status"],
       travelers.map((m) => {
         const b = balanceById[m.id];
         const net = b?.balance ?? 0;
+        // Net settle-up movement: positive = sent more than received.
+        const netPayment = (b?.repaid ?? 0) - (b?.received ?? 0);
         const settled = Math.abs(net) < 0.005;
         const status = settled ? "SETTLED" : net < 0 ? "OWES" : "IS OWED";
         return [
@@ -689,12 +720,15 @@ function buildStatement(
           ]),
           money(b?.paid ?? 0),
           money(b?.share ?? 0),
+          Math.abs(netPayment) < 0.005
+            ? money(0)
+            : (netPayment < 0 ? "-" : "+") + money(Math.abs(netPayment)),
           settled ? money(0) : (net < 0 ? "-" : "+") + money(Math.abs(net)),
           status,
         ];
       }),
-      ["left", "right", "right", "right", "right"],
-      "2fr 1fr 1.35fr 1fr 1fr",
+      ["left", "right", "right", "right", "right", "right"],
+      "1.8fr 1fr 1.2fr 1fr 1fr 0.9fr",
     ),
 
     heading("Account Activity"),
@@ -772,9 +806,11 @@ function buildStatement(
         disclosureParagraph(
           "Each expense may allocate exact responsibility amounts to individual travelers; " +
             "entries without a custom allocation use an equal split. Applied credits reduce the " +
-            `net amount of the expense they are attached to. All amounts are stated in ${baseCurrency}; ` +
-            "expenses recorded in another currency are converted at the exchange rate captured " +
-            "when the expense was entered (noted on the row).",
+            "net amount of the expense they are attached to. Member payments are settle-up " +
+            "transfers between travelers: they adjust the payer's and recipient's balances " +
+            `without changing the trip's totals. All amounts are stated in ${baseCurrency}; ` +
+            "entries recorded in another currency are converted at the exchange rate captured " +
+            "when they were entered (noted on the row).",
         ),
       ]),
       el("div", {}, [

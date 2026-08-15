@@ -1,4 +1,4 @@
-import type { Expense, ExpenseAllocation } from "./types";
+import type { Expense, ExpenseAllocation, Payment } from "./types";
 import { currencyDecimals, expenseCurrency, normalizeCurrency, roundFxRate } from "./currency";
 
 const cents = (value: number): number => Math.round(Math.max(0, Number(value) || 0) * 100);
@@ -19,10 +19,11 @@ export const appliedCredit = (e: Expense): number => Math.min(e.credit || 0, Num
 
 export const netExpense = (e: Expense): number => (Number(e.amount) || 0) - appliedCredit(e);
 
-// Base-currency units per unit of the expense's own currency. 1 for expenses
+// Base-currency units per unit of the line's own currency. 1 for lines
 // recorded directly in the base currency (or with a missing/invalid rate), so
-// pre-multi-currency data aggregates unchanged.
-export const expenseFxRate = (e: Expense): number => {
+// pre-multi-currency data aggregates unchanged. Structural so expenses and
+// payments share one conversion rule.
+export const expenseFxRate = (e: { fxRate?: number }): number => {
   const rate = Number(e.fxRate);
   return Number.isFinite(rate) && rate > 0 ? rate : 1;
 };
@@ -31,7 +32,7 @@ export const expenseFxRate = (e: Expense): number => {
 // is known, a line that resolves to the base itself always converts at exactly
 // 1, so a stray fxRate on a base-currency row (malformed agent data) can never
 // pull totals away from what the row visibly shows.
-const aggregationRate = (e: Expense, base?: string): number =>
+const aggregationRate = (e: { currency?: string; fxRate?: number }, base?: string): number =>
   base !== undefined && expenseCurrency(e, base) === base ? 1 : expenseFxRate(e);
 
 export type ExpenseTotals = { subtotal: number; creditTotal: number; total: number };
@@ -136,6 +137,10 @@ export type ExpenseBalance = {
   id: string;
   paid: number;
   share: number;
+  // Settle-up payments this member sent / received (base currency). They move
+  // `balance` without touching paid/share, so expense figures stay expense-only.
+  repaid: number;
+  received: number;
   balance: number;
 };
 
@@ -148,13 +153,21 @@ export type SettlementTransfer = {
 // Balances are stated in the trip's base currency. Per-expense paid/owed maps
 // each sum to the expense's own net (in its own currency), so converting both
 // with the same fxRate keeps total paid === total owed across any currency mix.
+// Settle-up payments then shift balances member-to-member: a payment counts
+// toward what `from` has effectively paid and against what `to` is still owed,
+// so both sides move by the same converted amount and the ledger stays
+// zero-sum. A payment whose members aren't both on the roster (or that pays
+// oneself) is skipped — it could otherwise create or lose money.
 export const expenseBalances = (
   expenses: Expense[],
   memberIds: string[],
   base?: string,
+  payments: Payment[] = [],
 ): ExpenseBalance[] => {
   const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
   const owed = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const repaid = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const received = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
   for (const e of expenses) {
     const rate = aggregationRate(e, base);
@@ -166,11 +179,20 @@ export const expenseBalances = (
     }
   }
 
+  for (const p of payments) {
+    if (p.from === p.to || !(p.from in repaid) || !(p.to in received)) continue;
+    const amount = Math.max(0, Number(p.amount) || 0) * aggregationRate(p, base);
+    repaid[p.from] += amount;
+    received[p.to] += amount;
+  }
+
   return memberIds.map((id) => ({
     id,
     paid: paid[id] || 0,
     share: owed[id] || 0,
-    balance: (paid[id] || 0) - (owed[id] || 0),
+    repaid: repaid[id] || 0,
+    received: received[id] || 0,
+    balance: (paid[id] || 0) - (owed[id] || 0) + (repaid[id] || 0) - (received[id] || 0),
   }));
 };
 

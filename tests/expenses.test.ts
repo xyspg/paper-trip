@@ -10,7 +10,7 @@ import {
   settlementTransfers,
 } from "../src/trip/expenses";
 import { applyOp, emptyTrip } from "../src/trip/ops";
-import type { Expense } from "../src/trip/types";
+import type { Expense, Payment } from "../src/trip/types";
 
 const expense = (patch: Partial<Expense> = {}): Expense => ({
   id: "expense-1",
@@ -20,6 +20,14 @@ const expense = (patch: Partial<Expense> = {}): Expense => ({
   amount: 10,
   credit: 0,
   payer: "a",
+  ...patch,
+});
+
+const payment = (patch: Partial<Payment> = {}): Payment => ({
+  id: "payment-1",
+  from: "b",
+  to: "a",
+  amount: 3,
   ...patch,
 });
 
@@ -49,8 +57,8 @@ describe("expense responsibility allocations", () => {
     );
 
     expect(balances).toEqual([
-      { id: "a", paid: 6, share: 3, balance: 3 },
-      { id: "b", paid: 4, share: 7, balance: -3 },
+      { id: "a", paid: 6, share: 3, repaid: 0, received: 0, balance: 3 },
+      { id: "b", paid: 4, share: 7, repaid: 0, received: 0, balance: -3 },
     ]);
   });
 
@@ -163,6 +171,47 @@ describe("multi-currency aggregation", () => {
   });
 });
 
+describe("settle-up payments", () => {
+  it("moves balances member-to-member without touching paid or share", () => {
+    // a fronted 10, split AA → b owes a 5; b then pays 3 of it back.
+    const balances = expenseBalances([expense()], ["a", "b"], undefined, [payment()]);
+    expect(balances).toEqual([
+      { id: "a", paid: 10, share: 5, repaid: 0, received: 3, balance: 2 },
+      { id: "b", paid: 0, share: 5, repaid: 3, received: 0, balance: -2 },
+    ]);
+    expect(settlementTransfers(balances)).toEqual([{ from: "b", to: "a", amount: 2 }]);
+  });
+
+  it("converts foreign-currency payments at their captured rate", () => {
+    const balances = expenseBalances(
+      [expense({ amount: 100 })],
+      ["a", "b"],
+      "USD",
+      // ¥5,000 back at 0.007 base per yen = $35 of the $50 owed.
+      [payment({ amount: 5_000, currency: "JPY", fxRate: 0.007 })],
+    );
+    expect(balances[0].received).toBeCloseTo(35, 10);
+    expect(balances[0].balance).toBeCloseTo(15, 10);
+    expect(balances[1].balance).toBeCloseTo(-15, 10);
+  });
+
+  it("stays zero-sum and can settle exactly", () => {
+    const balances = expenseBalances([expense()], ["a", "b"], undefined, [payment({ amount: 5 })]);
+    expect(balances[0].balance + balances[1].balance).toBeCloseTo(0, 10);
+    expect(settlementTransfers(balances)).toEqual([]);
+  });
+
+  it("skips self-payments and payments naming unknown members", () => {
+    const balances = expenseBalances([expense()], ["a", "b"], undefined, [
+      payment({ id: "p-self", from: "a", to: "a", amount: 4 }),
+      payment({ id: "p-ghost", from: "ghost", to: "a", amount: 4 }),
+      payment({ id: "p-negative", amount: -4 }),
+    ]);
+    expect(balances[0].balance).toBe(5);
+    expect(balances[1].balance).toBe(-5);
+  });
+});
+
 describe("base-currency rebase", () => {
   it("stamps implicit rows and restates captured rates, never amounts", () => {
     const out = rebaseExpenses(
@@ -192,9 +241,9 @@ describe("settlement transfers", () => {
   it("settles any number of travelers", () => {
     expect(
       settlementTransfers([
-        { id: "a", paid: 18, share: 10, balance: 8 },
-        { id: "b", paid: 7, share: 10, balance: -3 },
-        { id: "c", paid: 5, share: 10, balance: -5 },
+        { id: "a", paid: 18, share: 10, repaid: 0, received: 0, balance: 8 },
+        { id: "b", paid: 7, share: 10, repaid: 0, received: 0, balance: -3 },
+        { id: "c", paid: 5, share: 10, repaid: 0, received: 0, balance: -5 },
       ]),
     ).toEqual([
       { from: "b", to: "a", amount: 3 },

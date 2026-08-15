@@ -7,10 +7,11 @@ export const Route = createFileRoute("/t/$tripId/admin/split")({
 });
 
 function SplitRoute() {
-  const { expenses, tripOp, toast } = useAdmin();
+  const { expenses, payments, tripOp, toast } = useAdmin();
   return (
     <SplitSection
       expenses={expenses}
+      payments={payments}
       onSetAmount={(id, amount) =>
         tripOp.mutate({ type: "setExpenseAmount", expenseId: id, amount })
       }
@@ -40,6 +41,24 @@ function SplitRoute() {
           { type: "deleteExpense", expenseId: id },
           {
             onSuccess: () => toast("已删除条目"),
+            onError: () => toast("删除失败，请重试", "warn"),
+          },
+        )
+      }
+      onAddPayment={(payment) =>
+        tripOp.mutate(
+          { type: "addPayment", payment },
+          {
+            onSuccess: () => toast("已记录还款"),
+            onError: () => toast("记录失败，请重试", "warn"),
+          },
+        )
+      }
+      onDeletePayment={(id) =>
+        tripOp.mutate(
+          { type: "deletePayment", paymentId: id },
+          {
+            onSuccess: () => toast("已删除还款记录"),
             onError: () => toast("删除失败，请重试", "warn"),
           },
         )

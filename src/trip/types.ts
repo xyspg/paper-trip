@@ -151,6 +151,23 @@ export type Expense = {
   items?: ExpenseItem[];
 };
 
+// A settle-up transfer between two travelers — `from` handed `to` money outside
+// the shared expenses (e.g. a mid-trip partial repayment). Not an expense: it
+// never changes the trip's totals, only who still owes whom — balances count it
+// toward what `from` has effectively paid and against what `to` is still owed.
+// Multi-currency follows the Expense rule: `amount` is in `currency` (absent =
+// trip base currency) and `fxRate` is captured at entry.
+export type Payment = {
+  id: string;
+  from: string; // member id that handed over the money
+  to: string; // member id that received it
+  amount: number;
+  currency?: string;
+  fxRate?: number;
+  date?: string; // "2026-08-15" — in the trip's own timezone
+  note?: string;
+};
+
 // One airport endpoint of a flight. Dates/times are local wall-clock values at
 // the airport; `timezone` is optional because the airport label is usually the
 // clearest cue, but an IANA zone can be stored when the traveler needs it.
@@ -209,6 +226,9 @@ export type Trip = {
   suggestions: TripSuggestion[];
   expenses: Expense[];
   flights: Flight[];
+  // Settle-up transfers between travelers. Absent on state persisted before
+  // payments existed; the worker backfills it.
+  payments?: Payment[];
   // Absent on state persisted before multi-tenancy; the worker backfills it.
   members?: TripMember[];
   updatedAt: string;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import { applyOp, emptyTrip } from "../src/trip/ops";
-import type { Trip, TripItem } from "../src/trip/types";
+import type { Payment, Trip, TripItem } from "../src/trip/types";
 import type { Flight } from "../src/trip/types";
 
 const item = (id: string, date: string, time: string): TripItem => ({
@@ -111,5 +111,44 @@ describe("flight ops", () => {
     const original = applyOp(base(), { type: "addFlight", flight: flight("f1", "alice") });
     const collision = applyOp(original, { type: "addFlight", flight: flight("f1", "bob") });
     expect(collision.flights).toEqual(original.flights);
+  });
+});
+
+const payment = (id: string, amount: number): Payment => ({
+  id,
+  from: "bob",
+  to: "alice",
+  amount,
+});
+
+describe("payment ops", () => {
+  it("appends and replaces an existing id instead of duplicating (agent retry safety)", () => {
+    const one = applyOp(base(), { type: "addPayment", payment: payment("p1", 30) });
+    const two = applyOp(one, { type: "addPayment", payment: payment("p2", 10) });
+    const retried = applyOp(two, { type: "addPayment", payment: payment("p1", 50) });
+    expect(retried.payments?.map((p) => [p.id, p.amount])).toEqual([
+      ["p2", 10],
+      ["p1", 50],
+    ]);
+  });
+
+  it("updates and deletes by id", () => {
+    const one = applyOp(base(), { type: "addPayment", payment: payment("p1", 30) });
+    const updated = applyOp(one, {
+      type: "updatePayment",
+      payment: { ...payment("p1", 45), note: "wire" },
+    });
+    expect(updated.payments).toEqual([{ ...payment("p1", 45), note: "wire" }]);
+    expect(applyOp(updated, { type: "deletePayment", paymentId: "p1" }).payments).toEqual([]);
+    expect(applyOp(updated, { type: "deletePayment", paymentId: "nope" }).payments).toEqual(
+      updated.payments,
+    );
+  });
+
+  it("resetExpenses clears payments with the ledger they settle", () => {
+    const withPayment = applyOp(base(), { type: "addPayment", payment: payment("p1", 30) });
+    const wiped = applyOp(withPayment, { type: "resetExpenses" });
+    expect(wiped.payments).toEqual([]);
+    expect(applyOp(withPayment, { type: "reset" }).payments).toEqual([]);
   });
 });

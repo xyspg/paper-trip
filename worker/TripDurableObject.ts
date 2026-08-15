@@ -62,7 +62,8 @@ function isTripShape(x: unknown, expectedId: string): x is Trip {
     Array.isArray(t.documents) &&
     Array.isArray(t.suggestions) &&
     Array.isArray(t.expenses) &&
-    Array.isArray(t.flights)
+    Array.isArray(t.flights) &&
+    Array.isArray(t.payments)
   );
 }
 
@@ -91,6 +92,11 @@ function opTarget(op: TripOp): string | null {
     case "setExpensePayer":
     case "setExpenseSplit":
       return op.expenseId;
+    case "addPayment":
+    case "updatePayment":
+      return op.payment.id;
+    case "deletePayment":
+      return op.paymentId;
     case "addFlight":
     case "updateFlight":
       return op.flight.id;
@@ -130,6 +136,7 @@ export class TripDurableObject extends DurableObject<Env> {
       this.trip.suggestions ??= [];
       this.trip.expenses ??= [];
       this.trip.flights ??= [];
+      this.trip.payments ??= [];
       // Pre-multi-currency trips settled in the app's hardcoded USD.
       this.trip.base.currency ??= "USD";
       scrubPassUrls(this.trip);
@@ -458,6 +465,7 @@ export class TripDurableObject extends DurableObject<Env> {
       updatedAt: at,
     };
     this.trip.flights ??= [];
+    this.trip.payments ??= [];
     // Backups taken before the parking-pass proxy still embed the secret URL.
     scrubPassUrls(this.trip);
     this.rev += 1;

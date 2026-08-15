@@ -68,6 +68,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
   const tripItems = trip?.items ?? [];
   const expenses = trip?.expenses ?? [];
   const flights = trip?.flights ?? [];
+  const payments = trip?.payments ?? [];
   const travelers = trip ? tripTravelers(trip) : [];
   const currency = tripCurrency(trip);
 
@@ -162,8 +163,10 @@ export function AdminPage({ tripId }: { tripId: string }) {
         items: tripItems,
         expenses,
         flights,
+        payments,
         travelers,
         currency,
+        timezone: trip?.base.timezone ?? "UTC",
         tripOp,
       }}
     >
