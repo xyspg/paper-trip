@@ -6,6 +6,7 @@ import {
   expenseFxRate,
   expenseOwedBy,
   expenseTotals,
+  fullExpenseAllocation,
   rebaseExpenses,
   settlementTransfers,
 } from "../src/trip/expenses";
@@ -35,6 +36,15 @@ describe("expense responsibility allocations", () => {
       b: 3.33,
       c: 3.33,
     });
+  });
+
+  it("assigns the full amount to one traveler", () => {
+    expect(fullExpenseAllocation(10.01, ["a", "b", "c"], "b")).toEqual({
+      a: 0,
+      b: 10.01,
+      c: 0,
+    });
+    expect(fullExpenseAllocation(194, ["a", "b"], "a", 0)).toEqual({ a: 194, b: 0 });
   });
 
   it("keeps who paid independent from who owes", () => {
