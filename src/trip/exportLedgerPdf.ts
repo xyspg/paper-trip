@@ -21,12 +21,10 @@ import type { Trip } from "./types";
 // account footer, asymmetric balance summaries, ruled activity groups, and
 // small-print disclosures. Technical registry metadata is demoted to the trip
 // messages and statement reference instead of presented as a product panel.
-// Rendered from an off-screen DOM node into a raster image via
-// html2canvas, then embedded as a flat image rather than going through
-// jsPDF's own `.html()`/Context2D vector-text path: that path replays text
-// with jsPDF's built-in Helvetica font, which has no CJK glyphs and corrupts
-// the Chinese expense names. Rasterizing uses the browser's own font stack,
-// so any script it can render renders correctly.
+// Rendered from an off-screen DOM node into a raster image via html2canvas so
+// the visual layer keeps the browser's CJK shaping and exact CSS layout. A
+// matching invisible Unicode text layer is embedded over it with Noto Sans SC,
+// making the body searchable and copyable without changing its appearance.
 
 // Multi-tenant context threaded in by the ledger page. All optional: the
 // statement degrades to "-" placeholders when the registry row hasn't loaded
@@ -49,6 +47,164 @@ const SOFT_RULE = "#c9c9c9";
 const SITE_HOST = "papertrip.xyspg.moe";
 const STATEMENT_FONT =
   'Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Heiti SC", sans-serif';
+const SEARCH_TEXT_FONT_FAMILY = "Noto Sans SC";
+const SEARCH_TEXT_FONT_FILE = "NotoSansSC-VF.ttf";
+const SEARCH_TEXT_FONT_URL = "/fonts/NotoSansSC-VF.ttf";
+
+type SearchTextFragment = {
+  text: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  fontSize: number;
+};
+
+type PdfPageSlice = { startPx: number; endPx: number };
+
+let searchTextFontPromise: Promise<string> | undefined;
+
+function bytesToBinaryString(bytes: Uint8Array): string {
+  const chunks: string[] = [];
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    chunks.push(String.fromCharCode(...bytes.subarray(offset, offset + chunkSize)));
+  }
+  return chunks.join("");
+}
+
+function loadSearchTextFont(): Promise<string> {
+  searchTextFontPromise ??= fetch(SEARCH_TEXT_FONT_URL).then(async (response) => {
+    if (!response.ok) {
+      throw new Error(`Failed to load PDF font: ${response.status}`);
+    }
+    return bytesToBinaryString(new Uint8Array(await response.arrayBuffer()));
+  });
+  return searchTextFontPromise;
+}
+
+function transformedText(text: string, transform: string): string {
+  if (transform === "uppercase") return text.toLocaleUpperCase();
+  if (transform === "lowercase") return text.toLocaleLowerCase();
+  return text;
+}
+
+// Browser ranges expose the exact line wrapping chosen by layout. Recording a
+// fragment per rendered line keeps selection highlights aligned with the
+// rasterized text instead of adding one detached block of metadata per page.
+function collectSearchText(container: HTMLElement): SearchTextFragment[] {
+  const origin = container.getBoundingClientRect();
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const fragments: SearchTextFragment[] = [];
+
+  for (let current = walker.nextNode(); current; current = walker.nextNode()) {
+    const textNode = current as Text;
+    const parent = textNode.parentElement;
+    if (!parent || !textNode.data.trim()) continue;
+
+    const style = getComputedStyle(parent);
+    const fontSize = Number.parseFloat(style.fontSize);
+    if (!Number.isFinite(fontSize) || fontSize <= 0) continue;
+
+    const range = document.createRange();
+    let line:
+      | {
+          text: string;
+          left: number;
+          top: number;
+          right: number;
+          bottom: number;
+        }
+      | undefined;
+
+    const flushLine = () => {
+      if (!line) return;
+      const text = transformedText(line.text.replace(/\s+/g, " "), style.textTransform);
+      if (text.trim()) {
+        fragments.push({
+          text,
+          left: line.left - origin.left,
+          top: line.top - origin.top,
+          width: line.right - line.left,
+          height: line.bottom - line.top,
+          fontSize,
+        });
+      }
+      line = undefined;
+    };
+
+    for (let start = 0; start < textNode.data.length; ) {
+      const codePoint = textNode.data.codePointAt(start);
+      const length = codePoint != null && codePoint > 0xffff ? 2 : 1;
+      const end = start + length;
+      range.setStart(textNode, start);
+      range.setEnd(textNode, end);
+      const rect = range.getBoundingClientRect();
+      const character = textNode.data.slice(start, end);
+
+      if (rect.height > 0 && rect.width >= 0) {
+        if (!line || Math.abs(rect.top - line.top) > 0.75) {
+          flushLine();
+          line = {
+            text: character,
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+          };
+        } else {
+          line.text += character;
+          line.left = Math.min(line.left, rect.left);
+          line.right = Math.max(line.right, rect.right);
+          line.bottom = Math.max(line.bottom, rect.bottom);
+        }
+      }
+      start = end;
+    }
+    flushLine();
+  }
+
+  return fragments;
+}
+
+function addSearchTextLayer(
+  doc: jsPDF,
+  fontBinary: string,
+  fragments: SearchTextFragment[],
+  pageSlices: PdfPageSlice[],
+  scale: number,
+  ptPerPx: number,
+  sideMargin: number,
+  bodyTop: number,
+) {
+  doc.addFileToVFS(SEARCH_TEXT_FONT_FILE, fontBinary);
+  doc.addFont(SEARCH_TEXT_FONT_FILE, SEARCH_TEXT_FONT_FAMILY, "normal");
+  doc.setFont(SEARCH_TEXT_FONT_FAMILY, "normal");
+
+  pageSlices.forEach((page, pageIndex) => {
+    doc.setPage(pageIndex + 1);
+    for (const fragment of fragments) {
+      const topPx = fragment.top * scale;
+      const heightPx = fragment.height * scale;
+      const midpointPx = topPx + heightPx / 2;
+      if (midpointPx < page.startPx || midpointPx >= page.endPx) continue;
+
+      const x = sideMargin + fragment.left * scale * ptPerPx;
+      const y = bodyTop + (topPx - page.startPx) * ptPerPx;
+      const fontSize = fragment.fontSize * scale * ptPerPx;
+      const targetWidth = fragment.width * scale * ptPerPx;
+      doc.setFontSize(fontSize);
+      const measuredWidth = doc.getTextWidth(fragment.text);
+      const horizontalScale = measuredWidth > 0 ? targetWidth / measuredWidth : 1;
+      doc.text(fragment.text, x, y, {
+        baseline: "top",
+        horizontalScale:
+          Number.isFinite(horizontalScale) && horizontalScale > 0 ? horizontalScale : 1,
+        renderingMode: "invisible",
+      });
+    }
+  });
+}
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -853,6 +1009,7 @@ function buildStatement(
 // gesture.
 export type LedgerPdfStatement = {
   filename: string;
+  file: File;
   deliver: () => Promise<void>;
 };
 
@@ -888,6 +1045,7 @@ export async function exportLedgerPdf(
   // Safe page-break boundaries (canvas px): table rows plus marked headings and
   // disclosure paragraphs. The paginator favors the lowest one that fits.
   const containerTop = container.getBoundingClientRect().top;
+  const searchText = collectSearchText(container);
   const breakOffsets = [
     ...new Set(
       Array.from(container.querySelectorAll("[data-statement-break]"))
@@ -897,19 +1055,29 @@ export async function exportLedgerPdf(
   ].sort((a, b) => a - b);
 
   let canvas: HTMLCanvasElement;
+  let searchTextFont: string;
   try {
-    canvas = await html2canvas(container, {
-      scale: SCALE,
-      backgroundColor: "#ffffff",
-      windowWidth: 800,
-    });
+    [canvas, searchTextFont] = await Promise.all([
+      html2canvas(container, {
+        scale: SCALE,
+        backgroundColor: "#ffffff",
+        windowWidth: 800,
+      }),
+      loadSearchTextFont(),
+    ]);
   } finally {
     wrapper.remove();
   }
 
   // The reference statement uses a narrow, long 522 × 1008 pt page. Matching
   // that stock gives the body its characteristic dense vertical rhythm.
-  const doc = new jsPDF({ unit: "pt", format: [522, 1008], orientation: "portrait" });
+  const doc = new jsPDF({
+    unit: "pt",
+    format: [522, 1008],
+    orientation: "portrait",
+    compress: true,
+    putOnlyUsedFonts: true,
+  });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const sideMargin = 24;
@@ -923,6 +1091,7 @@ export async function exportLedgerPdf(
 
   let renderedPx = 0;
   let pageIndex = 0;
+  const pageSlices: PdfPageSlice[] = [];
   while (renderedPx < canvas.height) {
     const maxEnd = renderedPx + pageSliceHeightPx;
     // If the rest of the statement fits on one page, take it all. Otherwise cut
@@ -969,9 +1138,21 @@ export async function exportLedgerPdf(
       sliceHeightPx * ptPerPx,
     );
 
+    pageSlices.push({ startPx: renderedPx, endPx: end });
     renderedPx = end;
     pageIndex++;
   }
+
+  addSearchTextLayer(
+    doc,
+    searchTextFont,
+    searchText,
+    pageSlices,
+    SCALE,
+    ptPerPx,
+    sideMargin,
+    bodyTop,
+  );
 
   const today = todayIn(trip.base.timezone);
   const compactTripId = trip.id.length > 28 ? trip.id.slice(0, 25) + "..." : trip.id;
@@ -1046,6 +1227,7 @@ export async function exportLedgerPdf(
   const file = new File([doc.output("blob")], filename, { type: "application/pdf" });
   return {
     filename,
+    file,
     deliver: async () => {
       const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
       if (coarsePointer && navigator.canShare?.({ files: [file] })) {

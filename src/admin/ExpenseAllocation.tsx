@@ -4,6 +4,7 @@ import {
   evenExpenseAllocation,
   expenseAllocationMatches,
   expenseAllocationTotal,
+  fullExpenseAllocation,
 } from "../trip/expenses";
 import { Avatar } from "./Avatar";
 import type { AdminMember } from "./adminData";
@@ -27,12 +28,14 @@ function AllocationInput({
   symbol,
   decimals,
   onCommit,
+  onTakeFullAmount,
 }: {
   member: AdminMember;
   value: number;
   symbol: string;
   decimals: number;
   onCommit: (value: number) => void;
+  onTakeFullAmount: () => void;
 }) {
   const [draft, setDraft] = useState(value ? String(value) : "");
   const factor = 10 ** decimals;
@@ -49,26 +52,37 @@ function AllocationInput({
         <Avatar m={member} size="xs" />
         <span className="truncate">{member.name}</span>
       </span>
-      <span className="inline-flex items-center gap-[3px] border border-[#ebe9e3] rounded-[10px] px-2.5 py-[5px] bg-white transition-colors focus-within:border-[#1c1b19]">
-        <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">{symbol}</span>
-        <input
-          className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
-          type="number"
-          inputMode="decimal"
-          step={decimals ? "0.01" : "1"}
-          min="0"
-          value={draft}
-          autoComplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          aria-label={`${member.name} 承担金额`}
-          placeholder={decimals ? "0.00" : "0"}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-          }}
-        />
+      <span className="inline-flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          className="inline-flex items-center h-[33px] px-2.5 rounded-[9px] border border-[#ebe9e3] bg-white font-grotesk font-semibold text-[11px] text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19]"
+          title={`由 ${member.name} 承担全部金额`}
+          aria-label={`由 ${member.name} 承担全部金额`}
+          onClick={onTakeFullAmount}
+        >
+          100%
+        </button>
+        <span className="inline-flex items-center gap-[3px] border border-[#ebe9e3] rounded-[10px] px-2.5 py-[5px] bg-white transition-colors focus-within:border-[#1c1b19]">
+          <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">{symbol}</span>
+          <input
+            className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
+            type="number"
+            inputMode="decimal"
+            step={decimals ? "0.01" : "1"}
+            min="0"
+            value={draft}
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            aria-label={`${member.name} 承担金额`}
+            placeholder={decimals ? "0.00" : "0"}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={commit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+        </span>
       </span>
     </div>
   );
@@ -120,6 +134,9 @@ export function ExpenseAllocation({ amount, travelers, value, onChange, currency
             symbol={symbol}
             decimals={decimals}
             onCommit={(next) => onChange({ ...allocation, [member.id]: next })}
+            onTakeFullAmount={() =>
+              onChange(fullExpenseAllocation(amount, memberIds, member.id, decimals))
+            }
           />
         ))}
       </div>

@@ -109,6 +109,13 @@ export const evenExpenseAllocation = (
   decimals: number = 2,
 ): ExpenseAllocation => allocateByWeight(amount, memberIds, undefined, decimals);
 
+export const fullExpenseAllocation = (
+  amount: number,
+  memberIds: string[],
+  memberId: string,
+  decimals: number = 2,
+): ExpenseAllocation => allocateByWeight(amount, memberIds, { [memberId]: 1 }, decimals);
+
 export const expenseAllocationTotal = (
   allocation: ExpenseAllocation | undefined,
   memberIds: string[],
