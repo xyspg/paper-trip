@@ -1,4 +1,4 @@
-import { Check, ExternalLink, Link2, Wallet } from "lucide-react";
+import { ArrowRight, Check, ExternalLink, HandCoins, Link2, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
@@ -10,6 +10,7 @@ import { useTripMeta } from "../trip/hooks";
 import { tripTravelers } from "../trip/roster";
 import {
   appliedCredit,
+  countingPayments,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
@@ -94,10 +95,15 @@ export function PaperLedger({
   const travelerCount = travelerIds.length;
   const baseCurrency = tripCurrency(trip);
   const ledger = trip.expenses;
+  // Only the payments that actually move balances are listed, so the public
+  // ledger never shows a repayment the settle-up figures below it ignore.
+  // Rejected rows stay visible (and deletable) in the admin console.
+  const payments = countingPayments(trip.payments ?? [], travelerIds);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
-  const balances = expenseBalances(ledger, travelerIds, baseCurrency);
+  const balances = expenseBalances(ledger, travelerIds, baseCurrency, payments);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
+  const travelerById = Object.fromEntries(travelers.map((m) => [m.id, m]));
 
   return (
     <div className="font-sans text-[#1c1b19]">
@@ -188,6 +194,22 @@ export function PaperLedger({
                     {fmtMoney(balance?.share ?? 0, baseCurrency)}
                   </b>
                 </span>
+                {(balance?.repaid ?? 0) > 0.005 && (
+                  <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#eef4f0] border border-[#cfe0d6] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
+                    已还款
+                    <b className="font-sans font-bold text-[#3f6f5b]">
+                      {fmtMoney(balance?.repaid ?? 0, baseCurrency)}
+                    </b>
+                  </span>
+                )}
+                {(balance?.received ?? 0) > 0.005 && (
+                  <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#eef4f0] border border-[#cfe0d6] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
+                    已收款
+                    <b className="font-sans font-bold text-[#3f6f5b]">
+                      {fmtMoney(balance?.received ?? 0, baseCurrency)}
+                    </b>
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -398,9 +420,85 @@ export function PaperLedger({
         </div>
       </section>
 
+      {/* PAYMENTS */}
+      {payments.length > 0 && (
+        <section className="mt-4 overflow-hidden bg-white border border-[#ebe9e3] rounded-[16px]">
+          <div className="flex items-center justify-between gap-3 py-[13px] px-[18px] bg-[#fdfdfb] border-b border-[#ebe9e3]">
+            <span className="font-grotesk font-bold text-[12px] uppercase tracking-[0.14em]">
+              还款记录 · Payments
+            </span>
+            <span className="font-grotesk text-[10px] uppercase tracking-[0.04em] text-[#9b988f]">
+              成员间转账，只影响待结算
+            </span>
+          </div>
+          {payments.map((p) => {
+            const from = travelerById[p.from];
+            const to = travelerById[p.to];
+            const rowCurrency = expenseCurrency(p, baseCurrency);
+            const foreign = rowCurrency !== baseCurrency;
+            return (
+              <div
+                key={p.id}
+                className="py-4 px-[18px] border-b border-dashed border-[#ebe9e3] last:border-b-0"
+              >
+                <div className="flex gap-[13px] items-center flex-wrap">
+                  <span className="grid shrink-0 w-[38px] h-[38px] place-items-center overflow-hidden rounded-[10px] border border-[#ebe9e3] bg-white">
+                    <HandCoins size={19} strokeWidth={2} className="text-[#3f6f5b]" />
+                  </span>
+                  <span className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    <span className="inline-flex gap-[7px] items-center py-1 pr-2.5 pl-1 bg-[#fdfdfb] border border-[#ebe9e3] rounded-full">
+                      {from && (
+                        <Avatar
+                          m={from}
+                          className="w-[22px] h-[22px] text-[9px] border border-[#ebe9e3]"
+                        />
+                      )}
+                      <span className="font-cjk font-semibold text-[12px]">
+                        {from?.name ?? p.from}
+                      </span>
+                    </span>
+                    <ArrowRight size={15} strokeWidth={2.4} className="text-[#9b988f]" />
+                    <span className="inline-flex gap-[7px] items-center py-1 pr-2.5 pl-1 bg-[#fdfdfb] border border-[#ebe9e3] rounded-full">
+                      {to && (
+                        <Avatar
+                          m={to}
+                          className="w-[22px] h-[22px] text-[9px] border border-[#ebe9e3]"
+                        />
+                      )}
+                      <span className="font-cjk font-semibold text-[12px]">{to?.name ?? p.to}</span>
+                    </span>
+                    {(p.date || p.note) && (
+                      <span className="font-cjk text-[12px] text-[#9b988f]">
+                        {[p.date, p.note].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="inline-flex items-center gap-1 py-[5px] pr-[11px] pl-[9px] bg-[#eef4f0] border border-[#cfe0d6] rounded-[10px]">
+                      <span className="font-sans text-[14px] text-[#9b988f]">
+                        {currencySymbol(rowCurrency)}
+                      </span>
+                      <span className="font-sans font-bold text-[15px] text-[#3f6f5b]">
+                        {fmtCurrencyNumber(p.amount, rowCurrency)}
+                      </span>
+                    </span>
+                    {foreign && (
+                      <span className="block mt-1 font-sans text-[11px] text-[#9b988f]">
+                        ≈ {fmtMoney(p.amount * expenseFxRate(p), baseCurrency)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       <p className="flex gap-3.5 items-center mt-[26px] pt-[22px] border-t border-[#ebe9e3] font-grotesk text-[11px] uppercase tracking-[0.12em] text-[#9b988f]">
         <span className="flex-1 h-px bg-[#cfccc2]" />
-        {ledger.length} 笔花销 · {travelerCount} 位同行人
+        {ledger.length} 笔花销{payments.length > 0 ? ` · ${payments.length} 笔还款` : ""} ·{" "}
+        {travelerCount} 位同行人
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
 

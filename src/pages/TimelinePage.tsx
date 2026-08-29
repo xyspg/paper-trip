@@ -1,36 +1,12 @@
 import { useTrip, useTripLiveSync } from "../trip/hooks";
 import { tripTravelers } from "../trip/roster";
+import { nowIn } from "../trip/tripClock";
 import { PaperTimeline } from "./PaperTimeline";
 
 const shortDate = (iso: string): string => {
   if (!iso) return "—";
   const date = new Date(`${iso}T00:00:00`);
   return `${date.getMonth() + 1}/${date.getDate()}`;
-};
-
-// A trip's own wall-clock "now" as a "YYYY-MM-DD HH:MM" string, so it compares
-// lexicographically against each item's `${date} ${time}` (both zero-padded).
-// Each trip advances on its own base timezone, so the next action tracks that
-// clock regardless of the viewer's device timezone. Falls back to the device
-// timezone if the stored zone string is invalid (matches `todayIn` in
-// PaperTimeline).
-const CLOCK_OPTS: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-};
-const nowIn = (timeZone: string): string => {
-  let parts: Intl.DateTimeFormatPart[];
-  try {
-    parts = new Intl.DateTimeFormat("en-CA", { timeZone, ...CLOCK_OPTS }).formatToParts(new Date());
-  } catch {
-    parts = new Intl.DateTimeFormat("en-CA", CLOCK_OPTS).formatToParts(new Date());
-  }
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
 };
 
 export function TimelinePage({ tripId }: { tripId: string }) {

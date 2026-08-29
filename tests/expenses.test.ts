@@ -1,17 +1,18 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  countingPayments,
   evenExpenseAllocation,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
   expenseTotals,
   fullExpenseAllocation,
-  rebaseExpenses,
+  rebaseFxRows,
   settlementTransfers,
 } from "../src/trip/expenses";
 import { applyOp, emptyTrip } from "../src/trip/ops";
-import type { Expense } from "../src/trip/types";
+import type { Expense, Payment } from "../src/trip/types";
 
 const expense = (patch: Partial<Expense> = {}): Expense => ({
   id: "expense-1",
@@ -21,6 +22,14 @@ const expense = (patch: Partial<Expense> = {}): Expense => ({
   amount: 10,
   credit: 0,
   payer: "a",
+  ...patch,
+});
+
+const payment = (patch: Partial<Payment> = {}): Payment => ({
+  id: "payment-1",
+  from: "b",
+  to: "a",
+  amount: 3,
   ...patch,
 });
 
@@ -59,8 +68,8 @@ describe("expense responsibility allocations", () => {
     );
 
     expect(balances).toEqual([
-      { id: "a", paid: 6, share: 3, balance: 3 },
-      { id: "b", paid: 4, share: 7, balance: -3 },
+      { id: "a", paid: 6, share: 3, repaid: 0, received: 0, balance: 3 },
+      { id: "b", paid: 4, share: 7, repaid: 0, received: 0, balance: -3 },
     ]);
   });
 
@@ -173,9 +182,79 @@ describe("multi-currency aggregation", () => {
   });
 });
 
+describe("settle-up payments", () => {
+  it("moves balances member-to-member without touching paid or share", () => {
+    // a fronted 10, split AA → b owes a 5; b then pays 3 of it back.
+    const balances = expenseBalances([expense()], ["a", "b"], undefined, [payment()]);
+    expect(balances).toEqual([
+      { id: "a", paid: 10, share: 5, repaid: 0, received: 3, balance: 2 },
+      { id: "b", paid: 0, share: 5, repaid: 3, received: 0, balance: -2 },
+    ]);
+    expect(settlementTransfers(balances)).toEqual([{ from: "b", to: "a", amount: 2 }]);
+  });
+
+  it("converts foreign-currency payments at their captured rate", () => {
+    const balances = expenseBalances(
+      [expense({ amount: 100 })],
+      ["a", "b"],
+      "USD",
+      // ¥5,000 back at 0.007 base per yen = $35 of the $50 owed.
+      [payment({ amount: 5_000, currency: "JPY", fxRate: 0.007 })],
+    );
+    expect(balances[0].received).toBeCloseTo(35, 10);
+    expect(balances[0].balance).toBeCloseTo(15, 10);
+    expect(balances[1].balance).toBeCloseTo(-15, 10);
+  });
+
+  it("stays zero-sum and can settle exactly", () => {
+    const balances = expenseBalances([expense()], ["a", "b"], undefined, [payment({ amount: 5 })]);
+    expect(balances[0].balance + balances[1].balance).toBeCloseTo(0, 10);
+    expect(settlementTransfers(balances)).toEqual([]);
+  });
+
+  it("skips self-payments and payments naming unknown members", () => {
+    const balances = expenseBalances([expense()], ["a", "b"], undefined, [
+      payment({ id: "p-self", from: "a", to: "a", amount: 4 }),
+      payment({ id: "p-ghost", from: "ghost", to: "a", amount: 4 }),
+      payment({ id: "p-negative", amount: -4 }),
+      payment({ id: "p-zero", amount: 0 }),
+      payment({ id: "p-nan", amount: Number.NaN }),
+    ]);
+    expect(balances[0].balance).toBe(5);
+    expect(balances[1].balance).toBe(-5);
+  });
+
+  it("rejects member ids that collide with Object.prototype keys", () => {
+    // `p.from in repaid` was true for these via the prototype chain, so the
+    // payment passed the roster guard and then lost its `repaid` half while the
+    // `received` half landed, breaking the zero-sum invariant.
+    for (const key of ["toString", "constructor", "__proto__", "hasOwnProperty", "valueOf"]) {
+      const balances = expenseBalances([expense()], ["a", "b"], undefined, [
+        payment({ id: "p-proto-from", from: key, to: "a", amount: 100 }),
+        payment({ id: "p-proto-to", from: "b", to: key, amount: 100 }),
+      ]);
+      expect(balances.reduce((sum, b) => sum + b.balance, 0)).toBeCloseTo(0, 10);
+      expect(balances[0].balance).toBe(5);
+      expect(balances[1].balance).toBe(-5);
+    }
+  });
+
+  it("countingPayments admits exactly the rows the balance math uses", () => {
+    const rows = [
+      payment({ id: "ok" }),
+      payment({ id: "self", from: "a", to: "a" }),
+      payment({ id: "ghost", from: "ghost" }),
+      payment({ id: "proto", from: "toString" }),
+      payment({ id: "negative", amount: -1 }),
+      payment({ id: "zero", amount: 0 }),
+    ];
+    expect(countingPayments(rows, ["a", "b"]).map((p) => p.id)).toEqual(["ok"]);
+  });
+});
+
 describe("base-currency rebase", () => {
   it("stamps implicit rows and restates captured rates, never amounts", () => {
-    const out = rebaseExpenses(
+    const out = rebaseFxRows(
       [
         expense({ amount: 100 }),
         expense({ id: "e2", amount: 10_000, currency: "JPY", fxRate: 0.0068 }),
@@ -196,15 +275,39 @@ describe("base-currency rebase", () => {
     expect(out[2].fxRate).toBeUndefined();
     expect(out.map((e) => e.amount)).toEqual([100, 10_000, 50]);
   });
+
+  it("restates payments so balances survive a base-currency change", () => {
+    // Rebasing only the expenses left every payment reading as a raw figure in
+    // the new unit: a 50 USD repayment counted as 50 JPY once the trip moved to
+    // JPY, throwing balances off by the whole rebase factor.
+    const expenses = [expense({ amount: 300, payer: "a" })];
+    const payments = [payment({ id: "p1", from: "b", to: "a", amount: 50 })];
+    const before = expenseBalances(expenses, ["a", "b"], "USD", payments);
+
+    const rebase = 150;
+    const after = expenseBalances(
+      rebaseFxRows(expenses, "USD", "JPY", rebase),
+      ["a", "b"],
+      "JPY",
+      rebaseFxRows(payments, "USD", "JPY", rebase),
+    );
+
+    for (const [i, balance] of after.entries()) {
+      expect(balance.balance).toBeCloseTo(before[i].balance * rebase, 6);
+      expect(balance.repaid).toBeCloseTo(before[i].repaid * rebase, 6);
+      expect(balance.received).toBeCloseTo(before[i].received * rebase, 6);
+    }
+    expect(after.reduce((sum, b) => sum + b.balance, 0)).toBeCloseTo(0, 6);
+  });
 });
 
 describe("settlement transfers", () => {
   it("settles any number of travelers", () => {
     expect(
       settlementTransfers([
-        { id: "a", paid: 18, share: 10, balance: 8 },
-        { id: "b", paid: 7, share: 10, balance: -3 },
-        { id: "c", paid: 5, share: 10, balance: -5 },
+        { id: "a", paid: 18, share: 10, repaid: 0, received: 0, balance: 8 },
+        { id: "b", paid: 7, share: 10, repaid: 0, received: 0, balance: -3 },
+        { id: "c", paid: 5, share: 10, repaid: 0, received: 0, balance: -5 },
       ]),
     ).toEqual([
       { from: "b", to: "a", amount: 3 },

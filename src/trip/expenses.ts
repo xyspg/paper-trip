@@ -1,4 +1,4 @@
-import type { Expense, ExpenseAllocation } from "./types";
+import type { Expense, ExpenseAllocation, Payment } from "./types";
 import { currencyDecimals, expenseCurrency, normalizeCurrency, roundFxRate } from "./currency";
 
 const cents = (value: number): number => Math.round(Math.max(0, Number(value) || 0) * 100);
@@ -19,10 +19,11 @@ export const appliedCredit = (e: Expense): number => Math.min(e.credit || 0, Num
 
 export const netExpense = (e: Expense): number => (Number(e.amount) || 0) - appliedCredit(e);
 
-// Base-currency units per unit of the expense's own currency. 1 for expenses
+// Base-currency units per unit of the line's own currency. 1 for lines
 // recorded directly in the base currency (or with a missing/invalid rate), so
-// pre-multi-currency data aggregates unchanged.
-export const expenseFxRate = (e: Expense): number => {
+// pre-multi-currency data aggregates unchanged. Structural so expenses and
+// payments share one conversion rule.
+export const expenseFxRate = (e: { fxRate?: number }): number => {
   const rate = Number(e.fxRate);
   return Number.isFinite(rate) && rate > 0 ? rate : 1;
 };
@@ -31,7 +32,7 @@ export const expenseFxRate = (e: Expense): number => {
 // is known, a line that resolves to the base itself always converts at exactly
 // 1, so a stray fxRate on a base-currency row (malformed agent data) can never
 // pull totals away from what the row visibly shows.
-const aggregationRate = (e: Expense, base?: string): number =>
+const aggregationRate = (e: { currency?: string; fxRate?: number }, base?: string): number =>
   base !== undefined && expenseCurrency(e, base) === base ? 1 : expenseFxRate(e);
 
 export type ExpenseTotals = { subtotal: number; creditTotal: number; total: number };
@@ -143,6 +144,10 @@ export type ExpenseBalance = {
   id: string;
   paid: number;
   share: number;
+  // Settle-up payments this member sent / received (base currency). They move
+  // `balance` without touching paid/share, so expense figures stay expense-only.
+  repaid: number;
+  received: number;
   balance: number;
 };
 
@@ -152,16 +157,49 @@ export type SettlementTransfer = {
   amount: number;
 };
 
+// The payments that actually move balances. Both sides must be on the roster,
+// a traveler cannot repay themselves, and the amount must be a positive finite
+// number: any other row would create or lose money. The roster test goes
+// through a Set rather than `in`/`[]` on a plain object, so an id that collides
+// with an Object.prototype key ("toString", "constructor", "__proto__") is
+// rejected like any other stranger instead of passing the guard and then
+// silently dropping its half of the transfer.
+//
+// Every surface that lists payments filters through this, so the ledger, the
+// PDF statement and the settlement summary can never disagree about which
+// transfers count. The admin console is the one exception: it shows rejected
+// rows too, flagged, because it is where an owner deletes them.
+export const countingPayments = (payments: Payment[], memberIds: string[]): Payment[] => {
+  const roster = new Set(memberIds);
+  return payments.filter((p) => {
+    const amount = Number(p.amount);
+    return (
+      p.from !== p.to &&
+      roster.has(p.from) &&
+      roster.has(p.to) &&
+      Number.isFinite(amount) &&
+      amount > 0
+    );
+  });
+};
+
 // Balances are stated in the trip's base currency. Per-expense paid/owed maps
 // each sum to the expense's own net (in its own currency), so converting both
 // with the same fxRate keeps total paid === total owed across any currency mix.
+// Settle-up payments then shift balances member-to-member: a payment counts
+// toward what `from` has effectively paid and against what `to` is still owed,
+// so both sides move by the same converted amount and the ledger stays
+// zero-sum. Rows `countingPayments` rejects never reach the math.
 export const expenseBalances = (
   expenses: Expense[],
   memberIds: string[],
   base?: string,
+  payments: Payment[] = [],
 ): ExpenseBalance[] => {
   const paid = Object.fromEntries(memberIds.map((id) => [id, 0]));
   const owed = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const repaid = Object.fromEntries(memberIds.map((id) => [id, 0]));
+  const received = Object.fromEntries(memberIds.map((id) => [id, 0]));
 
   for (const e of expenses) {
     const rate = aggregationRate(e, base);
@@ -173,11 +211,19 @@ export const expenseBalances = (
     }
   }
 
+  for (const p of countingPayments(payments, memberIds)) {
+    const amount = Number(p.amount) * aggregationRate(p, base);
+    repaid[p.from] += amount;
+    received[p.to] += amount;
+  }
+
   return memberIds.map((id) => ({
     id,
     paid: paid[id] || 0,
     share: owed[id] || 0,
-    balance: (paid[id] || 0) - (owed[id] || 0),
+    repaid: repaid[id] || 0,
+    received: received[id] || 0,
+    balance: (paid[id] || 0) - (owed[id] || 0) + (repaid[id] || 0) - (received[id] || 0),
   }));
 };
 
@@ -210,23 +256,28 @@ export const settlementTransfers = (balances: ExpenseBalance[]): SettlementTrans
   return transfers;
 };
 
-// Restate a ledger for a base-currency change from `oldBase` to `newBase`.
+// Restate rows for a base-currency change from `oldBase` to `newBase`.
 // Recorded original-currency figures never change; only the base conversion is
 // restated: rows implicitly in the old base become explicit `oldBase` rows at
 // `rebaseRate` (newBase units per 1 oldBase unit), every foreign row's captured
 // rate is multiplied by it, and rows already recorded in the new base become
 // implicit again (conversion to itself is exactly 1 by definition).
-export const rebaseExpenses = (
-  expenses: Expense[],
+//
+// This is generic over the `{ currency, fxRate }` convention because expenses
+// and settle-up payments both follow it, and a currency change must restate
+// both. Rebasing only the expenses would leave every payment reading as a raw
+// figure in the new unit, misstating balances by the whole rebase factor.
+export const rebaseFxRows = <T extends { currency?: string; fxRate?: number }>(
+  rows: T[],
   oldBase: string,
   newBase: string,
   rebaseRate: number,
-): Expense[] =>
-  expenses.map((e) => {
-    const currency = normalizeCurrency(e.currency) ?? oldBase;
-    if (currency === newBase) return { ...e, currency: undefined, fxRate: undefined };
+): T[] =>
+  rows.map((row) => {
+    const currency = normalizeCurrency(row.currency) ?? oldBase;
+    if (currency === newBase) return { ...row, currency: undefined, fxRate: undefined };
     // A row recorded in the old base converted at exactly 1; foreign rows keep
     // their captured old-base rate as the starting point.
-    const captured = currency === oldBase ? 1 : expenseFxRate(e);
-    return { ...e, currency, fxRate: roundFxRate(captured * rebaseRate) };
+    const captured = currency === oldBase ? 1 : expenseFxRate(row);
+    return { ...row, currency, fxRate: roundFxRate(captured * rebaseRate) };
   });

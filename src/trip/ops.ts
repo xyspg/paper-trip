@@ -4,6 +4,7 @@ import type {
   ExpenseSplit,
   Flight,
   ItemStatus,
+  Payment,
   SuggestionStatus,
   Trip,
   TripItem,
@@ -27,6 +28,9 @@ export type TripOp =
   | { type: "setExpenseAmount"; expenseId: string; amount: number }
   | { type: "setExpensePayer"; expenseId: string; payer: string }
   | { type: "setExpenseSplit"; expenseId: string; payer: string; split?: ExpenseSplit }
+  | { type: "addPayment"; payment: Payment }
+  | { type: "updatePayment"; payment: Payment }
+  | { type: "deletePayment"; paymentId: string }
   | { type: "addFlight"; flight: Flight }
   | { type: "updateFlight"; flight: Flight }
   | { type: "deleteFlight"; flightId: string; travelerId: string }
@@ -156,6 +160,31 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
         ),
       };
 
+    case "addPayment": {
+      // Re-adding an existing id replaces it in place (idempotent under agent
+      // retries). Replacing rather than filter-and-append matters because the
+      // lists and the PDF render payments in raw array order: appending would
+      // let a lost response and its retry visibly reshuffle the user's
+      // repayment history.
+      const payments = trip.payments ?? [];
+      const next = payments.some((p) => p.id === op.payment.id)
+        ? payments.map((p) => (p.id === op.payment.id ? op.payment : p))
+        : [...payments, op.payment];
+      return { ...trip, payments: next };
+    }
+
+    case "updatePayment":
+      return {
+        ...trip,
+        payments: (trip.payments ?? []).map((p) => (p.id === op.payment.id ? op.payment : p)),
+      };
+
+    case "deletePayment":
+      return {
+        ...trip,
+        payments: (trip.payments ?? []).filter((p) => p.id !== op.paymentId),
+      };
+
     case "addFlight": {
       const flights = trip.flights ?? [];
       const existing = flights.find(
@@ -192,7 +221,9 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
       };
 
     case "resetExpenses":
-      return { ...trip, expenses: [] };
+      // Payments only exist to settle the expenses; keeping them against an
+      // emptied ledger would show phantom balances.
+      return { ...trip, expenses: [], payments: [] };
 
     case "reset":
       // Identity, metadata and the roster always survive a reset — `members`
@@ -205,6 +236,7 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
         suggestions: [],
         expenses: [],
         flights: [],
+        payments: [],
       };
   }
 }
@@ -230,6 +262,7 @@ export function emptyTrip(seed: {
     suggestions: [],
     expenses: [],
     flights: [],
+    payments: [],
     members: [],
     updatedAt: new Date().toISOString(),
   };

@@ -12,8 +12,11 @@ import { useConfirm } from "./useConfirm";
 import { useAdmin } from "./AdminContext";
 import { PaymentSplit, splitFromExpense, splitToExpense } from "./PaymentSplit";
 import type { SplitValue } from "./PaymentSplit";
+import { PaymentModal, buildPayment } from "./PaymentModal";
+import type { NewPaymentInput } from "./PaymentModal";
 import {
   appliedCredit,
+  countingPayments,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
@@ -22,34 +25,45 @@ import {
   settlementTransfers,
 } from "../trip/expenses";
 import { currencySymbol, expenseCurrency } from "../trip/currency";
-import type { ExpenseSplit } from "../trip/types";
+import type { ExpenseSplit, Payment } from "../trip/types";
 
 type Props = {
   expenses: Expense[];
+  payments: Payment[];
   onSetAmount: (id: string, amount: number) => void;
   onSetSplit: (id: string, payer: string, split?: ExpenseSplit) => void;
   onAdd: (expense: Expense) => void;
   onUpdate: (expense: Expense) => void;
   onDelete: (id: string) => void;
+  onAddPayment: (payment: Payment) => void;
+  onDeletePayment: (id: string) => void;
   onReset: () => void;
 };
 
 export function SplitSection({
   expenses,
+  payments,
   onSetAmount,
   onSetSplit,
   onAdd,
   onUpdate,
   onDelete,
+  onAddPayment,
+  onDeletePayment,
   onReset,
 }: Props) {
   const { travelers, currency } = useAdmin();
   const travelerIds = travelers.map((m) => m.id);
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
   // The expense currently being edited (null = the modal is in add mode / closed).
   const [editing, setEditing] = useState<Expense | null>(null);
   const { confirm, confirmModal } = useConfirm();
+  // The admin console is where a malformed payment gets deleted, so unlike the
+  // public ledger and the PDF it lists every row and flags the ones the
+  // settle-up math ignores instead of hiding them.
+  const countedPaymentIds = new Set(countingPayments(payments, travelerIds).map((p) => p.id));
 
   const addExpense = (input: NewExpenseInput) => onAdd(buildExpense(input, uid("exp")));
 
@@ -82,7 +96,9 @@ export function SplitSection({
       title: "恢复原始账目",
       message: (
         <>
-          这会丢弃<b>所有</b>改动，把分账明细恢复成初始数据，且<b>无法撤销</b>。
+          这会丢弃<b>所有</b>改动，把分账明细恢复成初始数据，并
+          <b>一并删除全部还款记录</b>（成员之间的实际转账，无法从初始数据重建），且
+          <b>无法撤销</b>。
         </>
       ),
       confirmLabel: "恢复原始",
@@ -90,6 +106,30 @@ export function SplitSection({
     });
     if (!ok) return;
     onReset();
+  };
+
+  const addPayment = (input: NewPaymentInput) => {
+    onAddPayment(buildPayment(input, uid("pay")));
+    setPayOpen(false);
+  };
+
+  const handleDeletePayment = async (p: Payment) => {
+    const counted = countedPaymentIds.has(p.id);
+    const ok = await confirm({
+      title: "删除还款记录",
+      message: (
+        <>
+          确定删除这笔<b>{fmtMoney(p.amount, expenseCurrency(p, currency))}</b>
+          的还款记录吗？
+          {counted
+            ? "删除后对应欠款会重新计入待结算。"
+            : "这笔记录本来就不计入结算，删除不会改变任何余额。"}
+        </>
+      ),
+      confirmLabel: "删除记录",
+    });
+    if (!ok) return;
+    onDeletePayment(p.id);
   };
 
   const handleDelete = async (e: Expense) => {
@@ -124,7 +164,7 @@ export function SplitSection({
   };
 
   const { subtotal, creditTotal, total } = expenseTotals(expenses, currency);
-  const balances = expenseBalances(expenses, travelerIds, currency);
+  const balances = expenseBalances(expenses, travelerIds, currency, payments);
   const transfers = settlementTransfers(balances);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
 
@@ -134,6 +174,8 @@ export function SplitSection({
     paid: balanceById[m.id]?.paid ?? 0,
     bal: balanceById[m.id]?.balance ?? 0,
     share: balanceById[m.id]?.share ?? 0,
+    repaid: balanceById[m.id]?.repaid ?? 0,
+    received: balanceById[m.id]?.received ?? 0,
   }));
   const travelerById = Object.fromEntries(travelers.map((traveler) => [traveler.id, traveler]));
 
@@ -338,10 +380,14 @@ export function SplitSection({
           结算 · Settle up
         </span>
         <span className="flex-1 h-px bg-[repeating-linear-gradient(90deg,#cfccc2_0_5px,transparent_5px_10px)]" />
+        <button className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={() => setPayOpen(true)}>
+          <Icons.plus sw={2.4} />
+          记录还款
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3.5 max-[620px]:grid-cols-1">
-        {travelerBalances.map(({ m, paid: p, bal, share: sh }) => {
+        {travelerBalances.map(({ m, paid: p, bal, share: sh, repaid, received }) => {
           const owe = bal < -0.005;
           const settled = Math.abs(bal) < 0.005;
           return (
@@ -362,6 +408,18 @@ export function SplitSection({
                   <span>应承担</span>
                   <span className="font-sans text-[#1c1b19]">{fmtMoney(sh, currency)}</span>
                 </div>
+                {repaid > 0.005 && (
+                  <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
+                    <span>已还款</span>
+                    <span className="font-sans text-[#3f6f5b]">{fmtMoney(repaid, currency)}</span>
+                  </div>
+                )}
+                {received > 0.005 && (
+                  <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
+                    <span>已收款</span>
+                    <span className="font-sans text-[#3f6f5b]">{fmtMoney(received, currency)}</span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[13.5px]">
                 <span>{settled ? "已结清" : owe ? "需补付" : "应收回"}</span>
@@ -376,6 +434,69 @@ export function SplitSection({
           );
         })}
       </div>
+
+      {payments.length > 0 && (
+        <div className="mt-4 bg-white border border-[#ebe9e3] rounded-[14px] overflow-hidden">
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#ebe9e3] bg-[#fdfdfb]">
+            <span className="font-grotesk font-bold text-[11px] tracking-[0.14em] uppercase">
+              还款记录 · Payments
+            </span>
+            <span className="ml-auto font-grotesk text-[10px] tracking-[0.04em] uppercase text-[#9b988f]">
+              {payments.length} 笔
+            </span>
+          </div>
+          {payments.map((p) => {
+            const from = travelerById[p.from];
+            const to = travelerById[p.to];
+            const rowCurrency = expenseCurrency(p, currency);
+            const foreign = rowCurrency !== currency;
+            const counted = countedPaymentIds.has(p.id);
+            return (
+              <div
+                key={p.id}
+                className="flex items-center gap-2.5 flex-wrap px-4 py-3 border-b border-dashed border-[#ebe9e3] last:border-0"
+              >
+                <span className="inline-flex items-center gap-1.5 border border-[#ebe9e3] rounded-full bg-[#fdfdfb] py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-[12.5px]">
+                  {from && <Avatar m={from} size="xs" />}
+                  {from?.name ?? p.from}
+                </span>
+                <Icons.arrow sw={2.4} style={{ width: 16, height: 16 }} />
+                <span className="inline-flex items-center gap-1.5 border border-[#ebe9e3] rounded-full bg-[#fdfdfb] py-[3px] pr-2.5 pl-1 font-cjk font-semibold text-[12.5px]">
+                  {to && <Avatar m={to} size="xs" />}
+                  {to?.name ?? p.to}
+                </span>
+                <b className="font-sans font-bold text-[14px] text-[#1c1b19]">
+                  {fmtMoney(p.amount, rowCurrency)}
+                </b>
+                {foreign && counted && (
+                  <span className="font-sans text-[11.5px] text-[#9b988f]">
+                    ≈ {fmtMoney(p.amount * expenseFxRate(p), currency)}
+                  </span>
+                )}
+                {!counted && (
+                  <span
+                    className="font-cjk font-semibold text-[11.5px] text-[#c2553f] border border-[#ecccc2] rounded-full px-2 py-[2px]"
+                    title="金额需大于 0，且付款人与收款人必须是不同的同行成员"
+                  >
+                    不计入结算
+                  </span>
+                )}
+                <span className="font-cjk text-[12px] text-[#9b988f]">
+                  {[p.date, p.note].filter(Boolean).join(" · ")}
+                </span>
+                <button
+                  className="ml-auto shrink-0 w-8 h-8 grid place-items-center border border-[#ecccc2] rounded-[9px] bg-white text-[#c2553f] hover:bg-[#c2553f] hover:text-white transition-colors [&_svg]:size-4"
+                  title="删除还款记录"
+                  aria-label="删除还款记录"
+                  onClick={() => handleDeletePayment(p)}
+                >
+                  <Icons.trash sw={2.2} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div
         className="mt-4 px-5 py-4 bg-[#1c1b19] text-[#fafaf8] rounded-[14px] flex items-center gap-3.5 flex-wrap"
@@ -437,6 +558,13 @@ export function SplitSection({
         initial={editing}
         onClose={() => setEditing(null)}
         onSubmit={handleEdit}
+      />
+
+      <PaymentModal
+        isOpen={payOpen}
+        onClose={() => setPayOpen(false)}
+        onSubmit={addPayment}
+        suggest={transfers[0] ? { from: transfers[0].from, to: transfers[0].to } : null}
       />
 
       {confirmModal}

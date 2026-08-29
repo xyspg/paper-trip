@@ -4,6 +4,7 @@ import { fmtMoney, type AdminMember } from "../admin/adminData";
 import type { TripMeta } from "./api";
 import {
   appliedCredit,
+  countingPayments,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
@@ -12,6 +13,7 @@ import {
   netExpense,
 } from "./expenses";
 import { expenseCurrency, fmtFxRate, tripCurrency } from "./currency";
+import { todayIn } from "./tripClock";
 import type { Trip } from "./types";
 
 // Bank-statement-style PDF export for the public ledger, patterned after a
@@ -241,15 +243,6 @@ function fmtMonthYear(iso: string): string {
     "December",
   ][Number(match[2]) - 1];
   return month ? `${month} ${match[1]}` : iso;
-}
-
-// Today's date (YYYY-MM-DD) on the trip's own clock, not the device's or UTC.
-function todayIn(timeZone: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
-  } catch {
-    return new Intl.DateTimeFormat("en-CA").format(new Date());
-  }
 }
 
 // "YYYY-MM-DD HH:mm" in the trip's timezone, falling back to the device zone
@@ -537,8 +530,13 @@ function buildStatement(
   // original figure noted on the row.
   const baseCurrency = tripCurrency(trip);
   const money = (n: number) => fmtMoney(n, baseCurrency);
+  // Only the payments that actually move balances are stated: a row naming a
+  // traveler off the roster (or paying itself) is skipped by expenseBalances,
+  // so printing it would leave the activity list contradicting this statement's
+  // own Settlement Summary.
+  const payments = countingPayments(trip.payments ?? [], travelerIds);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
-  const balances = expenseBalances(ledger, travelerIds, baseCurrency);
+  const balances = expenseBalances(ledger, travelerIds, baseCurrency, payments);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const timezone = trip.base.timezone;
@@ -550,6 +548,7 @@ function buildStatement(
   // product-looking column, and receipt details sit under their parent charge.
   const purchaseRows: ActivityRow[] = [];
   const creditRows: ActivityRow[] = [];
+  const paymentRows: ActivityRow[] = [];
   const categoryLabels: Record<string, string> = {
     transit: "Travel",
     food: "Dining",
@@ -632,6 +631,36 @@ function buildStatement(
         amount: "-" + money(credit * rate),
       });
     }
+  }
+
+  // Member settle-up payments get their own group rather than sharing the
+  // credits section. A credit posts signed ("-40.00") because it reduces the
+  // trip total; a settle-up transfer changes no total at all, so an unsigned
+  // figure in that same column would read as an added charge.
+  for (const payment of payments) {
+    const rowCurrency = expenseCurrency(payment, baseCurrency);
+    const rate = rowCurrency !== baseCurrency ? expenseFxRate(payment) : 1;
+    const fromName = nameById[payment.from] ?? payment.from;
+    const toName = nameById[payment.to] ?? payment.to;
+    paymentRows.push({
+      category: "Payment",
+      description: el("div", {}, [
+        el("div", { fontWeight: "600" }, [`Member payment: ${fromName} to ${toName}`]),
+        el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
+          [
+            "SETTLE-UP TRANSFER · DOES NOT CHANGE TRIP TOTAL",
+            payment.date ?? "",
+            payment.note ?? "",
+            rowCurrency !== baseCurrency
+              ? `RECORDED ${fmtMoney(payment.amount, rowCurrency)} @ ${fmtFxRate(rate)}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("  ·  "),
+        ]),
+      ]),
+      amount: money(payment.amount * rate),
+    });
   }
 
   // This node deliberately contains the statement body only. A crisp vector
@@ -832,10 +861,12 @@ function buildStatement(
   container.append(
     heading("Settlement Summary"),
     statementTable(
-      ["Traveler", "Paid", "Allocated Amount", "Balance", "Status"],
+      ["Traveler", "Paid", "Allocated Amount", "Payments", "Balance", "Status"],
       travelers.map((m) => {
         const b = balanceById[m.id];
         const net = b?.balance ?? 0;
+        // Net settle-up movement: positive = sent more than received.
+        const netPayment = (b?.repaid ?? 0) - (b?.received ?? 0);
         const settled = Math.abs(net) < 0.005;
         const status = settled ? "SETTLED" : net < 0 ? "OWES" : "IS OWED";
         return [
@@ -845,18 +876,22 @@ function buildStatement(
           ]),
           money(b?.paid ?? 0),
           money(b?.share ?? 0),
+          Math.abs(netPayment) < 0.005
+            ? money(0)
+            : (netPayment < 0 ? "-" : "+") + money(Math.abs(netPayment)),
           settled ? money(0) : (net < 0 ? "-" : "+") + money(Math.abs(net)),
           status,
         ];
       }),
-      ["left", "right", "right", "right", "right"],
-      "2fr 1fr 1.35fr 1fr 1fr",
+      ["left", "right", "right", "right", "right", "right"],
+      "1.8fr 1fr 1.2fr 1fr 1fr 0.9fr",
     ),
 
     heading("Account Activity"),
     activityTable(
       [
         { label: "Payments and Other Credits", rows: creditRows },
+        { label: "Member Settle-Up Payments", rows: paymentRows },
         { label: "Purchases", rows: purchaseRows },
       ],
       baseCurrency,
@@ -928,9 +963,11 @@ function buildStatement(
         disclosureParagraph(
           "Each expense may allocate exact responsibility amounts to individual travelers; " +
             "entries without a custom allocation use an equal split. Applied credits reduce the " +
-            `net amount of the expense they are attached to. All amounts are stated in ${baseCurrency}; ` +
-            "expenses recorded in another currency are converted at the exchange rate captured " +
-            "when the expense was entered (noted on the row).",
+            "net amount of the expense they are attached to. Member payments are settle-up " +
+            "transfers between travelers: they adjust the payer's and recipient's balances " +
+            `without changing the trip's totals. All amounts are stated in ${baseCurrency}; ` +
+            "entries recorded in another currency are converted at the exchange rate captured " +
+            "when they were entered (noted on the row).",
         ),
       ]),
       el("div", {}, [
