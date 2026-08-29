@@ -151,9 +151,9 @@ export type Expense = {
   items?: ExpenseItem[];
 };
 
-// A settle-up transfer between two travelers — `from` handed `to` money outside
-// the shared expenses (e.g. a mid-trip partial repayment). Not an expense: it
-// never changes the trip's totals, only who still owes whom — balances count it
+// A settle-up transfer between two travelers: `from` handed `to` money outside
+// the shared expenses (e.g. a mid-trip partial repayment). Not an expense, so it
+// never changes the trip's totals, only who still owes whom. Balances count it
 // toward what `from` has effectively paid and against what `to` is still owed.
 // Multi-currency follows the Expense rule: `amount` is in `currency` (absent =
 // trip base currency) and `fxRate` is captured at entry.
@@ -164,7 +164,7 @@ export type Payment = {
   amount: number;
   currency?: string;
   fxRate?: number;
-  date?: string; // "2026-08-15" — in the trip's own timezone
+  date?: string; // "2026-08-15", in the trip's own timezone
   note?: string;
 };
 

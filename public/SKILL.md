@@ -69,7 +69,7 @@ Notes:
 - `addItem` inserts in `(date, time)` order automatically and **replaces** an
   existing item with the same id, so retrying a failed call is safe; `addPayment`
   replaces by id the same way.
-- `updateItem` / `updateExpense` / `updatePayment` replace the **whole** object —
+- `updateItem` / `updateExpense` / `updatePayment` replace the **whole** object:
   fetch first and preserve fields you are not changing.
 - Anything not listed (bulk resets, backup restore/delete) is refused with 403
   `{"error":"op_not_allowed"}`; those need a human.
@@ -88,9 +88,10 @@ Content-Type: application/json
 - 409 `{ "error": "stale_rev", rev, trip }` — someone wrote in between. Reapply
   your changes to the returned `trip` and PUT again with the new `rev`.
 - 400 `{ "error": "bad_request" }` — the body must contain the ENTIRE trip
-  (same `id`, every content array including `flights` and `payments` present),
-  not a fragment. `trip.members` is registry-owned: whatever you send there is
-  ignored and re-imposed by the server.
+  (same `id`, every content array including `flights` present), not a fragment.
+  `payments` may be omitted (the server backfills it as `[]`), but omitting it
+  on a trip that has payments DELETES them. `trip.members` is registry-owned:
+  whatever you send there is ignored and re-imposed by the server.
 
 **Before any bulk PUT, create a backup:**
 
@@ -137,8 +138,14 @@ type Expense = {
 
 // A settle-up transfer between two travelers (e.g. a partial repayment of
 // money someone fronted). NOT an expense: it never changes the trip's totals,
-// only who still owes whom — balances count it toward what `from` has
+// only who still owes whom. Balances count it toward what `from` has
 // effectively paid and against what `to` is still owed.
+//
+// A payment is IGNORED by balances (and hidden from the public ledger and the
+// PDF) unless `from` and `to` are two different ids that are both on
+// `trip.members`, and `amount` is a positive number. Writes are not rejected,
+// so check the ids you send: a typo silently produces a row that counts for
+// nothing.
 type Payment = {
   id: string;
   from: string; // member id that handed over the money
@@ -146,7 +153,7 @@ type Payment = {
   amount: number; // in `currency` (falls back to trip.base.currency when absent)
   currency?: string; // ISO 4217 code, ONLY when not trip.base.currency
   fxRate?: number; // trip.base.currency units per 1 unit of `currency`, captured at entry
-  date?: string; // "2026-08-15" — in the trip's own timezone
+  date?: string; // "2026-08-15", in the trip's own timezone
   note?: string; // e.g. "微信转账"
 };
 
@@ -182,7 +189,7 @@ document shapes: read them from the live GET instead of guessing.
 7. An expense in a foreign currency sets `currency` and `fxRate` together, and
    every money field on it (amount, credit, item prices, shares in amount mode)
    is in that currency. `GET /api/rates/<BASE>` (public) returns live quotes —
-   `fxRate = 1 / rates[currency]` — when the user didn't state a rate. The same
+   `fxRate = 1 / rates[currency]` when the user didn't state a rate. The same
    rule applies to a `Payment` in a foreign currency.
 8. "X paid Y back" is a `Payment` (`addPayment`), never a new expense or an
    edit to an existing one: the fronted expense stays as recorded, and the

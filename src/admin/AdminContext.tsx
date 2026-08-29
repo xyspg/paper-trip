@@ -21,7 +21,7 @@ export type AdminContextValue = {
   // The trip's settlement currency (trip.base.currency) — what totals,
   // balances, and settle-up amounts are stated in.
   currency: string;
-  // The trip's own timezone (trip.base.timezone) — any "today" defaults derive
+  // The trip's own timezone (trip.base.timezone). Any "today" defaults derive
   // from it, never from the device clock's zone.
   timezone: string;
   tripOp: ReturnType<typeof useTripOp>;

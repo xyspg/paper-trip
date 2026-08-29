@@ -150,14 +150,39 @@ export type SettlementTransfer = {
   amount: number;
 };
 
+// The payments that actually move balances. Both sides must be on the roster,
+// a traveler cannot repay themselves, and the amount must be a positive finite
+// number: any other row would create or lose money. The roster test goes
+// through a Set rather than `in`/`[]` on a plain object, so an id that collides
+// with an Object.prototype key ("toString", "constructor", "__proto__") is
+// rejected like any other stranger instead of passing the guard and then
+// silently dropping its half of the transfer.
+//
+// Every surface that lists payments filters through this, so the ledger, the
+// PDF statement and the settlement summary can never disagree about which
+// transfers count. The admin console is the one exception: it shows rejected
+// rows too, flagged, because it is where an owner deletes them.
+export const countingPayments = (payments: Payment[], memberIds: string[]): Payment[] => {
+  const roster = new Set(memberIds);
+  return payments.filter((p) => {
+    const amount = Number(p.amount);
+    return (
+      p.from !== p.to &&
+      roster.has(p.from) &&
+      roster.has(p.to) &&
+      Number.isFinite(amount) &&
+      amount > 0
+    );
+  });
+};
+
 // Balances are stated in the trip's base currency. Per-expense paid/owed maps
 // each sum to the expense's own net (in its own currency), so converting both
 // with the same fxRate keeps total paid === total owed across any currency mix.
 // Settle-up payments then shift balances member-to-member: a payment counts
 // toward what `from` has effectively paid and against what `to` is still owed,
 // so both sides move by the same converted amount and the ledger stays
-// zero-sum. A payment whose members aren't both on the roster (or that pays
-// oneself) is skipped — it could otherwise create or lose money.
+// zero-sum. Rows `countingPayments` rejects never reach the math.
 export const expenseBalances = (
   expenses: Expense[],
   memberIds: string[],
@@ -179,9 +204,8 @@ export const expenseBalances = (
     }
   }
 
-  for (const p of payments) {
-    if (p.from === p.to || !(p.from in repaid) || !(p.to in received)) continue;
-    const amount = Math.max(0, Number(p.amount) || 0) * aggregationRate(p, base);
+  for (const p of countingPayments(payments, memberIds)) {
+    const amount = Number(p.amount) * aggregationRate(p, base);
     repaid[p.from] += amount;
     received[p.to] += amount;
   }
@@ -225,23 +249,28 @@ export const settlementTransfers = (balances: ExpenseBalance[]): SettlementTrans
   return transfers;
 };
 
-// Restate a ledger for a base-currency change from `oldBase` to `newBase`.
+// Restate rows for a base-currency change from `oldBase` to `newBase`.
 // Recorded original-currency figures never change; only the base conversion is
 // restated: rows implicitly in the old base become explicit `oldBase` rows at
 // `rebaseRate` (newBase units per 1 oldBase unit), every foreign row's captured
 // rate is multiplied by it, and rows already recorded in the new base become
 // implicit again (conversion to itself is exactly 1 by definition).
-export const rebaseExpenses = (
-  expenses: Expense[],
+//
+// This is generic over the `{ currency, fxRate }` convention because expenses
+// and settle-up payments both follow it, and a currency change must restate
+// both. Rebasing only the expenses would leave every payment reading as a raw
+// figure in the new unit, misstating balances by the whole rebase factor.
+export const rebaseFxRows = <T extends { currency?: string; fxRate?: number }>(
+  rows: T[],
   oldBase: string,
   newBase: string,
   rebaseRate: number,
-): Expense[] =>
-  expenses.map((e) => {
-    const currency = normalizeCurrency(e.currency) ?? oldBase;
-    if (currency === newBase) return { ...e, currency: undefined, fxRate: undefined };
+): T[] =>
+  rows.map((row) => {
+    const currency = normalizeCurrency(row.currency) ?? oldBase;
+    if (currency === newBase) return { ...row, currency: undefined, fxRate: undefined };
     // A row recorded in the old base converted at exactly 1; foreign rows keep
     // their captured old-base rate as the starting point.
-    const captured = currency === oldBase ? 1 : expenseFxRate(e);
-    return { ...e, currency, fxRate: roundFxRate(captured * rebaseRate) };
+    const captured = currency === oldBase ? 1 : expenseFxRate(row);
+    return { ...row, currency, fxRate: roundFxRate(captured * rebaseRate) };
   });

@@ -12,7 +12,8 @@ import {
 } from "./adminUi";
 import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { useAdmin } from "./AdminContext";
-import { currencyDecimals, roundFxRate } from "../trip/currency";
+import { currencyDecimals, roundAmount, roundFxRate } from "../trip/currency";
+import { todayIn } from "../trip/tripClock";
 import type { Payment } from "../trip/types";
 
 export type NewPaymentInput = Omit<Payment, "id">;
@@ -24,15 +25,6 @@ type Props = {
   // Prefill for from/to (e.g. the top settle-up transfer), so recording the
   // suggested repayment is two fields instead of four.
   suggest?: { from: string; to: string } | null;
-};
-
-// Today's date (YYYY-MM-DD) on the trip's own clock, not the device's or UTC.
-const todayIn = (timeZone: string): string => {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
-  } catch {
-    return new Intl.DateTimeFormat("en-CA").format(new Date());
-  }
 };
 
 // Reset the form whenever the modal (re)opens by keying the parent; this inner
@@ -53,7 +45,9 @@ function Form({ onClose, onSubmit, suggest }: Omit<Props, "isOpen">) {
   const fxRate = useEntryFxRate(baseCurrency, currency, fxOverride);
   const decimals = currencyDecimals(currency);
 
-  const parsed = Math.max(0, parseFloat(amount) || 0);
+  // Round at the currency's own precision so a pasted "3333.33" never
+  // persists as sub-unit yen; the step attribute alone does not stop it.
+  const parsed = roundAmount(Math.max(0, parseFloat(amount) || 0), currency);
   const canSubmit =
     from !== "" && to !== "" && from !== to && parsed > 0 && (!foreign || fxRate != null);
 
@@ -71,17 +65,30 @@ function Form({ onClose, onSubmit, suggest }: Omit<Props, "isOpen">) {
     });
   };
 
+  // Picking the traveler already on the other side swaps the two rather than
+  // disabling that option: on a two-person trip disabling would leave every
+  // alternative in both dropdowns unselectable, so the direction of a payment
+  // could never be reversed.
   const memberSelect = (
     label: string,
     value: string,
     onChange: (id: string) => void,
-    exclude: string,
+    onSwap: (id: string) => void,
+    other: string,
   ) => (
     <label className="flex flex-col gap-[7px] min-w-0">
       <span className={FIELD_LABEL}>{label}</span>
-      <select className={FIELD_INPUT} value={value} onChange={(e) => onChange(e.target.value)}>
+      <select
+        className={FIELD_INPUT}
+        value={value}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (next === other) onSwap(value);
+          onChange(next);
+        }}
+      >
         {travelers.map((m) => (
-          <option key={m.id} value={m.id} disabled={m.id === exclude}>
+          <option key={m.id} value={m.id}>
             {m.name}
           </option>
         ))}
@@ -94,8 +101,8 @@ function Form({ onClose, onSubmit, suggest }: Omit<Props, "isOpen">) {
       <ModalHeader icon={<Icons.swap sw={2.6} />} title="记录还款" onClose={onClose} />
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">
-        {memberSelect("谁还款", from, setFrom, to)}
-        {memberSelect("还给谁", to, setTo, from)}
+        {memberSelect("谁还款", from, setFrom, setTo, to)}
+        {memberSelect("还给谁", to, setTo, setFrom, from)}
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
           <span className={FIELD_LABEL}>金额</span>

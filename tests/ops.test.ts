@@ -122,13 +122,15 @@ const payment = (id: string, amount: number): Payment => ({
 });
 
 describe("payment ops", () => {
-  it("appends and replaces an existing id instead of duplicating (agent retry safety)", () => {
+  it("replaces an existing id in place, keeping history order (agent retry safety)", () => {
     const one = applyOp(base(), { type: "addPayment", payment: payment("p1", 30) });
     const two = applyOp(one, { type: "addPayment", payment: payment("p2", 10) });
     const retried = applyOp(two, { type: "addPayment", payment: payment("p1", 50) });
+    // A lost response and its retry must not reshuffle the list: every surface
+    // renders payments in raw array order.
     expect(retried.payments?.map((p) => [p.id, p.amount])).toEqual([
-      ["p2", 10],
       ["p1", 50],
+      ["p2", 10],
     ]);
   });
 

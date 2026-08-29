@@ -15,6 +15,7 @@ import {
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
 import { AddressLink } from "../components/AddressLink";
 import { SuggestBox } from "../components/SuggestBox";
+import { todayIn } from "../trip/tripClock";
 import type { ItemStatus, Trip, TripItem } from "../trip/types";
 import {
   formatDayDate,
@@ -57,18 +58,6 @@ const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
 
 const PAPER_BOLD = "font-bold text-[#1c1b19]";
 
-// Archive by the trip's own calendar date, not the device's, so a day isn't
-// archived while it is still that evening at the destination. en-CA formats as
-// YYYY-MM-DD, matching the trip's ISO date keys for plain string comparison.
-// Falls back to the device date if the stored zone is invalid.
-const todayIn = (timeZone: string) => {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
-  } catch {
-    return new Intl.DateTimeFormat("en-CA").format(new Date());
-  }
-};
-
 // Short label for a stop that carries its own timezone ("EDT", "GMT+9"),
 // resolved on that stop's date so DST is right. Null when it matches the
 // trip default or the zone string is invalid.
@@ -104,6 +93,8 @@ export function PaperTimeline({
   // bottom; the rest stay inline. Manual header toggles are stored as sparse
   // overrides so the date-derived defaults (archived → collapsed) still apply
   // to days the user never touched, even after server data replaces the trip.
+  // Archived by the trip's own calendar date, not the device's, so a day is not
+  // archived while it is still that evening at the destination.
   const today = todayIn(trip.base.timezone);
   const activeDates = orderedDates.filter((date) => date >= today);
   const archivedDates = orderedDates.filter((date) => date < today);

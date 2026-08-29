@@ -16,6 +16,7 @@ import { PaymentModal, buildPayment } from "./PaymentModal";
 import type { NewPaymentInput } from "./PaymentModal";
 import {
   appliedCredit,
+  countingPayments,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
@@ -59,6 +60,10 @@ export function SplitSection({
   // The expense currently being edited (null = the modal is in add mode / closed).
   const [editing, setEditing] = useState<Expense | null>(null);
   const { confirm, confirmModal } = useConfirm();
+  // The admin console is where a malformed payment gets deleted, so unlike the
+  // public ledger and the PDF it lists every row and flags the ones the
+  // settle-up math ignores instead of hiding them.
+  const countedPaymentIds = new Set(countingPayments(payments, travelerIds).map((p) => p.id));
 
   const addExpense = (input: NewExpenseInput) => onAdd(buildExpense(input, uid("exp")));
 
@@ -91,7 +96,9 @@ export function SplitSection({
       title: "恢复原始账目",
       message: (
         <>
-          这会丢弃<b>所有</b>改动，把分账明细恢复成初始数据，且<b>无法撤销</b>。
+          这会丢弃<b>所有</b>改动，把分账明细恢复成初始数据，并
+          <b>一并删除全部还款记录</b>（成员之间的实际转账，无法从初始数据重建），且
+          <b>无法撤销</b>。
         </>
       ),
       confirmLabel: "恢复原始",
@@ -107,12 +114,16 @@ export function SplitSection({
   };
 
   const handleDeletePayment = async (p: Payment) => {
+    const counted = countedPaymentIds.has(p.id);
     const ok = await confirm({
       title: "删除还款记录",
       message: (
         <>
           确定删除这笔<b>{fmtMoney(p.amount, expenseCurrency(p, currency))}</b>
-          的还款记录吗？删除后对应欠款会重新计入待结算。
+          的还款记录吗？
+          {counted
+            ? "删除后对应欠款会重新计入待结算。"
+            : "这笔记录本来就不计入结算，删除不会改变任何余额。"}
         </>
       ),
       confirmLabel: "删除记录",
@@ -439,6 +450,7 @@ export function SplitSection({
             const to = travelerById[p.to];
             const rowCurrency = expenseCurrency(p, currency);
             const foreign = rowCurrency !== currency;
+            const counted = countedPaymentIds.has(p.id);
             return (
               <div
                 key={p.id}
@@ -456,9 +468,17 @@ export function SplitSection({
                 <b className="font-sans font-bold text-[14px] text-[#1c1b19]">
                   {fmtMoney(p.amount, rowCurrency)}
                 </b>
-                {foreign && (
+                {foreign && counted && (
                   <span className="font-sans text-[11.5px] text-[#9b988f]">
                     ≈ {fmtMoney(p.amount * expenseFxRate(p), currency)}
+                  </span>
+                )}
+                {!counted && (
+                  <span
+                    className="font-cjk font-semibold text-[11.5px] text-[#c2553f] border border-[#ecccc2] rounded-full px-2 py-[2px]"
+                    title="金额需大于 0，且付款人与收款人必须是不同的同行成员"
+                  >
+                    不计入结算
                   </span>
                 )}
                 <span className="font-cjk text-[12px] text-[#9b988f]">

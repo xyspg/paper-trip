@@ -10,6 +10,7 @@ import { useTripMeta } from "../trip/hooks";
 import { tripTravelers } from "../trip/roster";
 import {
   appliedCredit,
+  countingPayments,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
@@ -94,7 +95,10 @@ export function PaperLedger({
   const travelerCount = travelerIds.length;
   const baseCurrency = tripCurrency(trip);
   const ledger = trip.expenses;
-  const payments = trip.payments ?? [];
+  // Only the payments that actually move balances are listed, so the public
+  // ledger never shows a repayment the settle-up figures below it ignore.
+  // Rejected rows stay visible (and deletable) in the admin console.
+  const payments = countingPayments(trip.payments ?? [], travelerIds);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
   const balances = expenseBalances(ledger, travelerIds, baseCurrency, payments);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);

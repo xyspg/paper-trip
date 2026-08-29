@@ -4,6 +4,7 @@ import { fmtMoney, type AdminMember } from "../admin/adminData";
 import type { TripMeta } from "./api";
 import {
   appliedCredit,
+  countingPayments,
   expenseBalances,
   expenseFxRate,
   expenseOwedBy,
@@ -12,6 +13,7 @@ import {
   netExpense,
 } from "./expenses";
 import { expenseCurrency, fmtFxRate, tripCurrency } from "./currency";
+import { todayIn } from "./tripClock";
 import type { Trip } from "./types";
 
 // Bank-statement-style PDF export for the public ledger, patterned after a
@@ -85,15 +87,6 @@ function fmtMonthYear(iso: string): string {
     "December",
   ][Number(match[2]) - 1];
   return month ? `${month} ${match[1]}` : iso;
-}
-
-// Today's date (YYYY-MM-DD) on the trip's own clock, not the device's or UTC.
-function todayIn(timeZone: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
-  } catch {
-    return new Intl.DateTimeFormat("en-CA").format(new Date());
-  }
 }
 
 // "YYYY-MM-DD HH:mm" in the trip's timezone, falling back to the device zone
@@ -381,7 +374,11 @@ function buildStatement(
   // original figure noted on the row.
   const baseCurrency = tripCurrency(trip);
   const money = (n: number) => fmtMoney(n, baseCurrency);
-  const payments = trip.payments ?? [];
+  // Only the payments that actually move balances are stated: a row naming a
+  // traveler off the roster (or paying itself) is skipped by expenseBalances,
+  // so printing it would leave the activity list contradicting this statement's
+  // own Settlement Summary.
+  const payments = countingPayments(trip.payments ?? [], travelerIds);
   const { subtotal, creditTotal, total: grand } = expenseTotals(ledger, baseCurrency);
   const balances = expenseBalances(ledger, travelerIds, baseCurrency, payments);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
@@ -395,6 +392,7 @@ function buildStatement(
   // product-looking column, and receipt details sit under their parent charge.
   const purchaseRows: ActivityRow[] = [];
   const creditRows: ActivityRow[] = [];
+  const paymentRows: ActivityRow[] = [];
   const categoryLabels: Record<string, string> = {
     transit: "Travel",
     food: "Dining",
@@ -479,14 +477,16 @@ function buildStatement(
     }
   }
 
-  // Member settle-up payments post alongside statement credits: informational
-  // rows that shift traveler balances without changing the trip's totals.
+  // Member settle-up payments get their own group rather than sharing the
+  // credits section. A credit posts signed ("-40.00") because it reduces the
+  // trip total; a settle-up transfer changes no total at all, so an unsigned
+  // figure in that same column would read as an added charge.
   for (const payment of payments) {
     const rowCurrency = expenseCurrency(payment, baseCurrency);
     const rate = rowCurrency !== baseCurrency ? expenseFxRate(payment) : 1;
     const fromName = nameById[payment.from] ?? payment.from;
     const toName = nameById[payment.to] ?? payment.to;
-    creditRows.push({
+    paymentRows.push({
       category: "Payment",
       description: el("div", {}, [
         el("div", { fontWeight: "600" }, [`Member payment: ${fromName} to ${toName}`]),
@@ -735,6 +735,7 @@ function buildStatement(
     activityTable(
       [
         { label: "Payments and Other Credits", rows: creditRows },
+        { label: "Member Settle-Up Payments", rows: paymentRows },
         { label: "Purchases", rows: purchaseRows },
       ],
       baseCurrency,

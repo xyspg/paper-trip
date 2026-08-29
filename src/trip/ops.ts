@@ -161,9 +161,16 @@ export function applyOp(trip: Trip, op: TripOp): Trip {
       };
 
     case "addPayment": {
-      // Re-adding an existing id replaces it (idempotent under agent retries).
-      const payments = (trip.payments ?? []).filter((p) => p.id !== op.payment.id);
-      return { ...trip, payments: [...payments, op.payment] };
+      // Re-adding an existing id replaces it in place (idempotent under agent
+      // retries). Replacing rather than filter-and-append matters because the
+      // lists and the PDF render payments in raw array order: appending would
+      // let a lost response and its retry visibly reshuffle the user's
+      // repayment history.
+      const payments = trip.payments ?? [];
+      const next = payments.some((p) => p.id === op.payment.id)
+        ? payments.map((p) => (p.id === op.payment.id ? op.payment : p))
+        : [...payments, op.payment];
+      return { ...trip, payments: next };
     }
 
     case "updatePayment":

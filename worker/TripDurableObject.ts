@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Trip, TripMember } from "../src/trip/types";
 import { applyOp, emptyTrip, type TripOp } from "../src/trip/ops";
-import { rebaseExpenses } from "../src/trip/expenses";
+import { rebaseFxRows } from "../src/trip/expenses";
 import type { TripBackup } from "../src/trip/types";
 import type { Env } from "./env";
 
@@ -63,7 +63,10 @@ function isTripShape(x: unknown, expectedId: string): x is Trip {
     Array.isArray(t.suggestions) &&
     Array.isArray(t.expenses) &&
     Array.isArray(t.flights) &&
-    Array.isArray(t.payments)
+    // Optional on `Trip`, and absent from bodies built against the pre-payments
+    // schema. Rejecting those would break every existing whole-trip writer, so
+    // the gate only insists it be an array when present; the handler backfills.
+    (t.payments === undefined || Array.isArray(t.payments))
   );
 }
 
@@ -251,7 +254,12 @@ export class TripDurableObject extends DurableObject<Env> {
       const at = new Date().toISOString();
       // The roster is registry-owned (synced from D1), never writable through a
       // whole-trip PUT — re-impose the current one over whatever the body says.
-      this.trip = { ...body.trip, members: this.trip.members, updatedAt: at };
+      this.trip = {
+        ...body.trip,
+        payments: body.trip.payments ?? [],
+        members: this.trip.members,
+        updatedAt: at,
+      };
       scrubPassUrls(this.trip);
       this.rev += 1;
       this.persist();
@@ -342,9 +350,11 @@ export class TripDurableObject extends DurableObject<Env> {
 
   // Mirror registry metadata edits (title/dates/timezone/currency) into the
   // document so the masthead everyone renders never drifts from what settings
-  // shows. A currency change also restates the ledger's captured conversion
-  // rates via the fxRebase cross rate the worker fetched (rebaseExpenses), so
-  // stored amounts are never silently relabeled in a new unit.
+  // shows. A currency change also restates the captured conversion rates via
+  // the fxRebase cross rate the worker fetched (rebaseFxRows), so stored
+  // amounts are never silently relabeled in a new unit. Expenses and settle-up
+  // payments are rebased together: restating one without the other would leave
+  // balances off by the whole rebase factor.
   private async setMeta(req: Request): Promise<Response> {
     if (!this.trip) return TripDurableObject.uninitialized();
     const body = (await req.json().catch(() => null)) as {
@@ -360,10 +370,13 @@ export class TripDurableObject extends DurableObject<Env> {
     const nextCurrency =
       typeof body.currency === "string" && body.currency ? body.currency : prevCurrency;
     const rebase = Number(body.fxRebase);
-    const expenses =
-      nextCurrency !== prevCurrency && Number.isFinite(rebase) && rebase > 0
-        ? rebaseExpenses(this.trip.expenses ?? [], prevCurrency, nextCurrency, rebase)
-        : this.trip.expenses;
+    const rebasing = nextCurrency !== prevCurrency && Number.isFinite(rebase) && rebase > 0;
+    const expenses = rebasing
+      ? rebaseFxRows(this.trip.expenses ?? [], prevCurrency, nextCurrency, rebase)
+      : this.trip.expenses;
+    const payments = rebasing
+      ? rebaseFxRows(this.trip.payments ?? [], prevCurrency, nextCurrency, rebase)
+      : this.trip.payments;
     this.trip = {
       ...this.trip,
       title: typeof body.title === "string" && body.title ? body.title : this.trip.title,
@@ -380,6 +393,7 @@ export class TripDurableObject extends DurableObject<Env> {
         currency: nextCurrency,
       },
       expenses,
+      payments,
       updatedAt: at,
     };
     this.rev += 1;
