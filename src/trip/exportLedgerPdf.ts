@@ -1,4 +1,3 @@
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { fmtMoney, type AdminMember } from "../admin/adminData";
 import type { TripMeta } from "./api";
@@ -21,10 +20,14 @@ import type { Trip } from "./types";
 // account footer, asymmetric balance summaries, ruled activity groups, and
 // small-print disclosures. Technical registry metadata is demoted to the trip
 // messages and statement reference instead of presented as a product panel.
-// Rendered from an off-screen DOM node into a raster image via html2canvas so
-// the visual layer keeps the browser's CJK shaping and exact CSS layout. A
-// matching invisible Unicode text layer is embedded over it with Noto Sans SC,
-// making the body searchable and copyable without changing its appearance.
+// The browser does the layout: buildStatement assembles an off-screen DOM
+// node in Noto Sans SC, and the export reads every background, border, and
+// rendered text line back from that layout and replays them as vector fills
+// and real text drawn with the same embedded faces. That keeps CSS grid
+// layout and CJK line breaking while producing crisp, selectable, searchable
+// text instead of a rasterized page. jsPDF's own `.html()` path is avoided:
+// it replays html2canvas text runs through jsPDF's built-in Helvetica, which
+// has no CJK glyphs.
 
 // Multi-tenant context threaded in by the ledger page. All optional: the
 // statement degrades to "-" placeholders when the registry row hasn't loaded
@@ -45,24 +48,52 @@ const ACCENT = "#176aa6";
 const PANEL = "#e5e5e5";
 const SOFT_RULE = "#c9c9c9";
 const SITE_HOST = "papertrip.xyspg.moe";
-const STATEMENT_FONT =
-  'Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Heiti SC", sans-serif';
-const SEARCH_TEXT_FONT_FAMILY = "Noto Sans SC";
-const SEARCH_TEXT_FONT_FILE = "NotoSansSC-VF.ttf";
-const SEARCH_TEXT_FONT_URL = "/fonts/NotoSansSC-VF.ttf";
+// The web font is registered under a private family name: the app already
+// declares "Noto Sans SC" through Google Fonts as hundreds of unicode-range
+// slices, and the layout must resolve to these exact files instead. The PDF
+// keeps the real font name.
+const LAYOUT_FONT_FAMILY = "PaperTrip Statement Sans";
+const PDF_FONT_NAME = "Noto Sans SC";
+const STATEMENT_FONT = `"${LAYOUT_FONT_FAMILY}", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Heiti SC", sans-serif`;
+// Static instances of the Noto Sans SC variable font (public/fonts/README.md).
+// jsPDF embeds TrueType outlines as they are, without variation tables, and the
+// variable font's default instance is Thin, so each weight ships pre-instanced.
+// The same bytes are registered as a web font so the off-screen layout below
+// measures exactly the glyph advances the PDF draws.
+const STATEMENT_FONT_FACES = [
+  { file: "NotoSansSC-Regular.ttf", weight: "400", pdfStyle: "normal" },
+  { file: "NotoSansSC-Bold.ttf", weight: "700", pdfStyle: "bold" },
+] as const;
+const STATEMENT_WIDTH_PX = 800;
 
-type SearchTextFragment = {
+type StatementFontFace = (typeof STATEMENT_FONT_FACES)[number];
+type LoadedStatementFont = { face: StatementFontFace; binary: string };
+
+type Rgb = readonly [number, number, number];
+
+// A filled box (background or one border side) in statement CSS px.
+type PaintRect = { left: number; top: number; width: number; height: number; color: Rgb };
+
+// One rendered line of a text node in statement CSS px. `baseline` is where
+// the browser drew the glyphs, so the PDF text lands on the same line.
+type PaintLine = {
   text: string;
   left: number;
   top: number;
+  bottom: number;
   width: number;
-  height: number;
+  baseline: number;
   fontSize: number;
+  bold: boolean;
+  letterSpacing: number;
+  color: Rgb;
 };
+
+type StatementPaint = { rects: PaintRect[]; lines: PaintLine[]; height: number };
 
 type PdfPageSlice = { startPx: number; endPx: number };
 
-let searchTextFontPromise: Promise<string> | undefined;
+let statementFontsPromise: Promise<LoadedStatementFont[]> | undefined;
 
 function bytesToBinaryString(bytes: Uint8Array): string {
   const chunks: string[] = [];
@@ -73,14 +104,27 @@ function bytesToBinaryString(bytes: Uint8Array): string {
   return chunks.join("");
 }
 
-function loadSearchTextFont(): Promise<string> {
-  searchTextFontPromise ??= fetch(SEARCH_TEXT_FONT_URL).then(async (response) => {
-    if (!response.ok) {
-      throw new Error(`Failed to load PDF font: ${response.status}`);
-    }
-    return bytesToBinaryString(new Uint8Array(await response.arrayBuffer()));
+function loadStatementFonts(): Promise<LoadedStatementFont[]> {
+  statementFontsPromise ??= Promise.all(
+    STATEMENT_FONT_FACES.map(async (face) => {
+      const response = await fetch(`/fonts/${face.file}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load PDF font ${face.file}: ${response.status}`);
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const webFont = new FontFace(LAYOUT_FONT_FAMILY, bytes, {
+        weight: face.weight,
+        style: "normal",
+      });
+      document.fonts.add(await webFont.load());
+      return { face, binary: bytesToBinaryString(bytes) };
+    }),
+  ).catch((err: unknown) => {
+    // Keep a failed download retryable instead of caching the rejection.
+    statementFontsPromise = undefined;
+    throw err;
   });
-  return searchTextFontPromise;
+  return statementFontsPromise;
 }
 
 function transformedText(text: string, transform: string): string {
@@ -89,121 +133,224 @@ function transformedText(text: string, transform: string): string {
   return text;
 }
 
-// Browser ranges expose the exact line wrapping chosen by layout. Recording a
-// fragment per rendered line keeps selection highlights aligned with the
-// rasterized text instead of adding one detached block of metadata per page.
-function collectSearchText(container: HTMLElement): SearchTextFragment[] {
+// Computed colors come back as rgb()/rgba(); fully transparent ones (the
+// default background) paint nothing.
+function parseColor(value: string): Rgb | undefined {
+  const match = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+%?))?\s*\)$/.exec(
+    value,
+  );
+  if (!match) return undefined;
+  const alpha = match[4];
+  if (alpha != null && Number.parseFloat(alpha) <= 0) return undefined;
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function borderWidth(borderStyle: string, width: string): number {
+  if (borderStyle === "none" || borderStyle === "hidden") return 0;
+  return Number.parseFloat(width) || 0;
+}
+
+// Baseline offset from the top of a text fragment's box, as a fraction of the
+// font size. Range rects span the font's ascent + descent whatever the
+// line-height, so this is what puts jsPDF's alphabetic baseline where the
+// browser drew the glyphs. Measured rather than read from the font because
+// browsers pick different metric tables (hhea vs OS/2) per platform.
+function measureAscentRatio(host: HTMLElement, fontWeight: string): number {
+  const size = 100;
+  const text = document.createTextNode("Hg");
+  const marker = el("span", { display: "inline-block", width: "0", height: "0" });
+  // nowrap keeps the marker on the text's own line even inside the zero-width
+  // off-screen host; wrapped onto a second line it would report that line's
+  // baseline instead.
+  const probe = el(
+    "div",
+    {
+      fontFamily: STATEMENT_FONT,
+      fontSize: `${size}px`,
+      fontWeight,
+      lineHeight: "1",
+      whiteSpace: "nowrap",
+    },
+    [text, marker],
+  );
+  host.append(probe);
+  const range = document.createRange();
+  range.selectNodeContents(text);
+  const textTop = range.getBoundingClientRect().top;
+  const baseline = marker.getBoundingClientRect().top;
+  probe.remove();
+  return (baseline - textTop) / size;
+}
+
+// Reads the laid-out statement back as paint primitives, in CSS paint order:
+// each element's background and borders, then its children. Browser ranges
+// expose the exact line wrapping layout chose, so one text primitive is
+// recorded per rendered line.
+function collectStatementPaint(container: HTMLElement, probeHost: HTMLElement): StatementPaint {
   const origin = container.getBoundingClientRect();
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-  const fragments: SearchTextFragment[] = [];
+  const rects: PaintRect[] = [];
+  const lines: PaintLine[] = [];
+  const ascentRatios = new Map<boolean, number>();
+  const ascentRatio = (bold: boolean) => {
+    let ratio = ascentRatios.get(bold);
+    if (ratio == null) {
+      ratio = measureAscentRatio(probeHost, bold ? "700" : "400");
+      ascentRatios.set(bold, ratio);
+    }
+    return ratio;
+  };
 
-  for (let current = walker.nextNode(); current; current = walker.nextNode()) {
-    const textNode = current as Text;
-    const parent = textNode.parentElement;
-    if (!parent || !textNode.data.trim()) continue;
+  const pushRect = (
+    left: number,
+    top: number,
+    width: number,
+    height: number,
+    color: Rgb | undefined,
+  ) => {
+    if (!color || width <= 0 || height <= 0) return;
+    rects.push({ left: left - origin.left, top: top - origin.top, width, height, color });
+  };
 
-    const style = getComputedStyle(parent);
+  const collectTextLines = (textNode: Text, style: CSSStyleDeclaration) => {
+    const data = textNode.data;
+    if (!data.trim()) return;
     const fontSize = Number.parseFloat(style.fontSize);
-    if (!Number.isFinite(fontSize) || fontSize <= 0) continue;
+    if (!Number.isFinite(fontSize) || fontSize <= 0) return;
+    const bold = Number.parseFloat(style.fontWeight) >= 600;
+    const letterSpacing = Number.parseFloat(style.letterSpacing) || 0;
+    const color = parseColor(style.color) ?? [17, 17, 17];
 
     const range = document.createRange();
     let line:
       | {
           text: string;
-          left: number;
           top: number;
-          right: number;
           bottom: number;
+          left: number;
+          right: number;
         }
       | undefined;
 
     const flushLine = () => {
       if (!line) return;
-      const text = transformedText(line.text.replace(/\s+/g, " "), style.textTransform);
-      if (text.trim()) {
-        fragments.push({
+      const text = transformedText(line.text.replace(/\s+/g, " ").trim(), style.textTransform);
+      if (text && line.right > line.left) {
+        lines.push({
           text,
           left: line.left - origin.left,
           top: line.top - origin.top,
+          bottom: line.bottom - origin.top,
           width: line.right - line.left,
-          height: line.bottom - line.top,
+          baseline: line.top - origin.top + ascentRatio(bold) * fontSize,
           fontSize,
+          bold,
+          letterSpacing,
+          color,
         });
       }
       line = undefined;
     };
 
-    for (let start = 0; start < textNode.data.length; ) {
-      const codePoint = textNode.data.codePointAt(start);
-      const length = codePoint != null && codePoint > 0xffff ? 2 : 1;
-      const end = start + length;
+    for (let start = 0; start < data.length; ) {
+      const codePoint = data.codePointAt(start);
+      const end = start + (codePoint != null && codePoint > 0xffff ? 2 : 1);
       range.setStart(textNode, start);
       range.setEnd(textNode, end);
       const rect = range.getBoundingClientRect();
-      const character = textNode.data.slice(start, end);
-
-      if (rect.height > 0 && rect.width >= 0) {
-        if (!line || Math.abs(rect.top - line.top) > 0.75) {
-          flushLine();
-          line = {
-            text: character,
-            left: rect.left,
-            top: rect.top,
-            right: rect.right,
-            bottom: rect.bottom,
-          };
-        } else {
-          line.text += character;
-          line.left = Math.min(line.left, rect.left);
-          line.right = Math.max(line.right, rect.right);
-          line.bottom = Math.max(line.bottom, rect.bottom);
-        }
-      }
+      const character = data.slice(start, end);
       start = end;
+      if (rect.height <= 0) continue;
+
+      if (!line || Math.abs(rect.top - line.top) > 0.75) {
+        flushLine();
+        line = { text: "", top: rect.top, bottom: rect.bottom, left: Infinity, right: -Infinity };
+      }
+      line.text += character;
+      // Whitespace boxes are unreliable at wrap points (collapsed, hung past
+      // the line end, or reported on the next line), so only ink defines the
+      // line's extent; the PDF string keeps its inner spaces regardless.
+      if (/\S/.test(character)) {
+        if (line.right < line.left) {
+          line.top = rect.top;
+          line.bottom = rect.bottom;
+        }
+        line.left = Math.min(line.left, rect.left);
+        line.right = Math.max(line.right, rect.right);
+        line.bottom = Math.max(line.bottom, rect.bottom);
+      }
     }
     flushLine();
-  }
+  };
 
-  return fragments;
+  const visitElement = (element: Element) => {
+    const style = getComputedStyle(element);
+    if (style.display === "none") return;
+    const background = parseColor(style.backgroundColor);
+    const top = borderWidth(style.borderTopStyle, style.borderTopWidth);
+    const bottom = borderWidth(style.borderBottomStyle, style.borderBottomWidth);
+    const left = borderWidth(style.borderLeftStyle, style.borderLeftWidth);
+    const right = borderWidth(style.borderRightStyle, style.borderRightWidth);
+    for (const box of Array.from(element.getClientRects())) {
+      pushRect(box.left, box.top, box.width, box.height, background);
+      pushRect(box.left, box.top, box.width, top, parseColor(style.borderTopColor));
+      pushRect(
+        box.left,
+        box.bottom - bottom,
+        box.width,
+        bottom,
+        parseColor(style.borderBottomColor),
+      );
+      pushRect(box.left, box.top, left, box.height, parseColor(style.borderLeftColor));
+      pushRect(box.right - right, box.top, right, box.height, parseColor(style.borderRightColor));
+    }
+    for (const child of Array.from(element.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE) collectTextLines(child as Text, style);
+      else if (child.nodeType === Node.ELEMENT_NODE) visitElement(child as Element);
+    }
+  };
+
+  visitElement(container);
+  return { rects, lines, height: origin.height };
 }
 
-function addSearchTextLayer(
+// Draws the part of the statement that falls inside one page slice: boxes are
+// clipped to the slice, text lines go to the page holding their midpoint.
+function paintStatementPage(
   doc: jsPDF,
-  fontBinary: string,
-  fragments: SearchTextFragment[],
-  pageSlices: PdfPageSlice[],
-  scale: number,
+  paint: StatementPaint,
+  slice: PdfPageSlice,
   ptPerPx: number,
   sideMargin: number,
   bodyTop: number,
 ) {
-  doc.addFileToVFS(SEARCH_TEXT_FONT_FILE, fontBinary);
-  doc.addFont(SEARCH_TEXT_FONT_FILE, SEARCH_TEXT_FONT_FAMILY, "normal");
-  doc.setFont(SEARCH_TEXT_FONT_FAMILY, "normal");
+  const toX = (px: number) => sideMargin + px * ptPerPx;
+  const toY = (px: number) => bodyTop + (px - slice.startPx) * ptPerPx;
 
-  pageSlices.forEach((page, pageIndex) => {
-    doc.setPage(pageIndex + 1);
-    for (const fragment of fragments) {
-      const topPx = fragment.top * scale;
-      const heightPx = fragment.height * scale;
-      const midpointPx = topPx + heightPx / 2;
-      if (midpointPx < page.startPx || midpointPx >= page.endPx) continue;
+  for (const rect of paint.rects) {
+    const top = Math.max(rect.top, slice.startPx);
+    const bottom = Math.min(rect.top + rect.height, slice.endPx);
+    if (bottom <= top) continue;
+    doc.setFillColor(...rect.color);
+    doc.rect(toX(rect.left), toY(top), rect.width * ptPerPx, (bottom - top) * ptPerPx, "F");
+  }
 
-      const x = sideMargin + fragment.left * scale * ptPerPx;
-      const y = bodyTop + (topPx - page.startPx) * ptPerPx;
-      const fontSize = fragment.fontSize * scale * ptPerPx;
-      const targetWidth = fragment.width * scale * ptPerPx;
-      doc.setFontSize(fontSize);
-      const measuredWidth = doc.getTextWidth(fragment.text);
-      const horizontalScale = measuredWidth > 0 ? targetWidth / measuredWidth : 1;
-      doc.text(fragment.text, x, y, {
-        baseline: "top",
-        horizontalScale:
-          Number.isFinite(horizontalScale) && horizontalScale > 0 ? horizontalScale : 1,
-        renderingMode: "invisible",
-      });
-    }
-  });
+  for (const line of paint.lines) {
+    const midpoint = (line.top + line.bottom) / 2;
+    if (midpoint < slice.startPx || midpoint >= slice.endPx) continue;
+    doc.setFont(PDF_FONT_NAME, line.bold ? "bold" : "normal");
+    doc.setFontSize(line.fontSize * ptPerPx);
+    doc.setTextColor(...line.color);
+    doc.setCharSpace(line.letterSpacing * ptPerPx);
+    // The layout disables kerning and ligatures, so jsPDF's summed advances
+    // match the browser's; the scale only absorbs glyphs the embedded font
+    // lacks, which the browser drew from a fallback face.
+    const measuredWidth = doc.getTextWidth(line.text);
+    const targetWidth = line.width * ptPerPx;
+    const horizontalScale =
+      measuredWidth > 0 ? Math.min(1.25, Math.max(0.75, targetWidth / measuredWidth)) : 1;
+    doc.text(line.text, toX(line.left), toY(line.baseline), { horizontalScale });
+  }
+  doc.setCharSpace(0);
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -665,11 +812,15 @@ function buildStatement(
 
   // This node deliberately contains the statement body only. A crisp vector
   // masthead and footer are added by jsPDF on every page after rasterization.
+  // Kerning and ligatures are off so the browser advances glyphs exactly the
+  // way jsPDF will when it draws the same text back.
   const container = el("div", {
-    width: "800px",
+    width: `${STATEMENT_WIDTH_PX}px`,
     background: "#ffffff",
     color: INK,
     fontFamily: STATEMENT_FONT,
+    fontKerning: "none",
+    fontVariantLigatures: "none",
     lineHeight: "1.3",
     padding: "0 0 18px",
   });
@@ -1018,10 +1169,12 @@ export async function exportLedgerPdf(
   travelers: AdminMember[],
   context: StatementContext = {},
 ): Promise<LedgerPdfStatement> {
+  // Fonts first: the statement has to be laid out in the faces the PDF embeds.
+  const fonts = await loadStatementFonts();
   const container = buildStatement(trip, travelers, context);
 
   // The wrapper (not the container itself) carries the off-screen styles, so
-  // html2canvas only ever sees the clean, normally-laid-out content node.
+  // the measured content node is laid out exactly like a normal 800px block.
   const wrapper = el("div", {
     position: "fixed",
     top: "0",
@@ -1033,38 +1186,20 @@ export async function exportLedgerPdf(
   wrapper.append(container);
   document.body.append(wrapper);
 
-  // Wait for any future body images before taking the statement snapshot.
-  await Promise.all(
-    Array.from(container.querySelectorAll("img")).map((img) => img.decode().catch(() => {})),
-  );
-
-  // Canvas px per CSS px. Used both for the raster render and for converting the
-  // measured DOM row positions below into the same coordinate space.
-  const SCALE = 2;
-
-  // Safe page-break boundaries (canvas px): table rows plus marked headings and
-  // disclosure paragraphs. The paginator favors the lowest one that fits.
-  const containerTop = container.getBoundingClientRect().top;
-  const searchText = collectSearchText(container);
-  const breakOffsets = [
-    ...new Set(
-      Array.from(container.querySelectorAll("[data-statement-break]"))
-        .map((node) => Math.round((node.getBoundingClientRect().top - containerTop) * SCALE))
-        .filter((y) => y > 0),
-    ),
-  ].sort((a, b) => a - b);
-
-  let canvas: HTMLCanvasElement;
-  let searchTextFont: string;
+  let paint: StatementPaint;
+  let breakOffsets: number[];
   try {
-    [canvas, searchTextFont] = await Promise.all([
-      html2canvas(container, {
-        scale: SCALE,
-        backgroundColor: "#ffffff",
-        windowWidth: 800,
-      }),
-      loadSearchTextFont(),
-    ]);
+    // Safe page-break boundaries (CSS px): table rows plus marked headings and
+    // disclosure paragraphs. The paginator favors the lowest one that fits.
+    const containerTop = container.getBoundingClientRect().top;
+    breakOffsets = [
+      ...new Set(
+        Array.from(container.querySelectorAll("[data-statement-break]"))
+          .map((node) => node.getBoundingClientRect().top - containerTop)
+          .filter((y) => y > 0),
+      ),
+    ].sort((a, b) => a - b);
+    paint = collectStatementPaint(container, wrapper);
   } finally {
     wrapper.remove();
   }
@@ -1078,6 +1213,10 @@ export async function exportLedgerPdf(
     compress: true,
     putOnlyUsedFonts: true,
   });
+  for (const font of fonts) {
+    doc.addFileToVFS(font.face.file, font.binary);
+    doc.addFont(font.face.file, PDF_FONT_NAME, font.face.pdfStyle);
+  }
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const sideMargin = 24;
@@ -1086,21 +1225,20 @@ export async function exportLedgerPdf(
   const usableWidth = pageWidth - sideMargin * 2;
   const usableHeight = footerTop - bodyTop;
 
-  const ptPerPx = usableWidth / canvas.width;
-  const pageSliceHeightPx = Math.floor(usableHeight / ptPerPx);
+  const ptPerPx = usableWidth / STATEMENT_WIDTH_PX;
+  const pageSliceHeightPx = usableHeight / ptPerPx;
 
-  let renderedPx = 0;
-  let pageIndex = 0;
   const pageSlices: PdfPageSlice[] = [];
-  while (renderedPx < canvas.height) {
+  let renderedPx = 0;
+  while (renderedPx < paint.height) {
     const maxEnd = renderedPx + pageSliceHeightPx;
     // If the rest of the statement fits on one page, take it all. Otherwise cut
     // at the lowest row boundary that still fits, so no line is split. A single
     // row taller than a whole page (shouldn't happen with these short rows)
     // falls back to a hard cut so the loop still makes progress.
     let end: number;
-    if (canvas.height <= maxEnd) {
-      end = canvas.height;
+    if (paint.height <= maxEnd) {
+      end = paint.height;
     } else {
       end = -1;
       for (const b of breakOffsets) {
@@ -1108,57 +1246,15 @@ export async function exportLedgerPdf(
       }
       if (end < 0) end = maxEnd;
     }
-
-    const sliceHeightPx = end - renderedPx;
-    const slice = document.createElement("canvas");
-    slice.width = canvas.width;
-    slice.height = sliceHeightPx;
-    const ctx = slice.getContext("2d");
-    if (!ctx) throw new Error("Canvas 2D context unavailable");
-    ctx.drawImage(
-      canvas,
-      0,
-      renderedPx,
-      canvas.width,
-      sliceHeightPx,
-      0,
-      0,
-      canvas.width,
-      sliceHeightPx,
-    );
-
-    if (pageIndex > 0) doc.addPage();
-    // PNG keeps dense small type and hairline rules crisp, with no JPEG haloing.
-    doc.addImage(
-      slice.toDataURL("image/png"),
-      "PNG",
-      sideMargin,
-      bodyTop,
-      usableWidth,
-      sliceHeightPx * ptPerPx,
-    );
-
     pageSlices.push({ startPx: renderedPx, endPx: end });
     renderedPx = end;
-    pageIndex++;
   }
-
-  addSearchTextLayer(
-    doc,
-    searchTextFont,
-    searchText,
-    pageSlices,
-    SCALE,
-    ptPerPx,
-    sideMargin,
-    bodyTop,
-  );
 
   const today = todayIn(trip.base.timezone);
   const compactTripId = trip.id.length > 28 ? trip.id.slice(0, 25) + "..." : trip.id;
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
+  const pageCount = pageSlices.length;
+  pageSlices.forEach((slice, index) => {
+    if (index > 0) doc.addPage();
 
     // Repeated institution masthead, patterned after the compact service strip
     // at the top of the reference statement.
@@ -1190,7 +1286,9 @@ export async function exportLedgerPdf(
     doc.setFontSize(7);
     doc.setTextColor(60, 60, 60);
     doc.text(compactTripId, sideMargin, pageHeight - 18);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 18, { align: "center" });
+    doc.text(`Page ${index + 1} of ${pageCount}`, pageWidth / 2, pageHeight - 18, {
+      align: "center",
+    });
     doc.text(`Statement Date:  ${fmtShortDate(today)}`, pageWidth - sideMargin, pageHeight - 18, {
       align: "right",
     });
@@ -1201,7 +1299,11 @@ export async function exportLedgerPdf(
       sideMargin,
       pageHeight - 8,
     );
-  }
+
+    // Body last, so its text state (font, spacing, horizontal scale) never
+    // bleeds into the masthead of the same page.
+    paintStatementPage(doc, paint, slice, ptPerPx, sideMargin, bodyTop);
+  });
 
   const filename = `${trip.id}-expense-statement-${today}.pdf`;
   doc.setProperties({

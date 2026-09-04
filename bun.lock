@@ -11,7 +11,6 @@
         "baseui": "^16.1.1",
         "better-auth": "^1.6.23",
         "hono": "^4.12.23",
-        "html2canvas": "^1.4.1",
         "jspdf": "^4.2.1",
         "lucide-react": "^1.17.0",
         "react": "^19.2.6",
