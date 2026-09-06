@@ -340,10 +340,15 @@ export function PaperLedger({
                 <ExpenseItems items={item.items} travelers={travelers} currency={rowCurrency} />
 
                 {item.credit > 0 && (
-                  <div className="flex gap-2 items-center justify-end mt-2.5 max-[480px]:justify-start max-[480px]:pl-[51px]">
+                  <div className="flex flex-wrap gap-2 items-center justify-end mt-2.5 max-[480px]:justify-start max-[480px]:pl-[51px]">
                     <span className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.06em] whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full py-[3px] px-2.5">
                       Credit
                     </span>
+                    {item.creditDescription && (
+                      <span className="font-sans text-[11px] text-[#3f6f5b]">
+                        {item.creditDescription}
+                      </span>
+                    )}
                     <span className="font-sans font-bold text-[13px] text-[#3f6f5b]">
                       −{fmtMoney(appliedCredit(item), rowCurrency)}
                     </span>

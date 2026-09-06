@@ -143,6 +143,7 @@ export type Expense = {
   sub: string;
   amount: number;
   credit: number;
+  creditDescription?: string;
   payer: string;
   currency?: string;
   fxRate?: number;

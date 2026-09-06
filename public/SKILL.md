@@ -129,6 +129,7 @@ type Expense = {
   sub: string; // one-line detail
   amount: number; // in `currency` (falls back to trip.base.currency when absent)
   credit: number; // statement credit offsetting it, usually 0 — same currency as amount
+  creditDescription?: string; // exact credit label shown on the ledger and PDF; preserve the original statement wording
   payer: string; // member id (trip.members[].id)
   currency?: string; // ISO 4217 code, ONLY when not trip.base.currency
   fxRate?: number; // trip.base.currency units per 1 unit of `currency`, captured at entry

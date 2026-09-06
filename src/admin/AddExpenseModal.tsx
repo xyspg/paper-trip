@@ -23,13 +23,15 @@ import { useAdmin } from "./AdminContext";
 import { ExpenseAllocation } from "./ExpenseAllocation";
 import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { expenseAllocationMatches } from "../trip/expenses";
-import { currencyDecimals, expenseCurrency, roundFxRate } from "../trip/currency";
+import { currencyDecimals, expenseCurrency, fmtCurrency, roundFxRate } from "../trip/currency";
 import { blockImeSubmit } from "../ime";
 
 export type NewExpenseInput = {
   name: string;
   sub: string;
   amount: number;
+  credit?: number;
+  creditDescription?: string;
   cat: StopCat;
   payer: string;
   // Recorded currency + captured base-per-unit rate; absent = trip base
@@ -60,6 +62,8 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   const [name, setName] = useState(initial?.name ?? "");
   const [sub, setSub] = useState(initial?.sub ?? "");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
+  const [credit, setCredit] = useState(String(initial?.credit ?? 0));
+  const [creditDescription, setCreditDescription] = useState(initial?.creditDescription ?? "");
   const [cat, setCat] = useState<StopCat>(initial?.cat ?? "event");
   const [currency, setCurrency] = useState(initialCurrency);
   // User-pinned rate; null falls back to the live quote. Editing keeps the
@@ -84,10 +88,13 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   };
 
   const parsed = Math.max(0, parseFloat(amount) || 0);
-  const netAmount = Math.max(0, parsed - (initial?.credit ?? 0));
+  const parsedCredit = credit.trim() === "" ? 0 : Number(credit);
+  const creditValid = Number.isFinite(parsedCredit) && parsedCredit >= 0 && parsedCredit <= parsed;
+  const netAmount = Math.max(0, parsed - (creditValid ? parsedCredit : 0));
   const travelerIds = travelers.map((m) => m.id);
   const allocationValid = expenseAllocationMatches(owedBy, netAmount, travelerIds);
-  const canSubmit = name.trim().length > 0 && allocationValid && (!foreign || fxRate != null);
+  const canSubmit =
+    name.trim().length > 0 && creditValid && allocationValid && (!foreign || fxRate != null);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +104,8 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
       name: name.trim(),
       sub: sub.trim(),
       amount: parsed,
+      credit: parsedCredit,
+      creditDescription: creditDescription.trim() || undefined,
       cat,
       payer,
       currency: foreign ? currency : undefined,
@@ -170,6 +179,51 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           />
         </div>
 
+        <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className={FIELD_LABEL}>Credit 抵扣金额（{currency}）</span>
+          <input
+            className={FIELD_INPUT}
+            type="number"
+            inputMode="decimal"
+            step={decimals ? "0.01" : "1"}
+            min="0"
+            max={parsed}
+            value={credit}
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            aria-label="Credit 抵扣金额"
+            aria-invalid={!creditValid}
+            onChange={(e) => setCredit(e.target.value)}
+          />
+          {!creditValid && (
+            <span role="alert" className="font-cjk text-[12px] text-[#c2553f]">
+              抵扣金额须在 0 与花销金额之间。
+            </span>
+          )}
+        </label>
+
+        <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
+          <span className={FIELD_LABEL}>Credit 描述（可选）</span>
+          <input
+            className={FIELD_INPUT}
+            value={creditDescription}
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            placeholder="填写账单上的原始描述"
+            onChange={(e) => setCreditDescription(e.target.value)}
+          />
+          <span className="font-cjk text-[11.5px] text-[#76726a]">
+            在账目和 PDF 的 credit 条目中原样显示。
+          </span>
+        </label>
+
+        <div className="col-span-full flex items-center justify-between gap-3 font-cjk text-[12px] text-[#3f6f5b]">
+          <span>抵扣后实付</span>
+          <span className="font-sans font-semibold">{fmtCurrency(netAmount, currency)}</span>
+        </div>
+
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
           <span className={FIELD_LABEL}>谁付的（垫付）</span>
           <PaymentSplit
@@ -236,7 +290,8 @@ export function buildExpense(input: NewExpenseInput, id: string): Expense {
     name: input.name,
     sub: input.sub,
     amount: input.amount,
-    credit: 0,
+    credit: input.credit ?? 0,
+    creditDescription: input.creditDescription,
     payer: input.payer,
     currency: input.currency,
     fxRate: input.fxRate,

@@ -770,10 +770,16 @@ function buildStatement(
       creditRows.push({
         category: "Credit",
         description: el("div", {}, [
-          el("div", { fontWeight: "600" }, [`${item.name} statement credit`]),
-          el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
-            "CREDIT APPLIED TO TRIP PURCHASE",
+          el("div", { fontWeight: "600" }, [
+            item.creditDescription || `${item.name} statement credit`,
           ]),
+          ...(item.creditDescription
+            ? []
+            : [
+                el("div", { marginTop: "1px", fontSize: "10px", color: MUTED }, [
+                  "CREDIT APPLIED TO TRIP PURCHASE",
+                ]),
+              ]),
         ]),
         amount: "-" + money(credit * rate),
       });

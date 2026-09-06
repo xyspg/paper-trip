@@ -70,8 +70,7 @@ export function SplitSection({
 
   const handleEdit = (input: NewExpenseInput) => {
     if (!editing) return;
-    // Carry over fields the modal doesn't touch (id, credit) so editing the
-    // name/amount/split never drops the credit on a row. The scanned-receipt
+    // Carry over fields the modal doesn't touch, including the id. The scanned-receipt
     // `items` breakdown is kept only when the amount is unchanged: the manual
     // form has no items UI, so once the total is edited the per-dish prices no
     // longer sum to it, and a stale breakdown that contradicts the total (shown
@@ -82,6 +81,8 @@ export function SplitSection({
       name: input.name,
       sub: input.sub,
       amount: input.amount,
+      credit: input.credit ?? editing.credit,
+      creditDescription: input.creditDescription,
       payer: input.payer,
       currency: input.currency,
       fxRate: input.fxRate,
@@ -322,8 +323,13 @@ export function SplitSection({
                   />
                 </span>
                 {e.credit ? (
-                  <span className="inline-flex items-center gap-1.5 font-grotesk text-[10px] tracking-[0.06em] uppercase whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full px-2.5 py-1">
+                  <span className="inline-flex flex-wrap items-center gap-1.5 font-grotesk text-[10px] tracking-[0.06em] uppercase whitespace-nowrap text-[#3f6f5b] bg-[#eef4f0] border border-[#cfe0d6] rounded-full px-2.5 py-1">
                     Credit{" "}
+                    {e.creditDescription && (
+                      <span className="font-sans normal-case tracking-normal whitespace-normal">
+                        {e.creditDescription}
+                      </span>
+                    )}
                     <span className="font-sans">−{fmtMoney(appliedCredit(e), rowCurrency)}</span>
                   </span>
                 ) : null}
