@@ -13,6 +13,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "./adminUi";
+import { blockImeSubmit } from "../ime";
 
 export type FlightTraveler = { id: string; name: string };
 
@@ -154,7 +155,11 @@ function Form({
   );
 
   return (
-    <form className="flex max-h-[min(880px,calc(100svh_-_32px))] flex-col" onSubmit={submit}>
+    <form
+      className="flex max-h-[min(880px,calc(100svh_-_32px))] flex-col"
+      onSubmit={submit}
+      onKeyDown={blockImeSubmit}
+    >
       <ModalHeader
         icon={<Icons.plane sw={2.3} />}
         title={flight ? "编辑航班" : "添加航班"}

@@ -16,6 +16,7 @@ import { useCreateTrip } from "../trip/hooks";
 import type { TripMeta, TripVisibility } from "../trip/api";
 import { CurrencySelect } from "../admin/CurrencyFields";
 import { DEFAULT_CURRENCY } from "../trip/currency";
+import { blockImeSubmit } from "../ime";
 
 type Props = {
   isOpen: boolean;
@@ -59,7 +60,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
   };
 
   return (
-    <form className="flex flex-col" onSubmit={submit}>
+    <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
       <ModalHeader icon={<Icons.plus sw={2.6} />} title="新建行程" onClose={onClose} />
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">

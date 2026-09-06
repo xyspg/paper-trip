@@ -15,6 +15,7 @@ import { useAdmin } from "./AdminContext";
 import { currencyDecimals, roundAmount, roundFxRate } from "../trip/currency";
 import { todayIn } from "../trip/tripClock";
 import type { Payment } from "../trip/types";
+import { blockImeSubmit } from "../ime";
 
 export type NewPaymentInput = Omit<Payment, "id">;
 
@@ -97,7 +98,7 @@ function Form({ onClose, onSubmit, suggest }: Omit<Props, "isOpen">) {
   );
 
   return (
-    <form className="flex flex-col" onSubmit={submit}>
+    <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
       <ModalHeader icon={<Icons.swap sw={2.6} />} title="记录还款" onClose={onClose} />
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">

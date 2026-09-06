@@ -25,6 +25,7 @@ import {
 import { useTripAccess } from "../components/TripLayout";
 import type { AdminMember } from "./adminData";
 import type { CreatedInvite } from "../trip/api";
+import { isEnterKey } from "../ime";
 
 // The trip's roster and, for owners, the email invite flow. The emailed link is
 // a bearer credential: any GitHub account that opens it may join.
@@ -123,7 +124,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
               placeholder="friend@example.com"
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") void sendInvite();
+                if (isEnterKey(e)) void sendInvite();
               }}
             />
             <button

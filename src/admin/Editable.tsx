@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useMountEffect } from "../useMountEffect";
+import { isEnterKey } from "../ime";
 
 type EditableProps = {
   value: string;
@@ -39,7 +40,7 @@ export function Editable({
       aria-label={ariaLabel}
       data-ph={placeholder}
       onKeyDown={(e) => {
-        if (!multiline && e.key === "Enter") {
+        if (!multiline && isEnterKey(e)) {
           e.preventDefault();
           e.currentTarget.blur();
         }

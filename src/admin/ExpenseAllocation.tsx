@@ -12,6 +12,7 @@ import { fmtMoney, round2 } from "./adminData";
 import { DEFAULT_CURRENCY, currencyDecimals, currencySymbol } from "../trip/currency";
 import { BTN_GHOST, BTN_SM } from "./adminUi";
 import { Icons } from "./AdminIcons";
+import { isEnterKey } from "../ime";
 
 type Props = {
   amount: number;
@@ -79,7 +80,7 @@ function AllocationInput({
             onChange={(event) => setDraft(event.target.value)}
             onBlur={commit}
             onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
+              if (isEnterKey(event)) event.currentTarget.blur();
             }}
           />
         </span>

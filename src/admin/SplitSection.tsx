@@ -26,6 +26,7 @@ import {
 } from "../trip/expenses";
 import { currencySymbol, expenseCurrency } from "../trip/currency";
 import type { ExpenseSplit, Payment } from "../trip/types";
+import { isEnterKey } from "../ime";
 
 type Props = {
   expenses: Expense[];
@@ -282,7 +283,7 @@ export function SplitSection({
                     aria-label={`${e.name} 金额`}
                     onBlur={(ev) => commitAmount(e, ev.target.value)}
                     onKeyDown={(ev) => {
-                      if (ev.key === "Enter") ev.currentTarget.blur();
+                      if (isEnterKey(ev)) ev.currentTarget.blur();
                     }}
                   />
                 </span>

@@ -5,6 +5,7 @@ import type { Expense, ExpenseSplit } from "../trip/types";
 import { expensePaidBy } from "../trip/expenses";
 import { Avatar } from "./Avatar";
 import { CHIP_OFF, CHIP_ON } from "./adminUi";
+import { isEnterKey } from "../ime";
 
 // Editor value for who fronted an expense. `single` is the default 100% case;
 // `percent` / `amount` carry per-traveler weights. Kept separate from the stored
@@ -215,7 +216,7 @@ export function PaymentSplit({ value, onChange, amount, travelers, currency }: P
                     aria-label={`${m.name} ${mode === "percent" ? "比例" : "金额"}`}
                     onBlur={(e) => updShare(m.id, e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (isEnterKey(e)) e.currentTarget.blur();
                     }}
                   />
                   <span className="font-grotesk font-semibold text-[12px] text-[#9b988f]">

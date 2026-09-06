@@ -3,6 +3,7 @@ import { fmtMoney } from "./adminData";
 import { FIELD_INPUT } from "./adminUi";
 import { CURRENCIES, fmtFxRate, roundFxRate } from "../trip/currency";
 import { rateToBase, useRates } from "../trip/rates";
+import { isEnterKey } from "../ime";
 
 // Currency picker + captured-rate editor shared by the manual expense form and
 // the receipt scanner. The rate is "base units per 1 unit of the entry
@@ -102,7 +103,7 @@ export function FxRateRow({
             setDraft(null);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
+            if (isEnterKey(e)) e.currentTarget.blur();
           }}
         />
         <span className="font-grotesk font-semibold text-[11px] text-[#9b988f]">{base}</span>

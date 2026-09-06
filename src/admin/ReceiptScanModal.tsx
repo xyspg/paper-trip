@@ -30,6 +30,7 @@ import {
   roundFxRate,
 } from "../trip/currency";
 import type { ExpenseItem } from "../trip/types";
+import { isEnterKey } from "../ime";
 
 type Props = {
   isOpen: boolean;
@@ -381,7 +382,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                             patchRow(row.id, { quantity: Number.isFinite(n) && n > 0 ? n : 1 });
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (isEnterKey(e)) e.currentTarget.blur();
                           }}
                         />
                         <span className="shrink-0 -ml-[3px] font-bold text-[#9b988f]">×</span>
@@ -415,7 +416,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                               });
                             }}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") e.currentTarget.blur();
+                              if (isEnterKey(e)) e.currentTarget.blur();
                             }}
                           />
                         </span>
@@ -483,7 +484,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                     setTax(Number.isFinite(n) ? Math.max(0, rDec(n)) : 0);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (isEnterKey(e)) e.currentTarget.blur();
                   }}
                 />
               </div>
@@ -550,7 +551,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                       setTipAmount(Number.isFinite(n) ? Math.max(0, rDec(n)) : 0);
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (isEnterKey(e)) e.currentTarget.blur();
                     }}
                   />
                 </div>
@@ -591,7 +592,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           setTotalTarget(Number.isFinite(n) && n > 0 ? rDec(n) : null);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (isEnterKey(e)) e.currentTarget.blur();
                         }}
                       />
                     </span>
@@ -662,7 +663,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         aria-label={`${m.name} 承担金额`}
                         onBlur={(e) => setManualAmount(m.id, e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (isEnterKey(e)) e.currentTarget.blur();
                         }}
                       />
                     </span>

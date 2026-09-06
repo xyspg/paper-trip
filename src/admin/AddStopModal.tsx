@@ -14,6 +14,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "./adminUi";
+import { blockImeSubmit } from "../ime";
 
 export type NewStopInput = {
   day: number;
@@ -67,7 +68,7 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
   };
 
   return (
-    <form className="flex flex-col" onSubmit={submit}>
+    <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
       <ModalHeader icon={<Icons.plus sw={2.6} />} title="新增停靠点" onClose={onClose} />
 
       <div className="grid grid-cols-2 gap-x-[14px] gap-y-[15px] p-[18px] max-[440px]:grid-cols-1">

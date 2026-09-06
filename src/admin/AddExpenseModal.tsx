@@ -24,6 +24,7 @@ import { ExpenseAllocation } from "./ExpenseAllocation";
 import { CurrencySelect, FxRateRow, useEntryFxRate } from "./CurrencyFields";
 import { expenseAllocationMatches } from "../trip/expenses";
 import { currencyDecimals, expenseCurrency, roundFxRate } from "../trip/currency";
+import { blockImeSubmit } from "../ime";
 
 export type NewExpenseInput = {
   name: string;
@@ -106,7 +107,7 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   };
 
   return (
-    <form className="flex flex-col" onSubmit={submit}>
+    <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
       <ModalHeader
         icon={editing ? <Icons.pencil sw={2.6} /> : <Icons.plus sw={2.6} />}
         title={editing ? "编辑花销条目" : "新增花销条目"}
