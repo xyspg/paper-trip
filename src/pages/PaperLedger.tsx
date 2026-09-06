@@ -1,5 +1,13 @@
-import { ArrowRight, Check, ExternalLink, HandCoins, Link2, Wallet } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowRight,
+  Check,
+  ExternalLink,
+  HandCoins,
+  Link2,
+  LoaderCircle,
+  Wallet,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
 import { fmtMoney } from "../admin/adminData";
@@ -28,6 +36,13 @@ import type { Trip } from "../trip/types";
 
 async function exportPdf(trip: Trip, context: StatementContext) {
   try {
+    // Let the loading state paint before PDF generation blocks the main thread,
+    // including repeat exports whose module and fonts are already cached.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        window.setTimeout(resolve, 0);
+      });
+    });
     const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
     const statement = await exportLedgerPdf(trip, tripTravelers(trip), context);
     await statement.deliver();
@@ -87,6 +102,21 @@ export function PaperLedger({
   // moment that happens.
   const [autoExportRequested] = useState(() => Boolean(autoExport));
   const [linkCopied, setLinkCopied] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const exportInFlight = useRef(false);
+
+  async function handleExportPdf() {
+    if (exportInFlight.current) return;
+    exportInFlight.current = true;
+    setExportingPdf(true);
+    try {
+      await exportPdf(trip, { meta, rev, preparedBy });
+    } finally {
+      exportInFlight.current = false;
+      setExportingPdf(false);
+    }
+  }
+
   // The export waits for the live snapshot and metadata queries to settle, so
   // the statement carries the full registry context.
   const autoExportReady = autoExportRequested && rev != null && !metaPending && !userLoading;
@@ -248,11 +278,17 @@ export function PaperLedger({
             </button>
             <button
               type="button"
-              onClick={() => exportPdf(trip, { meta, rev, preparedBy })}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap font-grotesk font-semibold text-[11px] uppercase tracking-[0.06em] text-[#3b3833] bg-white border border-[#ebe9e3] rounded-full py-2 px-3.5 cursor-pointer transition-colors hover:border-[#1c1b19]"
+              onClick={() => void handleExportPdf()}
+              disabled={exportingPdf}
+              aria-busy={exportingPdf}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap font-grotesk font-semibold text-[11px] uppercase tracking-[0.06em] text-[#3b3833] bg-white border border-[#ebe9e3] rounded-full py-2 px-3.5 cursor-pointer transition-colors enabled:hover:border-[#1c1b19] disabled:cursor-wait disabled:opacity-60"
             >
-              <ExternalLink size={13} strokeWidth={2.2} />
-              导出 PDF
+              {exportingPdf ? (
+                <LoaderCircle size={13} strokeWidth={2.2} className="animate-spin" />
+              ) : (
+                <ExternalLink size={13} strokeWidth={2.2} />
+              )}
+              <span aria-live="polite">{exportingPdf ? "正在导出…" : "导出 PDF"}</span>
             </button>
           </div>
         </div>
