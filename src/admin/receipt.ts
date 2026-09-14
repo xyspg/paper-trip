@@ -76,6 +76,7 @@ export async function parseReceipt(tripId: string, file: File): Promise<ParsedRe
   });
   if (!res.ok) {
     if (res.status === 403) throw new Error("请先登录管理后台");
+    if (res.status === 504) throw new Error("识别超时，请重试");
     throw new Error(`识别失败 (${res.status})`);
   }
   const json = (await res.json()) as ParsedReceipt;

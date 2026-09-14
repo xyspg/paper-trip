@@ -14,6 +14,10 @@ const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const endpointFor = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
+// Cloudflare drops Worker subrequests that go ~100s without a response with a
+// bare 524, so fail on our own terms first and tell the user to retry.
+const UPSTREAM_TIMEOUT_MS = 60_000;
+
 // OpenAPI-subset schema Gemini enforces on its JSON output. Prices are line
 // totals (quantity * unit) in the receipt's own currency, no symbols.
 const RESPONSE_SCHEMA = {
@@ -85,22 +89,34 @@ receipt.post("/parse", async (c) => {
   const mimeType = body?.mimeType || "image/jpeg";
 
   const endpoint = endpointFor(c.env.GEMINI_MODEL || DEFAULT_MODEL);
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ inline_data: { mime_type: mimeType, data } }, { text: PROMPT }],
+  let res: Response;
+  try {
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ inline_data: { mime_type: mimeType, data } }, { text: PROMPT }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: RESPONSE_SCHEMA,
+          // Gemini 3 thinking models: keep the default temperature (lowering
+          // it makes them loop in thought), and cap reasoning so a receipt
+          // never turns into a 60K-token, 100s+ generation that Cloudflare
+          // cuts off with a 524. The JSON itself is well under 8K tokens.
+          thinkingConfig: { thinkingLevel: "low" },
+          maxOutputTokens: 8192,
         },
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0,
-      },
-    }),
-  });
+      }),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === "TimeoutError";
+    return c.json({ error: timedOut ? "timeout" : "unreachable" }, 504);
+  }
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
