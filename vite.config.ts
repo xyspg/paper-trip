@@ -4,6 +4,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
 import babel from "@rolldown/plugin-babel";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { lingui, linguiTransformerBabelPreset } from "@lingui/vite-plugin";
 
 const entryLoadRecovery = {
   name: "papertrip-entry-load-recovery",
@@ -52,6 +53,9 @@ export default defineConfig({
     }),
     tailwindcss(),
     react(),
-    babel({ presets: [reactCompilerPreset()] }),
+    lingui(),
+    // Babel applies presets last to first, so Lingui macros expand before the
+    // React Compiler memoizes the component that uses them.
+    babel({ presets: [reactCompilerPreset(), linguiTransformerBabelPreset()] }),
   ],
 });

@@ -2,7 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { i18n } from "@lingui/core";
+import { I18nProvider } from "@lingui/react";
 import "./index.css";
+import { activateLocale, detectLocale } from "./i18n";
 import { routeTree } from "./routeTree.gen";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
@@ -30,6 +33,10 @@ if (new URL(window.location.href).searchParams.has("_papertrip_recover")) {
   }, 10_000);
 }
 
+// Must run before anything renders. Module-level code never translates (it
+// would evaluate before this line); it defines `msg` descriptors instead.
+activateLocale(detectLocale());
+
 const queryClient = new QueryClient();
 
 const router = createRouter({
@@ -48,8 +55,10 @@ declare module "@tanstack/react-router" {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <I18nProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>
   </StrictMode>,
 );

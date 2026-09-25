@@ -1,6 +1,9 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+
 export type TripTab = {
   id: string;
-  label: string;
+  label: MessageDescriptor;
   to: "/t/$tripId/timeline" | "/t/$tripId/bookings" | "/t/$tripId/ledger";
 };
 
@@ -9,7 +12,7 @@ export type TripTab = {
 // files. /t/$tripId/admin is intentionally omitted: it is reachable by URL but
 // hidden from the nav.
 export const tripTabs: TripTab[] = [
-  { id: "timeline", label: "行程时间线", to: "/t/$tripId/timeline" },
-  { id: "bookings", label: "预订信息", to: "/t/$tripId/bookings" },
-  { id: "ledger", label: "账目明细", to: "/t/$tripId/ledger" },
+  { id: "timeline", label: msg`行程时间线`, to: "/t/$tripId/timeline" },
+  { id: "bookings", label: msg`预订信息`, to: "/t/$tripId/bookings" },
+  { id: "ledger", label: msg`账目明细`, to: "/t/$tripId/ledger" },
 ];

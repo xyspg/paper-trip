@@ -1,0 +1,32 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-25 10:00-0400\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: zh\n"
+
+#: src/components/PageNav.tsx
+msgid "使用 GitHub 登录"
+msgstr "使用 GitHub 登录"
+
+#: src/components/PageNav.tsx
+msgid "打开管理后台"
+msgstr "打开管理后台"
+
+#: src/routes.ts
+msgid "行程时间线"
+msgstr "行程时间线"
+
+#: src/routes.ts
+msgid "账目明细"
+msgstr "账目明细"
+
+#: src/components/PageNav.tsx
+msgid "页面导航"
+msgstr "页面导航"
+
+#: src/routes.ts
+msgid "预订信息"
+msgstr "预订信息"
