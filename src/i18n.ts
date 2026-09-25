@@ -1,4 +1,5 @@
 import { i18n, type Messages } from "@lingui/core";
+import { t } from "@lingui/core/macro";
 import { messages as enMessages } from "./locales/en/messages.po";
 import { messages as zhMessages } from "./locales/zh/messages.po";
 import { INTL_LOCALES, isLocale, type Locale } from "./locale";
@@ -31,6 +32,9 @@ export function detectLocale(): Locale {
 export function activateLocale(locale: Locale) {
   i18n.loadAndActivate({ locale, messages: CATALOGS[locale] });
   document.documentElement.lang = INTL_LOCALES[locale];
+  // index.html keeps the Chinese title for crawlers and link previews. Pages
+  // without their own <title> (landing, dashboard) show this one instead.
+  document.title = t`Papertrip · 纸上行程`;
 }
 
 // Switching reloads instead of re-rendering in place: module-level Intl

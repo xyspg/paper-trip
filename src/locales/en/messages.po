@@ -220,6 +220,10 @@ msgstr "Lunch at Granville Island"
 msgid "iOS 27 同款 AI 识别"
 msgstr "AI recognition, just like iOS 27"
 
+#: src/i18n.ts
+msgid "Papertrip · 纸上行程"
+msgstr "Papertrip"
+
 #: src/components/AppErrorBoundary.tsx
 msgid "Papertrip 资源加载失败"
 msgstr "Papertrip failed to load"

@@ -214,6 +214,10 @@ msgstr "Granville Island 午餐"
 msgid "iOS 27 同款 AI 识别"
 msgstr "iOS 27 同款 AI 识别"
 
+#: src/i18n.ts
+msgid "Papertrip · 纸上行程"
+msgstr "Papertrip · 纸上行程"
+
 #: src/components/AppErrorBoundary.tsx
 msgid "Papertrip 资源加载失败"
 msgstr "Papertrip 资源加载失败"
