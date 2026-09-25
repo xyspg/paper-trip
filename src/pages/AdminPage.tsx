@@ -15,8 +15,7 @@ import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 import { PapertripLogo } from "../components/PapertripLogo";
 import { useTripAccess } from "../components/TripLayout";
-import { switchLocale } from "../i18n";
-import { currentLocale } from "../locale";
+import { LocaleMenu } from "../components/LocaleMenu";
 
 type SectionKey =
   | "itinerary"
@@ -230,7 +229,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
             </div>
             <Avatar m={me} size="sm" />
           </div>
-          <AdminLocaleToggle />
+          <LocaleMenu triggerClassName="shrink-0 w-[34px] h-[34px] grid place-items-center rounded-full border border-[#ebe9e3] bg-transparent text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19] data-[popup-open]:border-[#1c1b19] data-[popup-open]:text-[#1c1b19]" />
           <button
             className="shrink-0 w-[34px] h-[34px] grid place-items-center rounded-full border border-[#ebe9e3] bg-transparent text-[#76726a] cursor-pointer transition-colors hover:bg-[#c2553f] hover:text-white hover:border-[#c2553f] [&_svg]:w-4 [&_svg]:h-4"
             title={t`退出登录`}
@@ -324,25 +323,5 @@ export function AdminPage({ tripId }: { tripId: string }) {
         </div>
       </div>
     </AdminProvider>
-  );
-}
-
-// Labels the language it switches to, written in that language (like the
-// public PageNav toggle), styled as a sibling of the header's round logout
-// button so it reads as part of the admin chrome.
-function AdminLocaleToggle() {
-  const next = currentLocale() === "zh" ? "en" : "zh";
-  const label = next === "en" ? "Switch to English" : "切换到中文";
-  return (
-    <button
-      type="button"
-      className="shrink-0 w-[34px] h-[34px] grid place-items-center rounded-full border border-[#ebe9e3] bg-transparent text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19] font-grotesk text-[12px] font-semibold"
-      lang={next === "en" ? "en" : "zh-CN"}
-      title={label}
-      aria-label={label}
-      onClick={() => switchLocale(next)}
-    >
-      {next === "en" ? "EN" : "中"}
-    </button>
   );
 }

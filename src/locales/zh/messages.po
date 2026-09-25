@@ -2411,6 +2411,10 @@ msgstr "识别超时，请重试"
 msgid "该成员"
 msgstr "该成员"
 
+#: src/components/LocaleMenu.tsx
+msgid "语言"
+msgstr "语言"
+
 #: src/admin/PaymentSplit.tsx
 msgid "请为至少一人填写分摊"
 msgstr "请为至少一人填写分摊"

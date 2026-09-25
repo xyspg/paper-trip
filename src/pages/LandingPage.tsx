@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { signInWithGitHub } from "../admin/auth";
+import { LocaleMenu } from "../components/LocaleMenu";
 import { currentLocale } from "../locale";
 import "./landing.css";
 
@@ -80,14 +81,17 @@ function Nav() {
           <Trans>Agent 接入</Trans>
         </a>
       </nav>
-      <button
-        type="button"
-        className="ml-auto inline-flex items-center gap-2 py-2 px-4 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[12.5px] cursor-pointer hover:bg-black"
-        onClick={() => signInWithGitHub("/")}
-      >
-        <GitHubMark size={14} />
-        <Trans>登录</Trans>
-      </button>
+      <div className="ml-auto flex items-center gap-2">
+        <LocaleMenu />
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 py-2 px-4 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[12.5px] cursor-pointer hover:bg-black"
+          onClick={() => signInWithGitHub("/")}
+        >
+          <GitHubMark size={14} />
+          <Trans>登录</Trans>
+        </button>
+      </div>
     </div>
   );
 }

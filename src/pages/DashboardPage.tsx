@@ -6,6 +6,7 @@ import { useAdminUser } from "../admin/auth";
 import { useTrips } from "../trip/hooks";
 import { BaseWebProvider } from "../admin/baseweb";
 import { CreateTripModal } from "../components/CreateTripModal";
+import { LocaleMenu } from "../components/LocaleMenu";
 import { LandingPage } from "./LandingPage";
 import type { TripMeta } from "../trip/api";
 
@@ -47,10 +48,13 @@ export function DashboardPage() {
     <main className="min-h-svh p-[clamp(14px,3vw,40px)] overflow-x-clip bg-paper text-ink font-sans leading-normal">
       <div className="w-[min(1040px,100%)] mx-auto">
         <header className="pb-[30px] border-b border-[#ebe9e3]">
-          <span className="inline-flex gap-[9px] items-center font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3f6f5b]">
-            <span className="w-[7px] h-[7px] rounded-full bg-[#3f6f5b]" />
-            <Trans>行程工作台 · Trips</Trans>
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex gap-[9px] items-center font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3f6f5b]">
+              <span className="w-[7px] h-[7px] rounded-full bg-[#3f6f5b]" />
+              <Trans>行程工作台 · Trips</Trans>
+            </span>
+            <LocaleMenu className="ml-auto" />
+          </div>
           <h1 className="mt-3.5 font-sans font-extrabold tracking-[-0.03em] leading-[0.98] text-[clamp(38px,7vw,60px)]">
             <Trans>我的行程</Trans>
           </h1>

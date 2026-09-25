@@ -3,8 +3,7 @@ import { useLingui } from "@lingui/react/macro";
 import { UserRound } from "lucide-react";
 import { tripTabs } from "../routes";
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
-import { switchLocale } from "../i18n";
-import { currentLocale } from "../locale";
+import { LocaleMenu } from "./LocaleMenu";
 
 export function PageNav() {
   // Rendered above every non-admin page; the trip tabs only make sense when a
@@ -30,7 +29,7 @@ export function PageNav() {
             {t(tab.label)}
           </Link>
         ))}
-      <LocaleToggle />
+      <LocaleMenu className="ml-auto" />
       <SessionButton tripId={tripId} />
     </nav>
   );
@@ -66,24 +65,6 @@ function SessionButton({ tripId }: { tripId?: string }) {
       onClick={() => signInWithGitHub(window.location.pathname)}
     >
       <UserRound size={17} strokeWidth={2.2} />
-    </button>
-  );
-}
-
-// Labels the language it switches to, written in that language, so it stays
-// recognizable to someone who cannot read the current one.
-function LocaleToggle() {
-  const next = currentLocale() === "zh" ? "en" : "zh";
-  return (
-    <button
-      type="button"
-      className="grid place-items-center w-9 h-9 ml-auto p-0 rounded-full border border-[#ebe9e3] bg-white text-[#3b3833] cursor-pointer transition-colors hover:border-[#1c1b19] font-grotesk text-[12px] font-semibold"
-      lang={next === "en" ? "en" : "zh-CN"}
-      title={next === "en" ? "Switch to English" : "切换到中文"}
-      aria-label={next === "en" ? "Switch to English" : "切换到中文"}
-      onClick={() => switchLocale(next)}
-    >
-      {next === "en" ? "EN" : "中"}
     </button>
   );
 }

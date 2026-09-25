@@ -857,7 +857,7 @@ msgstr "Legend"
 
 #: src/pages/PaperTimeline.tsx
 msgid "在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。"
-msgstr "Add the first stop under \"Stops\" in the admin console and the timeline will show up here."
+msgstr "Add the first stop under \"Itinerary stops\" in the admin console and the timeline will show up here."
 
 #: src/components/AddressLink.tsx
 msgid "在地图中打开"
@@ -2416,6 +2416,10 @@ msgstr "Reading the receipt timed out. Please try again."
 #: src/admin/FlightsSection.tsx
 msgid "该成员"
 msgstr "this member"
+
+#: src/components/LocaleMenu.tsx
+msgid "语言"
+msgstr "Language"
 
 #: src/admin/PaymentSplit.tsx
 msgid "请为至少一人填写分摊"
