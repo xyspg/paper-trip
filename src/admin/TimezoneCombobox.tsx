@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { Combobox } from "@base-ui-components/react/combobox";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { FIELD_INPUT, FIELD_LABEL } from "./adminUi";
 import { timezoneDisplayName, timezoneMatchesQuery, timezoneOptionsForValue } from "./timezone";
@@ -13,17 +14,24 @@ type Props = {
   allowEmpty?: boolean;
 };
 
-const DEFAULT_DESCRIPTION = "用于“今天”的判定和日程归档；跨时区的停靠点可以带自己的时区。";
-
 export function TimezoneCombobox({
   value,
   onValueChange,
-  label = "默认时区",
-  description = DEFAULT_DESCRIPTION,
-  placeholder = "搜索城市或时区，如 New York",
+  label: labelProp,
+  description: descriptionProp,
+  placeholder: placeholderProp,
   allowEmpty = false,
 }: Props) {
   const inputId = useId();
+  const { t } = useLingui();
+  // Defaults resolve here rather than in the parameter list: t needs the hook.
+  // An explicit null description still hides the hint.
+  const label = labelProp ?? t`默认时区`;
+  const description =
+    descriptionProp === undefined
+      ? t`用于“今天”的判定和日程归档；跨时区的停靠点可以带自己的时区。`
+      : descriptionProp;
+  const placeholder = placeholderProp ?? t`搜索城市或时区，如 New York`;
   // Preserve a registry value even when an older browser's ICU dataset does
   // not expose it through Intl.supportedValuesOf().
   const items = timezoneOptionsForValue(value);
@@ -60,7 +68,7 @@ export function TimezoneCombobox({
           <Combobox.Trigger
             type="button"
             className="absolute right-1.5 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-[8px] border-0 bg-transparent text-[#76726a] transition-colors hover:bg-[#f0eee8] hover:text-[#1c1b19]"
-            aria-label="打开时区列表"
+            aria-label={t`打开时区列表`}
           >
             <ChevronsUpDown size={15} strokeWidth={2.2} aria-hidden="true" />
           </Combobox.Trigger>
@@ -70,7 +78,7 @@ export function TimezoneCombobox({
           <Combobox.Positioner className="z-[100] outline-none" align="start" sideOffset={6}>
             <Combobox.Popup className="box-border w-[var(--anchor-width)] min-w-[280px] overflow-hidden rounded-[12px] border border-[#d8d5cb] bg-white shadow-[0_18px_50px_-24px_rgba(28,27,25,0.38)] outline-none transition-[opacity,transform] duration-150 data-[starting-style]:translate-y-[-4px] data-[starting-style]:opacity-0 data-[ending-style]:translate-y-[-4px] data-[ending-style]:opacity-0">
               <Combobox.Empty className="px-4 py-8 text-center font-cjk text-[12.5px] text-[#76726a]">
-                没有匹配的时区
+                <Trans>没有匹配的时区</Trans>
               </Combobox.Empty>
               <Combobox.List className="max-h-[min(320px,var(--available-height))] overflow-y-auto p-1.5">
                 {(timezone: string) => (

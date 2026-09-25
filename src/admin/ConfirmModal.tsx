@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { ROLE } from "baseui/modal";
 import { AdminModal } from "./AdminModal";
 import { Icons } from "./AdminIcons";
@@ -24,14 +25,15 @@ export type ConfirmModalProps = {
 // now resolves to accent green) so deletes always read as a deliberate second tap.
 export function ConfirmModal({
   isOpen,
-  title = "确认删除",
-  message = "此操作无法撤销，确定继续吗？",
-  confirmLabel = "删除",
-  cancelLabel = "取消",
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
   requirePhrase,
   onConfirm,
   onClose,
 }: ConfirmModalProps) {
+  const { t } = useLingui();
   const [typed, setTyped] = useState("");
   // Trailing/leading whitespace is forgiving; the phrase itself must match exactly.
   const phraseOk = !requirePhrase || typed.trim() === requirePhrase;
@@ -45,14 +47,21 @@ export function ConfirmModal({
       role={ROLE.alertdialog}
     >
       <div className="flex flex-col">
-        <ModalHeader icon={<Icons.trash sw={2.4} />} title={title} onClose={onClose} tone="alert" />
+        <ModalHeader
+          icon={<Icons.trash sw={2.4} />}
+          title={title ?? t`确认删除`}
+          onClose={onClose}
+          tone="alert"
+        />
 
         <div className="py-5 px-[18px] font-cjk text-[14px] leading-[1.6] text-[#3b3833] [&_b]:font-bold [&_b]:text-[#1c1b19]">
-          {message}
+          {message === undefined ? <Trans>此操作无法撤销，确定继续吗？</Trans> : message}
           {requirePhrase && (
             <label className="flex flex-col gap-2 mt-4">
               <span className="font-cjk font-medium text-[13px] text-[#76726a] [&_code]:font-mono [&_code]:font-bold [&_code]:text-[12px] [&_code]:text-[#1c1b19] [&_code]:bg-[#f3f1ec] [&_code]:border [&_code]:border-[#ebe9e3] [&_code]:rounded-[6px] [&_code]:py-px [&_code]:px-1.5">
-                输入 <code>{requirePhrase}</code> 以确认
+                <Trans>
+                  输入 <code>{requirePhrase}</code> 以确认
+                </Trans>
               </span>
               <input
                 className={FIELD_INPUT}
@@ -71,7 +80,7 @@ export function ConfirmModal({
 
         <ModalFooter>
           <button type="button" className={`${BTN} ${BTN_GHOST}`} autoFocus onClick={onClose}>
-            {cancelLabel}
+            {cancelLabel ?? <Trans>取消</Trans>}
           </button>
           <span className="ml-auto" />
           <button
@@ -81,7 +90,7 @@ export function ConfirmModal({
             onClick={onConfirm}
           >
             <Icons.trash sw={2.4} />
-            {confirmLabel}
+            {confirmLabel ?? <Trans>删除</Trans>}
           </button>
         </ModalFooter>
       </div>

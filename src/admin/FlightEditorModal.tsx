@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { Flight } from "../trip/types";
 import { AdminModal } from "./AdminModal";
 import { Icons } from "./AdminIcons";
@@ -60,6 +61,7 @@ function Form({
   const [confirmation, setConfirmation] = useState(flight?.confirmation ?? "");
   const [notes, setNotes] = useState(flight?.notes ?? "");
   const [error, setError] = useState("");
+  const { t } = useLingui();
 
   const patchEndpoint = (endpoint: "departure" | "arrival", patch: Partial<EndpointDraft>) => {
     const update = (current: EndpointDraft) => ({ ...current, ...patch });
@@ -70,7 +72,7 @@ function Form({
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!travelerId) {
-      setError("请选择同行人");
+      setError(t`请选择同行人`);
       return;
     }
     if (
@@ -81,7 +83,7 @@ function Form({
       !arrival.date ||
       !arrival.time
     ) {
-      setError("请填写出发和到达机场、日期与时间");
+      setError(t`请填写出发和到达机场、日期与时间`);
       return;
     }
 
@@ -115,7 +117,9 @@ function Form({
     <fieldset className="col-span-full grid grid-cols-2 gap-x-[14px] gap-y-[15px] p-3.5 border border-[#ebe9e3] rounded-[12px] max-[520px]:grid-cols-1">
       <legend className="px-2 font-cjk font-bold text-[13px] text-[#3b3833]">{label}</legend>
       <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-        <span className={FIELD_LABEL}>机场 / 城市</span>
+        <span className={FIELD_LABEL}>
+          <Trans>机场 / 城市</Trans>
+        </span>
         <input
           className={FIELD_INPUT}
           value={value.airport}
@@ -125,7 +129,9 @@ function Form({
         />
       </label>
       <label className="flex flex-col gap-[7px] min-w-0">
-        <span className={FIELD_LABEL}>日期</span>
+        <span className={FIELD_LABEL}>
+          <Trans>日期</Trans>
+        </span>
         <input
           className={FIELD_INPUT}
           type="date"
@@ -134,7 +140,9 @@ function Form({
         />
       </label>
       <label className="flex flex-col gap-[7px] min-w-0">
-        <span className={FIELD_LABEL}>当地时间</span>
+        <span className={FIELD_LABEL}>
+          <Trans>当地时间</Trans>
+        </span>
         <input
           className={FIELD_INPUT}
           type="time"
@@ -145,7 +153,7 @@ function Form({
       <div className="min-w-0 col-span-full">
         <TimezoneCombobox
           value={value.timezone ?? ""}
-          label="时区（可选）"
+          label={t`时区（可选）`}
           description={null}
           allowEmpty
           onValueChange={(timezone) => patchEndpoint(endpoint, { timezone })}
@@ -162,13 +170,15 @@ function Form({
     >
       <ModalHeader
         icon={<Icons.plane sw={2.3} />}
-        title={flight ? "编辑航班" : "添加航班"}
+        title={flight ? t`编辑航班` : t`添加航班`}
         onClose={onClose}
       />
 
       <div className="grid grid-cols-2 gap-x-[14px] gap-y-[15px] overflow-y-auto p-[18px] max-[520px]:grid-cols-1">
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>同行人</span>
+          <span className={FIELD_LABEL}>
+            <Trans>同行人</Trans>
+          </span>
           <select
             className={`${FIELD_INPUT} cursor-pointer`}
             value={travelerId}
@@ -184,7 +194,9 @@ function Form({
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className={FIELD_LABEL}>航空公司（可选）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>航空公司（可选）</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={airline}
@@ -194,7 +206,9 @@ function Form({
           />
         </label>
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className={FIELD_LABEL}>航班号（可选）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>航班号（可选）</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={flightNumber}
@@ -204,11 +218,13 @@ function Form({
           />
         </label>
 
-        {endpointFields("departure", departure, "出发")}
-        {endpointFields("arrival", arrival, "到达")}
+        {endpointFields("departure", departure, t`出发`)}
+        {endpointFields("arrival", arrival, t`到达`)}
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>确认号（可选）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>确认号（可选）</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={confirmation}
@@ -217,7 +233,9 @@ function Form({
           />
         </label>
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>备注（可选）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>备注（可选）</Trans>
+          </span>
           <textarea
             className={`${FIELD_INPUT} min-h-[82px] resize-y`}
             value={notes}
@@ -234,12 +252,12 @@ function Form({
 
       <ModalFooter>
         <button type="button" className={`${BTN} ${BTN_GHOST}`} onClick={onClose}>
-          取消
+          <Trans>取消</Trans>
         </button>
         <span className="ml-auto" />
         <button type="submit" className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`}>
           <Icons.check sw={2.6} />
-          保存航班
+          <Trans>保存航班</Trans>
         </button>
       </ModalFooter>
     </form>

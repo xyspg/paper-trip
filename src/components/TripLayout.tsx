@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { TripAccessError } from "../trip/api";
 import type { TripMeta } from "../trip/api";
 import { useTripMeta } from "../trip/hooks";
@@ -25,6 +26,7 @@ export function useTripAccess(): TripAccess {
 // remounts the whole subtree (fresh websocket, fresh mount-scoped state).
 export function TripLayout({ tripId, children }: { tripId: string; children: ReactNode }) {
   const { data: meta, error, isLoading } = useTripMeta(tripId);
+  const { t } = useLingui();
 
   if (isLoading) {
     return (
@@ -40,15 +42,15 @@ export function TripLayout({ tripId, children }: { tripId: string; children: Rea
       return (
         <AccessCard
           kicker="Private Trip"
-          title="这是一个私密行程"
-          body="登录后如果你是该行程的成员，即可查看和编辑。"
+          title={t`这是一个私密行程`}
+          body={t`登录后如果你是该行程的成员，即可查看和编辑。`}
         >
           <button
             type="button"
             className="mt-5 inline-flex items-center justify-center py-2.5 px-5 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[13px] cursor-pointer hover:bg-black"
             onClick={() => signInWithGitHub(window.location.pathname)}
           >
-            用 GitHub 登录
+            <Trans>用 GitHub 登录</Trans>
           </button>
         </AccessCard>
       );
@@ -57,15 +59,15 @@ export function TripLayout({ tripId, children }: { tripId: string; children: Rea
       return (
         <AccessCard
           kicker="No Access"
-          title="你不是该行程的成员"
-          body="向行程创建者索取邀请链接后即可加入。"
+          title={t`你不是该行程的成员`}
+          body={t`向行程创建者索取邀请链接后即可加入。`}
         >
           <BackHome />
         </AccessCard>
       );
     }
     return (
-      <AccessCard kicker="Not Found" title="行程不存在" body="它可能已被删除，或链接有误。">
+      <AccessCard kicker="Not Found" title={t`行程不存在`} body={t`它可能已被删除，或链接有误。`}>
         <BackHome />
       </AccessCard>
     );
@@ -111,7 +113,7 @@ function BackHome() {
       to="/"
       className="mt-5 inline-flex items-center justify-center py-2.5 px-5 rounded-[10px] border border-[#ebe9e3] bg-white text-[#1c1b19] no-underline font-sans font-semibold text-[13px] hover:border-[#1c1b19]"
     >
-      返回首页
+      <Trans>返回首页</Trans>
     </Link>
   );
 }

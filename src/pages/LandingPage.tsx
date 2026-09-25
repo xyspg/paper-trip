@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
   Archive,
   ArrowRight,
@@ -11,6 +14,8 @@ import {
   Zap,
 } from "lucide-react";
 import { signInWithGitHub } from "../admin/auth";
+import { LocaleMenu } from "../components/LocaleMenu";
+import { currentLocale } from "../locale";
 import "./landing.css";
 
 // Brand name lives here and in index.html only.
@@ -67,28 +72,32 @@ function Nav() {
           href="#features"
           className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]"
         >
-          功能
+          <Trans>功能</Trans>
         </a>
         <a
           href="#agent"
           className="py-1.5 px-3 rounded-full no-underline text-inherit hover:text-[#1c1b19]"
         >
-          Agent 接入
+          <Trans>Agent 接入</Trans>
         </a>
       </nav>
-      <button
-        type="button"
-        className="ml-auto inline-flex items-center gap-2 py-2 px-4 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[12.5px] cursor-pointer hover:bg-black"
-        onClick={() => signInWithGitHub("/")}
-      >
-        <GitHubMark size={14} />
-        登录
-      </button>
+      <div className="ml-auto flex items-center gap-2">
+        <LocaleMenu />
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 py-2 px-4 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[12.5px] cursor-pointer hover:bg-black"
+          onClick={() => signInWithGitHub("/")}
+        >
+          <GitHubMark size={14} />
+          <Trans>登录</Trans>
+        </button>
+      </div>
     </div>
   );
 }
 
 function Hero() {
+  const { t } = useLingui();
   return (
     <header className="relative overflow-x-clip">
       <div className="lp-hero-dots" />
@@ -98,21 +107,25 @@ function Hero() {
           Agentic Trip Workbench
         </span>
         <h1 className="mt-4 mx-auto max-w-[16ch] font-sans font-extrabold tracking-[-0.03em] leading-[1.08] text-[clamp(34px,6.5vw,62px)]">
-          你负责旅行，
-          <br />
-          <span className="text-[#3f6f5b]">Agent</span> 负责行程
+          <Trans>
+            你负责旅行，
+            <br />
+            <span className="text-[#3f6f5b]">Agent</span> 负责行程
+          </Trans>
         </h1>
         <p className="mt-5 mx-auto max-w-[42ch] font-cjk text-[15px] leading-[1.9] text-[#76726a]">
-          时间线、预订、分账，一份行程实时同步。朋友从浏览器进来，Agent 拿着令牌从 API
-          进来——写的是同一张纸。
+          <Trans>
+            时间线、预订、分账，一份行程实时同步。朋友从浏览器进来，Agent 拿着令牌从 API
+            进来——写的是同一张纸。
+          </Trans>
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          {githubBtn("用 GitHub 登录，免费开始")}
+          {githubBtn(t`用 GitHub 登录，免费开始`)}
           <a
             href="#features"
             className="inline-flex items-center gap-1.5 py-3 px-5 rounded-[10px] border border-[#ebe9e3] bg-white no-underline text-[#3b3833] font-sans font-semibold text-[13.5px] hover:border-[#1c1b19]"
           >
-            了解功能
+            <Trans>了解功能</Trans>
             <ArrowRight size={15} strokeWidth={2.2} />
           </a>
         </div>
@@ -159,14 +172,19 @@ function Bubble({
   typeClass: string;
   chars: string;
 }) {
+  // The typewriter widths in landing.css count 1em per CJK glyph; Latin text
+  // is narrower and would clip or gap, so other locales show the line whole.
+  const typeClasses = currentLocale() === "zh" ? `lp-type ${typeClass}` : undefined;
   return (
     <div className={`lp-bubble ${className} max-w-none`}>
       <div className="py-2 px-3 bg-white border border-[#ebe9e3] rounded-[10px] rounded-bl-[3px] shadow-[0_10px_24px_-14px_rgba(28,27,25,0.4)]">
         <span className="block font-grotesk text-[9px] font-bold uppercase tracking-[0.12em] text-[#7a5c84]">
-          对 Agent 说
+          <Trans>对 Agent 说</Trans>
         </span>
         <span className="block mt-0.5 font-cjk text-[12.5px] font-medium text-[#1c1b19]">
-          「<span className={`lp-type ${typeClass}`}>{chars}</span>」
+          <Trans>
+            「<span className={typeClasses}>{chars}</span>」
+          </Trans>
         </span>
       </div>
     </div>
@@ -227,6 +245,7 @@ function MiniTicket({
 }
 
 function DeviceScene() {
+  const { t } = useLingui();
   return (
     <div className="lp-scene relative mx-auto mt-[clamp(32px,5vw,56px)] mb-10 w-[min(880px,100%)] text-left">
       {/* Boarding-pass prop, peeking out from under the laptop's left edge */}
@@ -262,7 +281,9 @@ function DeviceScene() {
           <div className="p-3.5">
             <div className="flex items-baseline gap-2">
               <span className="font-sans font-extrabold tracking-[-0.02em] text-[15px]">
-                北美西海岸<span className="text-[#3f6f5b]">之旅</span>
+                <Trans>
+                  北美西海岸<span className="text-[#3f6f5b]">之旅</span>
+                </Trans>
               </span>
               <span className="font-grotesk text-[8px] font-semibold uppercase tracking-[0.14em] text-[#9b988f]">
                 8/12 – 8/20 · Vancouver → Portland
@@ -271,82 +292,90 @@ function DeviceScene() {
 
             <div className="grid grid-cols-3 gap-2 mt-2.5 max-[560px]:grid-cols-2">
               <MiniTicket
-                chip={<MiniChip text="交通" color="#5b7a99" bg="#eef2f6" border="#cdd8e2" />}
+                chip={<MiniChip text={t`交通`} color="#5b7a99" bg="#eef2f6" border="#cdd8e2" />}
                 time="08:30"
                 title="AC 103 · YYZ → YVR"
-                sub="T1 值机 · 18A/18B"
+                sub={t`T1 值机 · 18A/18B`}
               >
                 {/* Status chip the human cursor flips: 计划中 → 已锁定 */}
                 <span className="relative inline-block mt-1 h-[14px] w-[44px]">
                   <span className="lp-chip-a absolute inset-0">
-                    <MiniChip text="计划中" color="#5b7a99" bg="#eef2f6" border="#cdd8e2" />
+                    <MiniChip text={t`计划中`} color="#5b7a99" bg="#eef2f6" border="#cdd8e2" />
                   </span>
                   <span className="lp-chip-b absolute inset-0">
-                    <MiniChip text="已锁定" color="#3f6f5b" bg="#eef4f0" border="#cfe0d6" />
+                    <MiniChip text={t`已锁定`} color="#3f6f5b" bg="#eef4f0" border="#cfe0d6" />
                   </span>
                 </span>
               </MiniTicket>
 
               <MiniTicket
-                chip={<MiniChip text="酒店" color="#7a5c84" bg="#f5eef6" border="#ddccdf" />}
+                chip={<MiniChip text={t`酒店`} color="#7a5c84" bg="#f5eef6" border="#ddccdf" />}
                 time="15:00"
                 title="Waterfront Hotel"
-                sub="入住 · 确认码 7N4PQ"
+                sub={t`入住 · 确认码 7N4PQ`}
               />
 
               {/* Ledger card, spans both rows */}
               <div className="row-span-2 p-2 bg-white border border-[#ebe9e3] rounded-[8px] max-[560px]:col-span-2 max-[560px]:row-span-1">
                 <div className="font-grotesk text-[8px] font-bold uppercase tracking-[0.14em] text-[#9b988f]">
-                  账本 · Ledger
+                  <Trans>账本 · Ledger</Trans>
                 </div>
                 <div className="mt-1.5 space-y-1 font-cjk text-[9px] text-[#3b3833]">
                   <div className="flex justify-between gap-2">
-                    <span>晚餐 · Gastown</span>
+                    <span>
+                      <Trans>晚餐 · Gastown</Trans>
+                    </span>
                     <span className="font-mono">$92.00</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span>租车 · 三日</span>
+                    <span>
+                      <Trans>租车 · 三日</Trans>
+                    </span>
                     <span className="font-mono">$148.00</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span>门票 · 吊桥公园</span>
+                    <span>
+                      <Trans>门票 · 吊桥公园</Trans>
+                    </span>
                     <span className="font-mono">$126.00</span>
                   </div>
                 </div>
                 <div className="flex justify-between gap-2 mt-1.5 pt-1.5 border-t border-[#ebe9e3] font-sans font-bold text-[9.5px]">
-                  <span>合计</span>
+                  <span>
+                    <Trans>合计</Trans>
+                  </span>
                   <span className="font-mono">$366.00</span>
                 </div>
                 <div className="lp-ledger-chip mt-1.5 py-1 px-1.5 rounded-[6px] bg-[#eef4f0] border border-[#cfe0d6] font-cjk text-[8.5px] font-medium text-[#3f6f5b]">
-                  结算：同行者 → 你 $183.00
+                  <Trans>结算：同行者 → 你 $183.00</Trans>
                 </div>
               </div>
 
               <MiniTicket
-                chip={<MiniChip text="活动" color="#c2553f" bg="#f8efec" border="#ecccc2" />}
+                chip={<MiniChip text={t`活动`} color="#c2553f" bg="#f8efec" border="#ecccc2" />}
                 time="09:00"
-                title="Stanley Park · 骑行"
-                sub="Seawall · 租车点集合"
+                title={t`Stanley Park · 骑行`}
+                sub={t`Seawall · 租车点集合`}
               />
 
               {/* The booking the agent types in */}
               <MiniTicket
                 className="lp-card-agent"
-                chip={<MiniChip text="预订" color="#3f6f5b" bg="#eef4f0" border="#cfe0d6" />}
+                chip={<MiniChip text={t`预订`} color="#3f6f5b" bg="#eef4f0" border="#cfe0d6" />}
                 time="14:20"
                 title="Amtrak 517 · SEA → PDX"
-                sub="南下 · 确认码 R4K8M"
+                sub={t`南下 · 确认码 R4K8M`}
               >
                 <span className="inline-flex items-center gap-1 mt-1 font-grotesk text-[7.5px] font-bold uppercase tracking-[0.1em] text-[#7a5c84]">
                   <Bot size={9} strokeWidth={2.4} />
-                  由 Agent 添加
+                  <Trans>由 Agent 添加</Trans>
                 </span>
               </MiniTicket>
             </div>
 
             <div className="flex items-center gap-1.5 mt-2.5 font-grotesk text-[8px] font-semibold uppercase tracking-[0.1em] text-[#9b988f]">
               <span className="w-[5px] h-[5px] rounded-full bg-[#3f6f5b]" />
-              实时同步 · 2 人在线 · rev 129
+              <Trans>实时同步 · 2 人在线 · rev 129</Trans>
             </div>
           </div>
         </div>
@@ -357,17 +386,19 @@ function DeviceScene() {
       <div className="lp-phone absolute right-8 -bottom-4 z-20 hidden sm:block w-[168px] p-2.5 max-md:right-0">
         <div className="flex items-center justify-between">
           <span className="font-sans font-extrabold text-[10.5px] tracking-tight">
-            西海岸<span className="text-[#3f6f5b]">之旅</span>
+            <Trans>
+              西海岸<span className="text-[#3f6f5b]">之旅</span>
+            </Trans>
           </span>
           <span className="font-grotesk text-[7.5px] font-bold uppercase tracking-[0.1em] text-[#9b988f]">
-            时间线
+            <Trans>时间线</Trans>
           </span>
         </div>
         <div className="mt-2 space-y-1.5">
           {[
-            ["09:00", "Stanley Park 骑行", "#c2553f"],
-            ["12:30", "Granville Island 午餐", "#b08648"],
-            ["14:20", "Amtrak 517 南下", "#3f6f5b"],
+            ["09:00", t`Stanley Park 骑行`, "#c2553f"],
+            ["12:30", t`Granville Island 午餐`, "#b08648"],
+            ["14:20", t`Amtrak 517 南下`, "#3f6f5b"],
           ].map(([time, label, color]) => (
             <div
               key={label}
@@ -385,7 +416,7 @@ function DeviceScene() {
           ))}
         </div>
         <div className="lp-toast mt-2 py-1.5 px-2 rounded-[7px] bg-[#1c1b19] font-cjk text-[8.5px] font-medium text-[#fafaf8]">
-          ● 已同步 · rev 129
+          <Trans>● 已同步 · rev 129</Trans>
         </div>
       </div>
 
@@ -394,17 +425,17 @@ function DeviceScene() {
         <CursorMark label="Agent" color="#7a5c84" />
       </div>
       <div className="lp-cursor lp-cursor-user">
-        <CursorMark label="你" color="#3f6f5b" />
+        <CursorMark label={t`你`} color="#3f6f5b" />
       </div>
       <Bubble
         className="lp-bubble-1 left-[38%] top-[74%] max-[560px]:left-[10%]"
         typeClass="lp-type-1"
-        chars="把这个预订信息加进去"
+        chars={t`把这个预订信息加进去`}
       />
       <Bubble
         className="lp-bubble-2 left-[58%] top-[16%] max-[640px]:left-[30%]"
         typeClass="lp-type-2"
-        chars="计算一下费用"
+        chars={t`计算一下费用`}
       />
     </div>
   );
@@ -412,128 +443,136 @@ function DeviceScene() {
 
 /* ------------------------------------------------------------------------ */
 
-const DEMO_ROWS: { say: string; result: string }[] = [
-  { say: "把这个预订信息加进去", result: "新增预订 · Amtrak 517 · 8/16 14:20 南下" },
-  { say: "计算一下费用", result: "账本已结清 · 3 笔支出 · 同行者应付你 $183.00" },
-  { say: "周六下午排太满了，帮我匀开一点", result: "移动 2 个日程 · 已实时同步给所有成员" },
+const DEMO_ROWS: { say: MessageDescriptor; result: MessageDescriptor }[] = [
+  { say: msg`把这个预订信息加进去`, result: msg`新增预订 · Amtrak 517 · 8/16 14:20 南下` },
+  { say: msg`计算一下费用`, result: msg`账本已结清 · 3 笔支出 · 同行者应付你 $183.00` },
+  { say: msg`周六下午排太满了，帮我匀开一点`, result: msg`移动 2 个日程 · 已实时同步给所有成员` },
 ];
 
 function AgentDemo() {
+  const { t } = useLingui();
   return (
     <section className="border-t border-[#ebe9e3] bg-white">
       <div className={`${container} py-[clamp(48px,8vw,88px)]`}>
         <SectionHead
           eyebrow="Talk to your trip"
-          title="对着行程，直接说"
-          sub="Agent 改的不是聊天记录，是行程本身：每条指令落成一次带审计的写入，所有人立刻看到。"
+          title={t`对着行程，直接说`}
+          sub={t`Agent 改的不是聊天记录，是行程本身：每条指令落成一次带审计的写入，所有人立刻看到。`}
         />
         <div className="mt-9 space-y-3 max-w-[720px] mx-auto">
-          {DEMO_ROWS.map((row) => (
-            <div key={row.say} className="flex flex-wrap items-center gap-3">
-              <span className="py-2.5 px-4 bg-[#fafaf8] border border-[#ebe9e3] rounded-[12px] rounded-bl-[4px] font-cjk text-[13.5px] font-medium">
-                「{row.say}」
-              </span>
-              <ArrowRight
-                size={15}
-                strokeWidth={2.2}
-                className="text-[#9b988f] max-[560px]:hidden"
-              />
-              <span className="inline-flex items-center gap-2 py-2.5 px-4 bg-[#eef4f0] border border-[#cfe0d6] rounded-[12px] font-cjk text-[13px] text-[#3f6f5b]">
-                <Zap size={13} strokeWidth={2.4} />
-                {row.result}
-              </span>
-            </div>
-          ))}
+          {DEMO_ROWS.map((row) => {
+            const say = t(row.say);
+            return (
+              <div key={row.say.id} className="flex flex-wrap items-center gap-3">
+                <span className="py-2.5 px-4 bg-[#fafaf8] border border-[#ebe9e3] rounded-[12px] rounded-bl-[4px] font-cjk text-[13.5px] font-medium">
+                  <Trans>「{say}」</Trans>
+                </span>
+                <ArrowRight
+                  size={15}
+                  strokeWidth={2.2}
+                  className="text-[#9b988f] max-[560px]:hidden"
+                />
+                <span className="inline-flex items-center gap-2 py-2.5 px-4 bg-[#eef4f0] border border-[#cfe0d6] rounded-[12px] font-cjk text-[13px] text-[#3f6f5b]">
+                  <Zap size={13} strokeWidth={2.4} />
+                  {t(row.result)}
+                </span>
+              </div>
+            );
+          })}
         </div>
         <p className="mt-8 text-center font-cjk text-[12.5px] text-[#9b988f]">
-          每一步写入都进审计日志，改错了随时快照回滚。
+          <Trans>每一步写入都进审计日志，改错了随时快照回滚。</Trans>
         </p>
       </div>
     </section>
   );
 }
 
-const FEATURES: { icon: ReactNode; title: string; body: string }[] = [
+const FEATURES: { icon: ReactNode; title: MessageDescriptor; body: MessageDescriptor }[] = [
   {
     icon: <Route size={17} strokeWidth={2.2} />,
-    title: "实时时间线",
-    body: "WebSocket 推送 + 乐观更新，改一处所有人立刻看到；按天折叠，过去的日程自动归档。",
+    title: msg`实时时间线`,
+    body: msg`WebSocket 推送 + 乐观更新，改一处所有人立刻看到；按天折叠，过去的日程自动归档。`,
   },
   {
     icon: <Ticket size={17} strokeWidth={2.2} />,
-    title: "预订一页收齐",
-    body: "机票、酒店、确认码、停车方案，全放进同一张纸，出发当天不用再翻邮箱。",
+    title: msg`预订一页收齐`,
+    body: msg`机票、酒店、确认码、停车方案，全放进同一张纸，出发当天不用再翻邮箱。`,
   },
   {
     icon: <DollarSign size={17} strokeWidth={2.2} />,
-    title: "分账账本",
-    body: "AA 或自定义比例，自动算清谁欠谁，行程结束一键导出 PDF 对账单。",
+    title: msg`分账账本`,
+    body: msg`AA 或自定义比例，自动算清谁欠谁，行程结束一键导出 PDF 对账单。`,
   },
   {
     icon: <UserPlus size={17} strokeWidth={2.2} />,
-    title: "邮件邀请协作",
-    body: "一封邀请邮件，GitHub 登录即加入；成员进出由创建者掌握，随时移除。",
+    title: msg`邮件邀请协作`,
+    body: msg`一封邀请邮件，GitHub 登录即加入；成员进出由创建者掌握，随时移除。`,
   },
   {
     icon: <Bot size={17} strokeWidth={2.2} />,
-    title: "Agent API",
-    body: "为每个行程签发限时 Bearer 令牌，配套 SKILL.md 说明书，Claude 们开箱即用。",
+    title: msg`Agent API`,
+    body: msg`为每个行程签发限时 Bearer 令牌，配套 SKILL.md 说明书，Claude 们开箱即用。`,
   },
   {
     icon: <Archive size={17} strokeWidth={2.2} />,
-    title: "备份与审计",
-    body: "每次改动留痕、可追责到人（或 Agent）；一键快照，误操作随时回滚。",
+    title: msg`备份与审计`,
+    body: msg`每次改动留痕、可追责到人（或 Agent）；一键快照，误操作随时回滚。`,
   },
 ];
 
 function Features() {
+  const { t } = useLingui();
   return (
     <section id="features" className="border-t border-[#ebe9e3]">
       <div className={`${container} py-[clamp(48px,8vw,88px)]`}>
         <SectionHead
           eyebrow="Everything in one sheet"
-          title="一份行程该有的，都在"
-          sub="给爱做攻略的人一张认真的纸：不是备忘录，也不用拉一个共享表格。"
+          title={t`一份行程该有的，都在`}
+          sub={t`给爱做攻略的人一张认真的纸：不是备忘录，也不用拉一个共享表格。`}
         />
         <div className="grid grid-cols-3 gap-3.5 mt-9 max-[820px]:grid-cols-2 max-[560px]:grid-cols-1">
           {FEATURES.map((f) => (
-            <div key={f.title} className="p-5 bg-white border border-[#ebe9e3] rounded-[14px]">
+            <div key={f.title.id} className="p-5 bg-white border border-[#ebe9e3] rounded-[14px]">
               <span className="grid place-items-center w-9 h-9 rounded-[10px] bg-[#eef4f0] text-[#3f6f5b]">
                 {f.icon}
               </span>
-              <div className="mt-3.5 font-sans font-bold text-[15px]">{f.title}</div>
-              <p className="mt-1.5 font-cjk text-[12.5px] leading-[1.8] text-[#76726a]">{f.body}</p>
+              <div className="mt-3.5 font-sans font-bold text-[15px]">{t(f.title)}</div>
+              <p className="mt-1.5 font-cjk text-[12.5px] leading-[1.8] text-[#76726a]">
+                {t(f.body)}
+              </p>
             </div>
           ))}
         </div>
         <div className="flex items-center justify-center gap-2 mt-8 font-cjk text-[12.5px] text-[#9b988f]">
           <Globe size={13} strokeWidth={2.2} />
-          行程可设为公开：任何人可以围观时间线，还能给你提建议。
+          <Trans>行程可设为公开：任何人可以围观时间线，还能给你提建议。</Trans>
         </div>
       </div>
     </section>
   );
 }
 
-const STEPS: { n: string; title: string; body: string }[] = [
+const STEPS: { n: string; title: MessageDescriptor; body: MessageDescriptor }[] = [
   {
     n: "01",
-    title: "登录，建一个行程",
-    body: "GitHub 一键登录，起个名字、定好日期，行程纸就铺开了。",
+    title: msg`登录，建一个行程`,
+    body: msg`GitHub 一键登录，起个名字、定好日期，行程纸就铺开了。`,
   },
   {
     n: "02",
-    title: "把同行人请进来",
-    body: "填个邮箱发出邀请，对方点开链接登录即加入，无需注册流程。",
+    title: msg`把同行人请进来`,
+    body: msg`填个邮箱发出邀请，对方点开链接登录即加入，无需注册流程。`,
   },
   {
     n: "03",
-    title: "给 Agent 发张门票",
-    body: "后台一键签发令牌，把 SKILL.md 丢给你的 Agent，开始使唤它。",
+    title: msg`给 Agent 发张门票`,
+    body: msg`后台一键签发令牌，把 SKILL.md 丢给你的 Agent，开始使唤它。`,
   },
 ];
 
 function DevBand() {
+  const { t } = useLingui();
   return (
     <section id="agent" className="bg-[#1c1b19] text-[#fafaf8]">
       <div className={`${container} py-[clamp(48px,8vw,88px)]`}>
@@ -544,22 +583,26 @@ function DevBand() {
               Work with Agent
             </span>
             <h2 className="mt-3.5 font-sans font-extrabold tracking-[-0.02em] leading-[1.15] text-[clamp(26px,4vw,38px)]">
-              给 Agent 一张
-              <br />
-              进入行程的门票
+              <Trans>
+                给 Agent 一张
+                <br />
+                进入行程的门票
+              </Trans>
             </h2>
             <p className="mt-4 max-w-[40ch] font-cjk text-[14px] leading-[1.9] text-[#b5b1a8]">
-              令牌只对单个行程有效、限时、可随时吊销；配套的 SKILL.md 把行程 API 讲给 Agent
-              听。Claude Code、或任何会发 HTTP 的东西，都能替你打理行程。
+              <Trans>
+                令牌只对单个行程有效、限时、可随时吊销；配套的 SKILL.md 把行程 API 讲给 Agent
+                听。Claude Code、或任何会发 HTTP 的东西，都能替你打理行程。
+              </Trans>
             </p>
             <div className="mt-7 space-y-4">
               {STEPS.map((s) => (
                 <div key={s.n} className="flex gap-4">
                   <span className="font-mono text-[13px] font-bold text-[#8fb8a4]">{s.n}</span>
                   <div>
-                    <div className="font-sans font-bold text-[14.5px]">{s.title}</div>
+                    <div className="font-sans font-bold text-[14.5px]">{t(s.title)}</div>
                     <div className="mt-0.5 font-cjk text-[12.5px] leading-[1.7] text-[#b5b1a8]">
-                      {s.body}
+                      {t(s.body)}
                     </div>
                   </div>
                 </div>
@@ -578,9 +621,9 @@ function DevBand() {
               <code>
                 {"$ claude\n"}
                 <span className="text-[#76726a]">{"> "}</span>
-                {"帮我把今晚的酒店确认加进行程\n\n"}
+                {t`帮我把今晚的酒店确认加进行程` + "\n\n"}
                 <span className="text-[#8fb8a4]">{"✓"}</span>
-                {" 读取 SKILL.md · 行程 API 已就绪\n"}
+                {" " + t`读取 SKILL.md · 行程 API 已就绪` + "\n"}
                 <span className="text-[#8fb8a4]">{"✓"}</span>
                 {" POST /api/trips/"}
                 <span className="text-[#b08648]">{"kx83jq2h4m"}</span>
@@ -589,9 +632,9 @@ function DevBand() {
                 <span className="text-[#b08648]">{"••••••"}</span>
                 {"\n"}
                 <span className="text-[#8fb8a4]">{"✓"}</span>
-                {" rev 129 → 130 · 已同步给 2 位成员\n"}
+                {" " + t`rev 129 → 130 · 已同步给 2 位成员` + "\n"}
                 <span className="text-[#8fb8a4]">{"✓"}</span>
-                {" 审计日志：agent · addStop\n"}
+                {" " + t`审计日志：agent · addStop` + "\n"}
               </code>
             </pre>
           </div>
@@ -602,17 +645,22 @@ function DevBand() {
 }
 
 function ClosingCta() {
+  const { t } = useLingui();
   return (
     <section className="border-t border-[#ebe9e3]">
       <div className={`${container} py-[clamp(56px,9vw,96px)] text-center`}>
         <h2 className="mx-auto max-w-[18ch] font-sans font-extrabold tracking-[-0.03em] leading-[1.15] text-[clamp(28px,5vw,44px)]">
-          下一趟旅行，
-          <br className="sm:hidden" />
-          带上你的 <span className="text-[#3f6f5b]">Agent</span>
+          <Trans>
+            下一趟旅行，
+            <br className="sm:hidden" />
+            带上你的 <span className="text-[#3f6f5b]">Agent</span>
+          </Trans>
         </h2>
-        <p className="mt-4 font-cjk text-[14px] text-[#76726a]">免费使用，登录即开工。</p>
+        <p className="mt-4 font-cjk text-[14px] text-[#76726a]">
+          <Trans>免费使用，登录即开工。</Trans>
+        </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          {githubBtn("用 GitHub 登录")}
+          {githubBtn(t`用 GitHub 登录`)}
         </div>
       </div>
     </section>
@@ -644,7 +692,9 @@ function Footer() {
           <span className="w-[8px] h-[8px] rounded-full bg-[#3f6f5b]" />
           {BRAND}
         </span>
-        <span className="font-cjk text-[12px] text-[#9b988f]">人和 Agent 共写的行程工作台</span>
+        <span className="font-cjk text-[12px] text-[#9b988f]">
+          <Trans>人和 Agent 共写的行程工作台</Trans>
+        </span>
         <span className="ml-auto inline-flex items-center gap-2 leading-none text-[#9b988f]">
           <span className="font-sans text-[12px]" aria-hidden="true">
             ©

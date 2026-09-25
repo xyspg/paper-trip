@@ -1,4 +1,7 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { AdminMember } from "../admin/adminData";
 import { useAudit, useBackups, useTrip, useTripLiveSync, useTripOp } from "../trip/hooks";
 import { tripCurrency } from "../trip/currency";
@@ -12,6 +15,7 @@ import { AdminProvider } from "../admin/AdminContext";
 import { useAdminToasts } from "../admin/useAdminToasts";
 import { PapertripLogo } from "../components/PapertripLogo";
 import { useTripAccess } from "../components/TripLayout";
+import { LocaleMenu } from "../components/LocaleMenu";
 
 type SectionKey =
   | "itinerary"
@@ -25,7 +29,7 @@ type SectionKey =
   | "settings";
 type NavEntry = {
   key: SectionKey;
-  label: string;
+  label: MessageDescriptor;
   icon: IconName;
   badge?: boolean;
   // Shown only to the trip's owner (settings).
@@ -34,16 +38,36 @@ type NavEntry = {
 
 // Each section lives at its own route (`…/admin/itinerary` …) so a refresh or
 // shared link lands on the right tab without a `?tab=` search param.
+// Nav labels carry their own context: they name sections in a narrow sidebar,
+// so their English can stay shorter than the matching section headings.
 const NAV: NavEntry[] = [
-  { key: "itinerary", label: "行程停靠点", icon: "route" },
-  { key: "flights", label: "航班信息", icon: "plane" },
-  { key: "suggestions", label: "待审建议", icon: "chat", badge: true },
-  { key: "split", label: "分账金额", icon: "wallet" },
-  { key: "members", label: "成员", icon: "users" },
-  { key: "backups", label: "备份恢复", icon: "repo" },
-  { key: "audit", label: "操作记录", icon: "repo" },
-  { key: "agent", label: "Agent 协作", icon: "sparkle" },
-  { key: "settings", label: "行程设置", icon: "gear", ownerOnly: true },
+  {
+    key: "itinerary",
+    label: msg({ message: "行程停靠点", context: "admin-section" }),
+    icon: "route",
+  },
+  { key: "flights", label: msg({ message: "航班信息", context: "admin-section" }), icon: "plane" },
+  {
+    key: "suggestions",
+    label: msg({ message: "待审建议", context: "admin-section" }),
+    icon: "chat",
+    badge: true,
+  },
+  { key: "split", label: msg({ message: "分账金额", context: "admin-section" }), icon: "wallet" },
+  { key: "members", label: msg({ message: "成员", context: "admin-section" }), icon: "users" },
+  { key: "backups", label: msg({ message: "备份恢复", context: "admin-section" }), icon: "repo" },
+  { key: "audit", label: msg({ message: "操作记录", context: "admin-section" }), icon: "repo" },
+  {
+    key: "agent",
+    label: msg({ message: "Agent 协作", context: "admin-section" }),
+    icon: "sparkle",
+  },
+  {
+    key: "settings",
+    label: msg({ message: "行程设置", context: "admin-section" }),
+    icon: "gear",
+    ownerOnly: true,
+  },
 ];
 
 const ADMIN_SHELL = "min-h-screen text-ink font-sans leading-normal bg-paper";
@@ -55,6 +79,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
   // section the router is actually showing.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { toasts, toast } = useAdminToasts();
+  const { t } = useLingui();
 
   // Suggestions are the live trip's comments, submitted from the public timeline.
   useTripLiveSync(tripId);
@@ -117,17 +142,17 @@ export function AdminPage({ tripId }: { tripId: string }) {
               No Access
             </div>
             <h1 className="mt-2 font-sans font-bold text-[22px] tracking-tight">
-              你不是该行程的成员
+              <Trans>你不是该行程的成员</Trans>
             </h1>
             <p className="mt-3 font-cjk text-[13.5px] text-[#76726a] leading-relaxed">
-              向行程创建者索取邀请链接后即可进入后台。
+              <Trans>向行程创建者索取邀请链接后即可进入后台。</Trans>
             </p>
             <Link
               to="/t/$tripId/timeline"
               params={{ tripId }}
               className="mt-5 inline-flex items-center justify-center py-2.5 px-5 rounded-[10px] border border-[#ebe9e3] bg-white text-[#1c1b19] no-underline font-sans font-semibold text-[13px] hover:border-[#1c1b19]"
             >
-              返回行程页
+              <Trans>返回行程页</Trans>
             </Link>
           </div>
         </div>
@@ -135,12 +160,13 @@ export function AdminPage({ tripId }: { tripId: string }) {
     );
   }
 
+  const tripTitle = meta.title;
   const display = user.name?.trim() || user.login;
   const me: AdminMember = {
     id: "me",
     name: display,
     handle: user.login,
-    role: meta.role === "owner" ? "管理员" : "成员",
+    role: meta.role === "owner" ? t`管理员` : t`成员`,
     color: "var(--color-magenta)",
     traveler: true,
     initials: display.slice(0, 2).toUpperCase(),
@@ -151,7 +177,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
     // authClient.useSession is a shared store; signOut flips every subscriber
     // (this shell, the public nav) without any cache to clear by hand.
     await adminLogout();
-    toast("已退出登录", "warn");
+    toast(t`已退出登录`, "warn");
   };
 
   return (
@@ -176,13 +202,13 @@ export function AdminPage({ tripId }: { tripId: string }) {
             to="/t/$tripId/timeline"
             params={{ tripId }}
             className="flex items-center gap-3 min-w-0 text-inherit no-underline"
-            title="返回行程页"
-            aria-label="返回行程页"
+            title={t`返回行程页`}
+            aria-label={t`返回行程页`}
           >
             <PapertripLogo className="w-9 h-9 rounded-[9px]" />
             <span className="min-w-0">
               <span className="block font-sans font-bold text-[14.5px] tracking-tight truncate">
-                {meta.title} · 后台
+                <Trans>{tripTitle} · 后台</Trans>
               </span>
               <span className="block font-grotesk text-[10px] tracking-[0.12em] uppercase text-[#9b988f] mt-0.5 max-[380px]:hidden">
                 Trip Admin
@@ -203,9 +229,11 @@ export function AdminPage({ tripId }: { tripId: string }) {
             </div>
             <Avatar m={me} size="sm" />
           </div>
+          <LocaleMenu triggerClassName="shrink-0 w-[34px] h-[34px] grid place-items-center rounded-full border border-[#ebe9e3] bg-transparent text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19] data-[popup-open]:border-[#1c1b19] data-[popup-open]:text-[#1c1b19]" />
           <button
             className="shrink-0 w-[34px] h-[34px] grid place-items-center rounded-full border border-[#ebe9e3] bg-transparent text-[#76726a] cursor-pointer transition-colors hover:bg-[#c2553f] hover:text-white hover:border-[#c2553f] [&_svg]:w-4 [&_svg]:h-4"
-            title="退出登录"
+            title={t`退出登录`}
+            aria-label={t`退出登录`}
             onClick={logout}
           >
             <Icons.logout sw={2.2} />
@@ -215,7 +243,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
         <div className="flex items-start">
           <aside className="shrink-0 w-[228px] sticky top-[57px] self-start h-[calc(100vh_-_57px)] px-4 py-5 border-r border-[#ebe9e3] flex flex-col gap-1 max-[760px]:hidden">
             <div className="font-grotesk text-[10px] tracking-[0.16em] uppercase text-[#9b988f] px-2.5 pb-1">
-              管理区
+              <Trans>管理区</Trans>
             </div>
             {nav.map((n) => {
               const active = pathname.includes(`/admin/${n.key}`);
@@ -233,7 +261,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
                   >
                     <Ico sw={2.2} />
                   </span>
-                  {n.label}
+                  {t(n.label)}
                   {counts[n.key] !== null && (
                     <span
                       className={`ml-auto font-mono text-[11px] min-w-[22px] h-[22px] px-1.5 grid place-items-center rounded-full ${badge ? "bg-[#c2553f] text-white" : active ? "bg-white/[0.12] text-[#fafaf8]" : "bg-[#fafaf8] text-[#76726a] border border-[#ebe9e3]"}`}
@@ -266,7 +294,7 @@ export function AdminPage({ tripId }: { tripId: string }) {
                       </span>
                     )}
                   </span>
-                  {n.label}
+                  {t(n.label)}
                 </Link>
               );
             })}
@@ -278,18 +306,18 @@ export function AdminPage({ tripId }: { tripId: string }) {
         </div>
 
         <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-[80] flex flex-col gap-2 items-center pointer-events-none max-[760px]:bottom-20">
-          {toasts.map((t) => (
+          {toasts.map((item) => (
             <div
-              key={t.id}
+              key={item.id}
               style={{ boxShadow: "0 18px 40px -18px rgba(20,20,30,0.7)" }}
               className="flex items-center gap-2.5 bg-[#1c1b19] text-[#fafaf8] rounded-full px-5 py-2.5 font-cjk font-semibold text-[13px] animate-toast-in"
             >
               <span
-                className={`w-5 h-5 rounded-full grid place-items-center shrink-0 text-white font-bold text-[11px] [&_svg]:w-3 [&_svg]:h-3 ${t.kind === "warn" ? "bg-[#b08648]" : "bg-[#3f6f5b]"}`}
+                className={`w-5 h-5 rounded-full grid place-items-center shrink-0 text-white font-bold text-[11px] [&_svg]:w-3 [&_svg]:h-3 ${item.kind === "warn" ? "bg-[#b08648]" : "bg-[#3f6f5b]"}`}
               >
-                {t.kind === "warn" ? "!" : <Icons.check sw={3} />}
+                {item.kind === "warn" ? "!" : <Icons.check sw={3} />}
               </span>
-              {t.msg}
+              {item.msg}
             </div>
           ))}
         </div>

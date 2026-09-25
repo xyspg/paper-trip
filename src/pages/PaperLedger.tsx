@@ -7,6 +7,7 @@ import {
   LoaderCircle,
   Wallet,
 } from "lucide-react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useRef, useState } from "react";
 import { Avatar } from "../admin/Avatar";
 import { ExpenseItems } from "../admin/ExpenseItems";
@@ -34,7 +35,8 @@ import type { Trip } from "../trip/types";
 // in each expense's own recorded currency; totals and balances are stated in
 // the trip's base currency (converted at each row's captured rate).
 
-async function exportPdf(trip: Trip, context: StatementContext) {
+// Resolves false on failure so the caller can show a translated alert.
+async function exportPdf(trip: Trip, context: StatementContext): Promise<boolean> {
   try {
     // Let the loading state paint before PDF generation blocks the main thread,
     // including repeat exports whose module and fonts are already cached.
@@ -46,9 +48,10 @@ async function exportPdf(trip: Trip, context: StatementContext) {
     const { exportLedgerPdf } = await import("../trip/exportLedgerPdf");
     const statement = await exportLedgerPdf(trip, tripTravelers(trip), context);
     await statement.deliver();
+    return true;
   } catch (err) {
     console.error("导出 PDF 失败", err);
-    alert("导出 PDF 失败，请重试");
+    return false;
   }
 }
 
@@ -91,6 +94,7 @@ export function PaperLedger({
   // Registry metadata + the exporting user feed the statement's multi-tenant
   // header (visibility, role, prepared-by). Both are optional: the statement
   // renders placeholders while they load or for anonymous viewers.
+  const { t } = useLingui();
   const { data: meta, isPending: metaPending } = useTripMeta(trip.id);
   const { data: adminUser, isLoading: userLoading } = useAdminUser();
   const preparedBy = adminUser
@@ -110,7 +114,7 @@ export function PaperLedger({
     exportInFlight.current = true;
     setExportingPdf(true);
     try {
-      await exportPdf(trip, { meta, rev, preparedBy });
+      if (!(await exportPdf(trip, { meta, rev, preparedBy }))) alert(t`导出 PDF 失败，请重试`);
     } finally {
       exportInFlight.current = false;
       setExportingPdf(false);
@@ -134,6 +138,9 @@ export function PaperLedger({
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const travelerById = Object.fromEntries(travelers.map((m) => [m.id, m]));
+  const creditText = fmtMoney(creditTotal, baseCurrency);
+  const expenseCount = ledger.length;
+  const paymentCount = payments.length;
 
   return (
     <div className="font-sans text-[#1c1b19]">
@@ -141,13 +148,15 @@ export function PaperLedger({
       <header className="pb-[28px] border-b border-[#ebe9e3]">
         <span className="inline-flex gap-[9px] items-center font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b08648]">
           <span className="w-[7px] h-[7px] rounded-full bg-[#b08648]" />
-          账目明细 · Trip Expenses
+          <Trans>账目明细 · Trip Expenses</Trans>
         </span>
         <h1 className="mt-3.5 font-sans font-extrabold tracking-[-0.03em] leading-[0.98] text-[clamp(34px,7vw,54px)]">
-          行程<span className="text-[#b08648]">花销</span>
+          <Trans>
+            行程<span className="text-[#b08648]">花销</span>
+          </Trans>
         </h1>
         <p className="mt-3.5 max-w-[46ch] font-cjk text-[14px] leading-[1.75] text-[#76726a]">
-          集中记录共同花销、抵扣与垫付；每一笔都能按实际情况分配到同行人。
+          <Trans>集中记录共同花销、抵扣与垫付；每一笔都能按实际情况分配到同行人。</Trans>
         </p>
       </header>
 
@@ -155,27 +164,27 @@ export function PaperLedger({
       <section className="grid grid-cols-2 mt-[22px] overflow-hidden border border-[#ebe9e3] rounded-[16px] max-[480px]:grid-cols-1">
         <div className="p-[20px_22px] border-r border-[#ebe9e3] max-[480px]:border-r-0 max-[480px]:border-b">
           <div className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.12em] text-[#76726a]">
-            实付合计 Total ({baseCurrency})
+            <Trans>实付合计 Total ({baseCurrency})</Trans>
           </div>
           <div className="mt-3 font-sans font-extrabold text-[clamp(26px,6vw,36px)] leading-none tracking-[-0.02em]">
             {fmtMoney(grand, baseCurrency)}
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
-            已抵扣 Credit{" "}
-            <span className="font-sans font-bold text-[#3f6f5b]">
-              −{fmtMoney(creditTotal, baseCurrency)}
-            </span>
+            <Trans>
+              已抵扣 Credit{" "}
+              <span className="font-sans font-bold text-[#3f6f5b]">−{creditText}</span>
+            </Trans>
           </div>
         </div>
         <div className="p-[20px_22px] bg-[#eef4f0]">
           <div className="flex items-center gap-[7px] font-grotesk font-semibold text-[10px] uppercase tracking-[0.12em] text-[#76726a]">
-            待结算 Outstanding
+            <Trans>待结算 Outstanding</Trans>
           </div>
           <div className="mt-3 font-sans font-extrabold text-[clamp(26px,6vw,36px)] leading-none tracking-[-0.02em] text-[#3f6f5b]">
             {fmtMoney(outstanding, baseCurrency)}
           </div>
           <div className="mt-2.5 font-cjk text-[12px] text-[#76726a]">
-            {travelerCount > 0 ? `${travelerCount} 位同行人按明细分别承担` : "邀请同行人后计算"}
+            {travelerCount > 0 ? t`${travelerCount} 位同行人按明细分别承担` : t`邀请同行人后计算`}
           </div>
         </div>
       </section>
@@ -183,14 +192,14 @@ export function PaperLedger({
       {/* PER-PERSON BALANCES */}
       <section
         className="grid grid-cols-2 gap-3 mt-4 max-[560px]:grid-cols-1"
-        aria-label="同行人各自结算金额"
+        aria-label={t`同行人各自结算金额`}
       >
         {travelers.map((m) => {
           const balance = balanceById[m.id];
           const net = balance?.balance ?? 0;
           const owe = net < -0.005;
           const settled = Math.abs(net) < 0.005;
-          const label = settled ? "已结清" : owe ? "需补付" : "应收回";
+          const label = settled ? t`已结清` : owe ? t`需补付` : t`应收回`;
           const tone = settled ? "#76726a" : owe ? "#c2553f" : "#3f6f5b";
           return (
             <div key={m.id} className="p-4 bg-white border border-[#ebe9e3] rounded-[14px]">
@@ -213,20 +222,20 @@ export function PaperLedger({
               </div>
               <div className="grid grid-cols-2 gap-2 mt-3 max-[480px]:grid-cols-1">
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
-                  已垫付
+                  <Trans>已垫付</Trans>
                   <b className="font-sans font-bold text-[#1c1b19]">
                     {fmtMoney(balance?.paid ?? 0, baseCurrency)}
                   </b>
                 </span>
                 <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
-                  应承担
+                  <Trans>应承担</Trans>
                   <b className="font-sans font-bold text-[#1c1b19]">
                     {fmtMoney(balance?.share ?? 0, baseCurrency)}
                   </b>
                 </span>
                 {(balance?.repaid ?? 0) > 0.005 && (
                   <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#eef4f0] border border-[#cfe0d6] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
-                    已还款
+                    <Trans>已还款</Trans>
                     <b className="font-sans font-bold text-[#3f6f5b]">
                       {fmtMoney(balance?.repaid ?? 0, baseCurrency)}
                     </b>
@@ -234,7 +243,7 @@ export function PaperLedger({
                 )}
                 {(balance?.received ?? 0) > 0.005 && (
                   <span className="flex items-center justify-between gap-2 py-1.5 px-2.5 bg-[#eef4f0] border border-[#cfe0d6] rounded-[10px] font-cjk text-[12px] text-[#76726a]">
-                    已收款
+                    <Trans>已收款</Trans>
                     <b className="font-sans font-bold text-[#3f6f5b]">
                       {fmtMoney(balance?.received ?? 0, baseCurrency)}
                     </b>
@@ -250,7 +259,7 @@ export function PaperLedger({
       <section className="mt-4 overflow-hidden bg-white border border-[#ebe9e3] rounded-[16px]">
         <div className="flex items-center justify-between gap-3 py-[13px] px-[18px] bg-[#fdfdfb] border-b border-[#ebe9e3]">
           <span className="font-grotesk font-bold text-[12px] uppercase tracking-[0.14em]">
-            花销明细 · Ledger
+            <Trans>花销明细 · Ledger</Trans>
           </span>
           <div className="flex shrink-0 items-center gap-2">
             <button
@@ -263,18 +272,18 @@ export function PaperLedger({
                   })
                   .catch((err) => {
                     console.error("复制 PDF 链接失败", err);
-                    alert("复制链接失败，请重试");
+                    alert(t`复制链接失败，请重试`);
                   });
               }}
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-transparent py-2 px-2.5 font-grotesk text-[11px] font-semibold uppercase tracking-[0.04em] text-[#76726a] cursor-pointer transition-colors hover:border-[#ebe9e3] hover:bg-white hover:text-[#1c1b19]"
-              aria-label="复制 PDF 自动导出链接"
+              aria-label={t`复制 PDF 自动导出链接`}
             >
               {linkCopied ? (
                 <Check size={13} strokeWidth={2.2} />
               ) : (
                 <Link2 size={13} strokeWidth={2.2} />
               )}
-              {linkCopied ? "已复制" : "复制链接"}
+              {linkCopied ? t`已复制` : t`复制链接`}
             </button>
             <button
               type="button"
@@ -288,7 +297,7 @@ export function PaperLedger({
               ) : (
                 <ExternalLink size={13} strokeWidth={2.2} />
               )}
-              <span aria-live="polite">{exportingPdf ? "正在导出…" : "导出 PDF"}</span>
+              <span aria-live="polite">{exportingPdf ? t`正在导出…` : t`导出 PDF`}</span>
             </button>
           </div>
         </div>
@@ -303,6 +312,11 @@ export function PaperLedger({
             const responsible = travelers.filter((m) => (owedBy[m.id] ?? 0) > 0.005);
             const rowCurrency = expenseCurrency(item, baseCurrency);
             const foreign = rowCurrency !== baseCurrency;
+            const netText = fmtMoney(net, rowCurrency);
+            const allocatedText = fmtMoney(
+              travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0),
+              rowCurrency,
+            );
             return (
               <div
                 key={item.id}
@@ -358,7 +372,7 @@ export function PaperLedger({
                 {payers.length > 0 && (
                   <div className="flex flex-wrap gap-x-2.5 gap-y-2 items-center mt-2.5 max-[480px]:pl-[51px]">
                     <span className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] text-[#76726a]">
-                      {isSplit ? "分摊垫付 Split" : "垫付 Paid by"}
+                      {isSplit ? t`分摊垫付 Split` : t`垫付 Paid by`}
                     </span>
                     <span className="flex flex-wrap gap-1.5">
                       {payers.map((m) => {
@@ -392,7 +406,7 @@ export function PaperLedger({
                 {responsible.length > 0 && (
                   <div className="flex flex-wrap gap-x-2.5 gap-y-2 items-center mt-2.5 max-[480px]:pl-[51px]">
                     <span className="font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] text-[#76726a]">
-                      承担 Owed by
+                      <Trans>承担 Owed by</Trans>
                     </span>
                     <span className="flex flex-wrap gap-1.5">
                       {responsible.map((m) => (
@@ -416,19 +430,18 @@ export function PaperLedger({
 
                 <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    实付{" "}
-                    <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(net, rowCurrency)}
-                    </b>
+                    <Trans>
+                      实付{" "}
+                      <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">{netText}</b>
+                    </Trans>
                   </span>
                   <span className="font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                    已分配{" "}
-                    <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
-                      {fmtMoney(
-                        travelerIds.reduce((sum, id) => sum + (owedBy[id] ?? 0), 0),
-                        rowCurrency,
-                      )}
-                    </b>
+                    <Trans>
+                      已分配{" "}
+                      <b className="font-sans font-bold text-[#1c1b19] text-[13.5px]">
+                        {allocatedText}
+                      </b>
+                    </Trans>
                   </span>
                 </div>
               </div>
@@ -439,21 +452,29 @@ export function PaperLedger({
         {/* TOTALS */}
         <div className="bg-[#eef4f0] border-t border-[#ebe9e3]">
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px]">
-            <span>小计 Subtotal ({baseCurrency})</span>
+            <span>
+              <Trans>小计 Subtotal ({baseCurrency})</Trans>
+            </span>
             <span className="font-sans font-bold">{fmtMoney(subtotal, baseCurrency)}</span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
-            <span>抵扣 Credit</span>
+            <span>
+              <Trans>抵扣 Credit</Trans>
+            </span>
             <span className="font-sans font-bold">−{fmtMoney(creditTotal, baseCurrency)}</span>
           </div>
           <div className="flex items-center justify-between py-[15px] px-[18px] bg-[#1c1b19] text-[#fafaf8] font-sans font-extrabold tracking-[0.01em] text-[clamp(15px,3vw,17px)]">
-            <span>实付合计 Net Total</span>
+            <span>
+              <Trans>实付合计 Net Total</Trans>
+            </span>
             <span className="font-sans text-white text-[clamp(18px,4vw,22px)]">
               {fmtMoney(grand, baseCurrency)}
             </span>
           </div>
           <div className="flex items-center justify-between py-[11px] px-[18px] bg-white border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[14px]">
-            <span>承担合计 Allocated</span>
+            <span>
+              <Trans>承担合计 Allocated</Trans>
+            </span>
             <span className="font-sans font-bold text-[#3f6f5b] text-[16px]">
               {fmtMoney(grand, baseCurrency)}
             </span>
@@ -466,10 +487,10 @@ export function PaperLedger({
         <section className="mt-4 overflow-hidden bg-white border border-[#ebe9e3] rounded-[16px]">
           <div className="flex items-center justify-between gap-3 py-[13px] px-[18px] bg-[#fdfdfb] border-b border-[#ebe9e3]">
             <span className="font-grotesk font-bold text-[12px] uppercase tracking-[0.14em]">
-              还款记录 · Payments
+              <Trans>还款记录 · Payments</Trans>
             </span>
             <span className="font-grotesk text-[10px] uppercase tracking-[0.04em] text-[#9b988f]">
-              成员间转账，只影响待结算
+              <Trans>成员间转账，只影响待结算</Trans>
             </span>
           </div>
           {payments.map((p) => {
@@ -538,8 +559,15 @@ export function PaperLedger({
 
       <p className="flex gap-3.5 items-center mt-[26px] pt-[22px] border-t border-[#ebe9e3] font-grotesk text-[11px] uppercase tracking-[0.12em] text-[#9b988f]">
         <span className="flex-1 h-px bg-[#cfccc2]" />
-        {ledger.length} 笔花销{payments.length > 0 ? ` · ${payments.length} 笔还款` : ""} ·{" "}
-        {travelerCount} 位同行人
+        {paymentCount > 0 ? (
+          <Trans>
+            {expenseCount} 笔花销 · {paymentCount} 笔还款 · {travelerCount} 位同行人
+          </Trans>
+        ) : (
+          <Trans>
+            {expenseCount} 笔花销 · {travelerCount} 位同行人
+          </Trans>
+        )}
         <span className="flex-1 h-px bg-[#cfccc2]" />
       </p>
 

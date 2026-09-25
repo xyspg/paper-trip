@@ -1,15 +1,18 @@
 import { Link, useParams } from "@tanstack/react-router";
+import { useLingui } from "@lingui/react/macro";
 import { UserRound } from "lucide-react";
 import { tripTabs } from "../routes";
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
+import { LocaleMenu } from "./LocaleMenu";
 
 export function PageNav() {
   // Rendered above every non-admin page; the trip tabs only make sense when a
   // trip is in the URL (dashboard/invite pages just get the session button).
   const { tripId } = useParams({ strict: false });
+  const { t } = useLingui();
 
   return (
-    <nav className="flex flex-wrap items-center gap-2 mb-[26px]" aria-label="页面导航">
+    <nav className="flex flex-wrap items-center gap-2 mb-[26px]" aria-label={t`页面导航`}>
       {tripId &&
         tripTabs.map((tab) => (
           <Link
@@ -23,9 +26,10 @@ export function PageNav() {
               className: "text-[#3b3833] bg-white border-[#ebe9e3] hover:border-[#1c1b19]",
             }}
           >
-            {tab.label}
+            {t(tab.label)}
           </Link>
         ))}
+      <LocaleMenu className="ml-auto" />
       <SessionButton tripId={tripId} />
     </nav>
   );
@@ -37,16 +41,17 @@ export function PageNav() {
 // a wrong-state flash.
 function SessionButton({ tripId }: { tripId?: string }) {
   const { data: user, isLoading } = useAdminUser();
+  const { t } = useLingui();
   if (isLoading) return null;
 
   const base =
-    "grid place-items-center w-9 h-9 ml-auto p-0 overflow-hidden rounded-full border bg-white cursor-pointer transition-colors";
+    "grid place-items-center w-9 h-9 p-0 overflow-hidden rounded-full border bg-white cursor-pointer transition-colors";
   return user ? (
     <button
       type="button"
       className={`${base} border-[#ebe9e3] hover:border-[#1c1b19]`}
-      title={`${user.login} · 打开管理后台`}
-      aria-label="打开管理后台"
+      title={`${user.login} · ${t`打开管理后台`}`}
+      aria-label={t`打开管理后台`}
       onClick={() => window.open(tripId ? `/t/${tripId}/admin` : "/", "_blank")}
     >
       <img className="h-full w-full object-cover" src={user.avatarUrl} alt="" draggable={false} />
@@ -55,8 +60,8 @@ function SessionButton({ tripId }: { tripId?: string }) {
     <button
       type="button"
       className={`${base} border-[#ebe9e3] text-[#76726a] hover:border-[#1c1b19] hover:text-[#1c1b19]`}
-      title="使用 GitHub 登录"
-      aria-label="使用 GitHub 登录"
+      title={t`使用 GitHub 登录`}
+      aria-label={t`使用 GitHub 登录`}
       onClick={() => signInWithGitHub(window.location.pathname)}
     >
       <UserRound size={17} strokeWidth={2.2} />

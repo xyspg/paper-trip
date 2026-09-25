@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { CATS, CAT_KEYS } from "./adminData";
 import type { StopCat } from "./adminData";
 import { Icons } from "./AdminIcons";
@@ -60,7 +61,7 @@ export function RefreshButton({ onClick, busy }: { onClick: () => void; busy?: b
   return (
     <button className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={onClick} disabled={busy}>
       <Icons.swap sw={2.2} />
-      {busy ? "刷新中" : "刷新"}
+      {busy ? <Trans>刷新中</Trans> : <Trans>刷新</Trans>}
     </button>
   );
 }
@@ -79,6 +80,7 @@ export function ModalHeader({
   onClose: () => void;
   tone?: "ink" | "alert";
 }) {
+  const { t } = useLingui();
   const chip = tone === "alert" ? "bg-[#f7e9e4] text-[#c2553f]" : "bg-[#1c1b19] text-[#fafaf8]";
   return (
     <div className="flex items-center gap-3 px-[18px] py-4 border-b border-[#ebe9e3]">
@@ -91,7 +93,8 @@ export function ModalHeader({
       <button
         type="button"
         className="ml-auto shrink-0 w-8 h-8 grid place-items-center rounded-full border border-[#ebe9e3] bg-white text-[#76726a] cursor-pointer [&_svg]:size-[15px] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors"
-        title="关闭"
+        title={t`关闭`}
+        aria-label={t`关闭`}
         onClick={onClose}
       >
         <Icons.x sw={2.6} />

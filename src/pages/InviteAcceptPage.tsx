@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { acceptInvite, fetchInvitePreview } from "../trip/api";
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
 
@@ -19,6 +20,7 @@ export function InviteAcceptPage({ token }: { token: string }) {
   const navigate = useNavigate();
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
+  const { t } = useLingui();
 
   const join = async () => {
     setJoining(true);
@@ -30,10 +32,10 @@ export function InviteAcceptPage({ token }: { token: string }) {
       const code = err instanceof Error ? err.message : "";
       setError(
         code === "used"
-          ? "这个邀请已被其他人使用。"
+          ? t`这个邀请已被其他人使用。`
           : code === "expired"
-            ? "这个邀请已过期，请向创建者要一个新链接。"
-            : "加入失败，请重试。",
+            ? t`这个邀请已过期，请向创建者要一个新链接。`
+            : t`加入失败，请重试。`,
       );
       setJoining(false);
     }
@@ -50,15 +52,18 @@ export function InviteAcceptPage({ token }: { token: string }) {
   const status = preview?.status ?? "invalid";
   const dead =
     status === "invalid"
-      ? { title: "邀请无效", body: "链接可能有误，或邀请已被撤销。" }
+      ? { title: t`邀请无效`, body: t`链接可能有误，或邀请已被撤销。` }
       : status === "expired"
-        ? { title: "邀请已过期", body: "邀请链接 7 天内有效，请向创建者要一个新链接。" }
+        ? { title: t`邀请已过期`, body: t`邀请链接 7 天内有效，请向创建者要一个新链接。` }
         : status === "used"
           ? {
-              title: "邀请已被使用",
-              body: "每个邀请链接只能加入一个人。如果这是你本人，直接打开行程即可。",
+              title: t`邀请已被使用`,
+              body: t`每个邀请链接只能加入一个人。如果这是你本人，直接打开行程即可。`,
             }
           : null;
+  const tripTitle = preview?.tripTitle;
+  const inviterName = preview?.inviterName;
+  const login = user?.login;
 
   return (
     <div className="grid place-items-center py-20">
@@ -77,10 +82,10 @@ export function InviteAcceptPage({ token }: { token: string }) {
         ) : (
           <>
             <h1 className="mt-2 font-sans font-bold text-[22px] tracking-tight">
-              加入「{preview?.tripTitle}」
+              <Trans>加入「{tripTitle}」</Trans>
             </h1>
             <p className="mt-3 font-cjk text-[13.5px] text-[#76726a] leading-relaxed">
-              {preview?.inviterName} 邀请你一起规划这次行程：共享时间线、预订信息和分账账目。
+              <Trans>{inviterName} 邀请你一起规划这次行程：共享时间线、预订信息和分账账目。</Trans>
             </p>
             {user ? (
               <>
@@ -90,7 +95,7 @@ export function InviteAcceptPage({ token }: { token: string }) {
                   onClick={() => void join()}
                   disabled={joining}
                 >
-                  {joining ? "加入中…" : `以 @${user.login} 的身份加入`}
+                  {joining ? t`加入中…` : t`以 @${login} 的身份加入`}
                 </button>
                 {error && (
                   <p className="mt-3 font-cjk font-semibold text-[12.5px] text-[#c2553f]">
@@ -104,7 +109,7 @@ export function InviteAcceptPage({ token }: { token: string }) {
                 className="mt-6 w-full inline-flex items-center justify-center py-3 rounded-[10px] bg-[#1c1b19] text-[#fafaf8] font-sans font-semibold text-[13.5px] cursor-pointer hover:bg-black"
                 onClick={() => signInWithGitHub(window.location.pathname)}
               >
-                用 GitHub 登录后加入
+                <Trans>用 GitHub 登录后加入</Trans>
               </button>
             )}
           </>

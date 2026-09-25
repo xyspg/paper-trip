@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { ReactNode } from "react";
 import type { TripItem } from "../trip/types";
 
@@ -19,10 +20,10 @@ export const itemPlans = (item: TripItem): StopPlan[] => {
   if (item.parking) {
     const plans: StopPlan[] = hasRichParking(item)
       ? []
-      : [{ kind: "main", label: "主方案", text: item.parking.primary }];
-    if (item.parking.backup) plans.push({ kind: "alt", label: "备用", text: item.parking.backup });
+      : [{ kind: "main", label: t`主方案`, text: item.parking.primary }];
+    if (item.parking.backup) plans.push({ kind: "alt", label: t`备用`, text: item.parking.backup });
     if (item.parking.warning && !hasRichParking(item)) {
-      plans.push({ kind: "alt", label: "提醒", text: item.parking.warning });
+      plans.push({ kind: "alt", label: t`提醒`, text: item.parking.warning });
     }
     return plans;
   }
@@ -31,7 +32,7 @@ export const itemPlans = (item: TripItem): StopPlan[] => {
   // windows from the public page while the admin console still showed them.
   return item.notes.map((text, index) => ({
     kind: index === 0 ? "main" : "alt",
-    label: index === 0 ? "提示" : "备注",
+    label: index === 0 ? t`提示` : t`备注`,
     text,
   }));
 };

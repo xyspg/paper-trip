@@ -6,12 +6,17 @@
 // converts (see expenses.ts), so a rate is captured once and never silently
 // rewrites what was actually paid.
 
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+
 export const DEFAULT_CURRENCY = "USD";
 
 export type CurrencyInfo = {
   code: string;
   symbol: string;
-  label: string;
+  // Localized display name: render with t(label) / i18n._(label). A code
+  // outside the curated list is its own name.
+  label: MessageDescriptor;
   // Display decimals; zero-decimal currencies (JPY/KRW/…) never show cents.
   decimals: number;
 };
@@ -19,21 +24,21 @@ export type CurrencyInfo = {
 // Curated picker list for a travel ledger. Any other ISO 4217 code still
 // round-trips (currencyInfo falls back to the code itself as the symbol).
 export const CURRENCIES: CurrencyInfo[] = [
-  { code: "USD", symbol: "$", label: "美元", decimals: 2 },
-  { code: "CNY", symbol: "¥", label: "人民币", decimals: 2 },
-  { code: "JPY", symbol: "JP¥", label: "日元", decimals: 0 },
-  { code: "EUR", symbol: "€", label: "欧元", decimals: 2 },
-  { code: "GBP", symbol: "£", label: "英镑", decimals: 2 },
-  { code: "HKD", symbol: "HK$", label: "港币", decimals: 2 },
-  { code: "TWD", symbol: "NT$", label: "新台币", decimals: 0 },
-  { code: "KRW", symbol: "₩", label: "韩元", decimals: 0 },
-  { code: "SGD", symbol: "S$", label: "新加坡元", decimals: 2 },
-  { code: "THB", symbol: "฿", label: "泰铢", decimals: 2 },
-  { code: "VND", symbol: "₫", label: "越南盾", decimals: 0 },
-  { code: "MYR", symbol: "RM", label: "林吉特", decimals: 2 },
-  { code: "AUD", symbol: "A$", label: "澳元", decimals: 2 },
-  { code: "CAD", symbol: "C$", label: "加元", decimals: 2 },
-  { code: "CHF", symbol: "CHF ", label: "瑞士法郎", decimals: 2 },
+  { code: "USD", symbol: "$", label: msg`美元`, decimals: 2 },
+  { code: "CNY", symbol: "¥", label: msg`人民币`, decimals: 2 },
+  { code: "JPY", symbol: "JP¥", label: msg`日元`, decimals: 0 },
+  { code: "EUR", symbol: "€", label: msg`欧元`, decimals: 2 },
+  { code: "GBP", symbol: "£", label: msg`英镑`, decimals: 2 },
+  { code: "HKD", symbol: "HK$", label: msg`港币`, decimals: 2 },
+  { code: "TWD", symbol: "NT$", label: msg`新台币`, decimals: 0 },
+  { code: "KRW", symbol: "₩", label: msg`韩元`, decimals: 0 },
+  { code: "SGD", symbol: "S$", label: msg`新加坡元`, decimals: 2 },
+  { code: "THB", symbol: "฿", label: msg`泰铢`, decimals: 2 },
+  { code: "VND", symbol: "₫", label: msg`越南盾`, decimals: 0 },
+  { code: "MYR", symbol: "RM", label: msg`林吉特`, decimals: 2 },
+  { code: "AUD", symbol: "A$", label: msg`澳元`, decimals: 2 },
+  { code: "CAD", symbol: "C$", label: msg`加元`, decimals: 2 },
+  { code: "CHF", symbol: "CHF ", label: msg`瑞士法郎`, decimals: 2 },
 ];
 
 const byCode = new Map(CURRENCIES.map((c) => [c.code, c]));
@@ -57,7 +62,12 @@ export function normalizeCurrency(v: unknown): string | null {
 }
 
 export const currencyInfo = (code: string): CurrencyInfo =>
-  byCode.get(code) ?? { code, symbol: `${code} `, label: code, decimals: 2 };
+  byCode.get(code) ?? {
+    code,
+    symbol: `${code} `,
+    label: { id: code, message: code },
+    decimals: 2,
+  };
 
 export const currencySymbol = (code: string): string => currencyInfo(code).symbol;
 

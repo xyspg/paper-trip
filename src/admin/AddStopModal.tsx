@@ -1,4 +1,7 @@
 import { useState } from "react";
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { AdminModal } from "./AdminModal";
 import type { StopCat } from "./adminData";
 import { Icons } from "./AdminIcons";
@@ -35,10 +38,10 @@ type Props = {
   onCreate: (input: NewStopInput) => void;
 };
 
-const STATUS: Record<ItemStatus, { label: string }> = {
-  planned: { label: "计划中" },
-  locked: { label: "已锁定" },
-  done: { label: "已完成" },
+const STATUS: Record<ItemStatus, { label: MessageDescriptor }> = {
+  planned: { label: msg`计划中` },
+  locked: { label: msg`已锁定` },
+  done: { label: msg`已完成` },
 };
 
 const STATUS_KEYS = Object.keys(STATUS) as ItemStatus[];
@@ -60,6 +63,7 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
   const [title, setTitle] = useState("");
   const [cat, setCat] = useState<StopCat>("event");
   const [status, setStatus] = useState<ItemStatus>("planned");
+  const { t } = useLingui();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,11 +73,13 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
 
   return (
     <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
-      <ModalHeader icon={<Icons.plus sw={2.6} />} title="新增停靠点" onClose={onClose} />
+      <ModalHeader icon={<Icons.plus sw={2.6} />} title={t`新增停靠点`} onClose={onClose} />
 
       <div className="grid grid-cols-2 gap-x-[14px] gap-y-[15px] p-[18px] max-[440px]:grid-cols-1">
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className={FIELD_LABEL}>放在哪一天</span>
+          <span className={FIELD_LABEL}>
+            <Trans>放在哪一天</Trans>
+          </span>
           <select
             className={`${FIELD_INPUT} cursor-pointer appearance-none [-webkit-appearance:none]`}
             value={day}
@@ -88,7 +94,9 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className={FIELD_LABEL}>时间</span>
+          <span className={FIELD_LABEL}>
+            <Trans>时间</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             type="time"
@@ -98,7 +106,9 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>标题</span>
+          <span className={FIELD_LABEL}>
+            <Trans>标题</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={title}
@@ -106,18 +116,22 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="新停靠点"
+            placeholder={t`新停靠点`}
             onChange={(e) => setTitle(e.target.value)}
           />
         </label>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>类别</span>
+          <span className={FIELD_LABEL}>
+            <Trans>类别</Trans>
+          </span>
           <CategoryChips value={cat} onChange={setCat} />
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>状态</span>
+          <span className={FIELD_LABEL}>
+            <Trans>状态</Trans>
+          </span>
           <div className="flex flex-wrap gap-[7px]">
             {STATUS_KEYS.map((k) => {
               const on = status === k;
@@ -131,7 +145,7 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
                   }
                   onClick={() => setStatus(k)}
                 >
-                  {STATUS[k].label}
+                  {t(STATUS[k].label)}
                 </button>
               );
             })}
@@ -141,12 +155,12 @@ function Form({ days, initialDay, onClose, onCreate }: Omit<Props, "isOpen">) {
 
       <ModalFooter>
         <button type="button" className={`${BTN} ${BTN_GHOST}`} onClick={onClose}>
-          取消
+          <Trans>取消</Trans>
         </button>
         <span className="ml-auto" />
         <button type="submit" className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`}>
           <Icons.plus sw={2.6} />
-          创建停靠点
+          <Trans>创建停靠点</Trans>
         </button>
       </ModalFooter>
     </form>

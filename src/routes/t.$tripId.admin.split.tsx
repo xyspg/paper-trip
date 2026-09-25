@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useLingui } from "@lingui/react/macro";
 import { SplitSection } from "../admin/SplitSection";
 import { useAdmin } from "../admin/AdminContext";
 
@@ -8,6 +9,7 @@ export const Route = createFileRoute("/t/$tripId/admin/split")({
 
 function SplitRoute() {
   const { expenses, payments, tripOp, toast } = useAdmin();
+  const { t } = useLingui();
   return (
     <SplitSection
       expenses={expenses}
@@ -22,8 +24,8 @@ function SplitRoute() {
         tripOp.mutate(
           { type: "updateExpense", expense },
           {
-            onSuccess: () => toast("已更新条目"),
-            onError: () => toast("更新失败，请重试", "warn"),
+            onSuccess: () => toast(t`已更新条目`),
+            onError: () => toast(t`更新失败，请重试`, "warn"),
           },
         )
       }
@@ -31,8 +33,8 @@ function SplitRoute() {
         tripOp.mutate(
           { type: "addExpense", expense },
           {
-            onSuccess: () => toast("已添加花销条目"),
-            onError: () => toast("添加失败，请重试", "warn"),
+            onSuccess: () => toast(t`已添加花销条目`),
+            onError: () => toast(t`添加失败，请重试`, "warn"),
           },
         )
       }
@@ -40,8 +42,8 @@ function SplitRoute() {
         tripOp.mutate(
           { type: "deleteExpense", expenseId: id },
           {
-            onSuccess: () => toast("已删除条目"),
-            onError: () => toast("删除失败，请重试", "warn"),
+            onSuccess: () => toast(t`已删除条目`),
+            onError: () => toast(t`删除失败，请重试`, "warn"),
           },
         )
       }
@@ -49,8 +51,8 @@ function SplitRoute() {
         tripOp.mutate(
           { type: "addPayment", payment },
           {
-            onSuccess: () => toast("已记录还款"),
-            onError: () => toast("记录失败，请重试", "warn"),
+            onSuccess: () => toast(t`已记录还款`),
+            onError: () => toast(t`记录失败，请重试`, "warn"),
           },
         )
       }
@@ -58,8 +60,8 @@ function SplitRoute() {
         tripOp.mutate(
           { type: "deletePayment", paymentId: id },
           {
-            onSuccess: () => toast("已删除还款记录"),
-            onError: () => toast("删除失败，请重试", "warn"),
+            onSuccess: () => toast(t`已删除还款记录`),
+            onError: () => toast(t`删除失败，请重试`, "warn"),
           },
         )
       }
@@ -67,8 +69,8 @@ function SplitRoute() {
         tripOp.mutate(
           { type: "resetExpenses" },
           {
-            onSuccess: () => toast("已恢复原始账目"),
-            onError: () => toast("恢复失败，请重试", "warn"),
+            onSuccess: () => toast(t`已恢复原始账目`),
+            onError: () => toast(t`恢复失败，请重试`, "warn"),
           },
         )
       }

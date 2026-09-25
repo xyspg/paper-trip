@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Icons } from "./AdminIcons";
 import {
   BTN,
@@ -29,6 +30,7 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
   const deleteTrip = useDeleteTrip(tripId);
   const { confirm, confirmModal } = useConfirm();
   const navigate = useNavigate();
+  const { t } = useLingui();
 
   const [title, setTitle] = useState(meta.title);
   const [startDate, setStartDate] = useState(meta.startDate ?? "");
@@ -45,7 +47,7 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
 
   const save = async () => {
     if (!title.trim()) {
-      toast("行程名称不能为空", "warn");
+      toast(t`行程名称不能为空`, "warn");
       return;
     }
     // A base-currency change restates the whole ledger (each entry keeps its
@@ -53,14 +55,16 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
     // rate), so it deserves a deliberate second tap before anything is written.
     if (currency !== (meta.currency || DEFAULT_CURRENCY)) {
       const ok = await confirm({
-        title: "更改记账本位币？",
+        title: t`更改记账本位币？`,
         message: (
           <span>
-            合计、余额与结算将改按 <b>{currency}</b>{" "}
-            显示。已有账目保留原币种与金额不变，折算到新本位币的汇率会按当前汇率重新计算。
+            <Trans>
+              合计、余额与结算将改按 <b>{currency}</b>{" "}
+              显示。已有账目保留原币种与金额不变，折算到新本位币的汇率会按当前汇率重新计算。
+            </Trans>
           </span>
         ),
-        confirmLabel: "更改本位币",
+        confirmLabel: t`更改本位币`,
       });
       if (!ok) return;
     }
@@ -73,9 +77,9 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
         timezone: timezone.trim() || undefined,
         currency,
       });
-      toast("已保存行程设置");
+      toast(t`已保存行程设置`);
     } catch {
-      toast("保存失败，请重试", "warn");
+      toast(t`保存失败，请重试`, "warn");
     }
   };
 
@@ -83,19 +87,23 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
     if (visibility === meta.visibility) return;
     try {
       await patchTrip.mutateAsync({ visibility });
-      toast(visibility === "public" ? "行程已设为公开" : "行程已设为私密");
+      toast(visibility === "public" ? t`行程已设为公开` : t`行程已设为私密`);
     } catch {
-      toast("修改可见性失败，请重试", "warn");
+      toast(t`修改可见性失败，请重试`, "warn");
     }
   };
 
   const destroy = async () => {
     const ok = await confirm({
-      title: "删除这个行程？",
+      title: t`删除这个行程？`,
       message: (
-        <span>行程的全部内容（时间线、账目、建议、备份、操作记录）都会被永久删除，无法恢复。</span>
+        <span>
+          <Trans>
+            行程的全部内容（时间线、账目、建议、备份、操作记录）都会被永久删除，无法恢复。
+          </Trans>
+        </span>
       ),
-      confirmLabel: "永久删除",
+      confirmLabel: t`永久删除`,
       requirePhrase: meta.id,
     });
     if (!ok) return;
@@ -103,7 +111,7 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
       await deleteTrip.mutateAsync();
       void navigate({ to: "/" });
     } catch {
-      toast("删除失败，请重试", "warn");
+      toast(t`删除失败，请重试`, "warn");
     }
   };
 
@@ -111,13 +119,15 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
     <div>
       <SectionHead
         kicker="07 · Settings"
-        title="行程设置"
-        desc="名称 / 日期 / 时区 / 本位币 / 可见性 · 仅创建者可修改"
+        title={t`行程设置`}
+        desc={t`名称 / 日期 / 时区 / 本位币 / 可见性 · 仅创建者可修改`}
       />
 
       <div className="mt-7 max-w-[560px] flex flex-col gap-[15px]">
         <label className="flex flex-col gap-[7px]">
-          <span className={FIELD_LABEL}>行程名称</span>
+          <span className={FIELD_LABEL}>
+            <Trans>行程名称</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={title}
@@ -128,7 +138,9 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
 
         <div className="grid grid-cols-2 gap-[14px] max-[440px]:grid-cols-1">
           <label className="flex flex-col gap-[7px]">
-            <span className={FIELD_LABEL}>开始日期</span>
+            <span className={FIELD_LABEL}>
+              <Trans>开始日期</Trans>
+            </span>
             <input
               className={FIELD_INPUT}
               type="date"
@@ -137,7 +149,9 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
             />
           </label>
           <label className="flex flex-col gap-[7px]">
-            <span className={FIELD_LABEL}>结束日期</span>
+            <span className={FIELD_LABEL}>
+              <Trans>结束日期</Trans>
+            </span>
             <input
               className={FIELD_INPUT}
               type="date"
@@ -150,10 +164,12 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
         <TimezoneCombobox value={timezone} onValueChange={setTimezone} />
 
         <label className="flex flex-col gap-[7px]">
-          <span className={FIELD_LABEL}>记账本位币</span>
+          <span className={FIELD_LABEL}>
+            <Trans>记账本位币</Trans>
+          </span>
           <CurrencySelect value={currency} onChange={setCurrency} />
           <span className="font-cjk text-[12px] text-[#9b988f] leading-relaxed">
-            合计与结算按本位币显示；各笔花销可用其他币种记录，按录入时的汇率折算。
+            <Trans>合计与结算按本位币显示；各笔花销可用其他币种记录，按录入时的汇率折算。</Trans>
           </span>
         </label>
 
@@ -164,20 +180,24 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
             disabled={!dirty || patchTrip.isPending}
           >
             <Icons.check sw={2.6} />
-            保存修改
+            <Trans>保存修改</Trans>
           </button>
         </div>
 
         <div className="mt-4 p-4 bg-white border border-[#ebe9e3] rounded-[14px]">
-          <div className={FIELD_LABEL}>可见性</div>
+          <div className={FIELD_LABEL}>
+            <Trans>可见性</Trans>
+          </div>
           <p className="mt-2 font-cjk text-[12.5px] text-[#76726a] leading-relaxed">
-            公开行程任何拿到链接的人都能浏览时间线 / 账目，还能匿名提建议；私密行程仅成员可见。
+            <Trans>
+              公开行程任何拿到链接的人都能浏览时间线 / 账目，还能匿名提建议；私密行程仅成员可见。
+            </Trans>
           </p>
           <div className="inline-flex gap-[5px] mt-3">
             {(
               [
-                { key: "private", label: "私密 · 仅成员" },
-                { key: "public", label: "公开 · 链接可读" },
+                { key: "private", label: t`私密 · 仅成员` },
+                { key: "public", label: t`公开 · 链接可读` },
               ] as const
             ).map((v) => (
               <button
@@ -195,10 +215,12 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
 
         <div className="mt-4 p-4 bg-white border border-[#ecccc2] rounded-[14px]">
           <div className="font-grotesk font-semibold text-[10px] tracking-[0.12em] uppercase text-[#c2553f]">
-            危险区
+            <Trans>危险区</Trans>
           </div>
           <p className="mt-2 font-cjk text-[12.5px] text-[#76726a] leading-relaxed">
-            删除行程会同时清空它的 Durable Object 存储：时间线、账目、备份、审计日志一并消失。
+            <Trans>
+              删除行程会同时清空它的 Durable Object 存储：时间线、账目、备份、审计日志一并消失。
+            </Trans>
           </p>
           <button
             className={`${BTN} ${BTN_DANGER} mt-3 [&_svg]:size-3.5`}
@@ -206,7 +228,7 @@ export function SettingsSection({ toast }: { toast: ToastFn }) {
             disabled={deleteTrip.isPending}
           >
             <Icons.trash sw={2.2} />
-            删除行程
+            <Trans>删除行程</Trans>
           </button>
         </div>
       </div>

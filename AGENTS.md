@@ -33,6 +33,20 @@ Page implementations live in `src/pages/` (the paper theme renders through the `
 
 Use TypeScript and React function components with two-space indentation. Formatting is enforced by oxfmt, so match its generated output instead of applying a fixed quote or semicolon rule by hand. Components use `PascalCase` filenames and exports, for example `RootLayout.tsx`; hooks use `useX` naming. The React Compiler is enabled (`babel-plugin-react-compiler`), so avoid manual memoization unless profiling shows a need. Do not call `useEffect` directly: use `useMountEffect` (`src/useMountEffect.ts`) for one-time external setup, and prefer deriving state or handling work in event handlers over syncing via effects. Keep route files in `src/routes/` small and delegate UI to page/component modules. Do not hand-edit `src/routeTree.gen.ts`.
 
+## Internationalization
+
+UI strings go through Lingui. Chinese (`zh`) is the source locale, so the Chinese text itself is the message id, and English (`en`) is the translated catalog. Config is in `lingui.config.ts`. Browser boot and switching live in `src/i18n.ts`, which imports the catalogs and touches the DOM. Shared code reads the active locale from `src/locale.ts` (`currentLocale()`, `intlLocale()`), which imports neither, so the Worker type-check and `bun test` can load it. Catalogs are in `src/locales/{zh,en}/messages.po`. `@lingui/vite-plugin` compiles catalogs on import, so there is no separate compile step.
+
+- JSX text: `<Trans>` from `@lingui/react/macro`. Other strings inside components (attributes, toasts, confirm text): `const { t } = useLingui()` from `@lingui/react/macro`.
+- Plain functions that run at call time: `t` / `plural` from `@lingui/core/macro`.
+- Module-level constants: `msg` descriptors, rendered with `t(descriptor)` in components or `i18n._(descriptor)` elsewhere. Never call `t` at module top level: `main.tsx` activates the locale only after every module has loaded, so a top-level `t` throws at boot.
+- Intl formatting that should follow the UI language uses `intlLocale()` from `src/locale.ts` instead of a hardcoded `"zh-CN"`. Trip timezone rules still apply.
+- Default text that gets saved into trip data (for example an untitled stop) is written in the creator's UI language at creation time. Stored data is never translated afterwards.
+- Worker-side copy (invite email, crawler metadata in `src/trip/metadata.ts`) is not localized yet. The Worker never activates a Lingui locale, so Worker code and anything it imports at runtime must not call `t` (a `msg` descriptor is fine).
+- After adding or changing messages, run `bun run i18n:extract` and fill `msgstr` in `src/locales/en/messages.po`. An untranslated entry falls back to the Chinese source.
+- `switchLocale()` saves the choice to localStorage and reloads, so nothing needs to re-render in place.
+- `bun test` expands macros through `tests/linguiPreload.ts` (a `bunfig.toml` preload) and runs in `zh`.
+
 ## Testing Guidelines
 
 Before handing off changes, run `bun test`, `bun run lint`, and `bun run build`, plus `bun run typecheck:worker` when Worker code changes. For route changes, verify trip-scoped paths such as `/t/<tripId>/timeline`, `/bookings`, and `/ledger`; unscoped paths returning to `/`; invite acceptance (`/invite/<token>`); and API paths like `/api/health`.

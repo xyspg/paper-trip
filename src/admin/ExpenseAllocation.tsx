@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { ExpenseAllocation as ExpenseAllocationValue } from "../trip/types";
 import {
   evenExpenseAllocation,
@@ -38,6 +39,8 @@ function AllocationInput({
   onCommit: (value: number) => void;
   onTakeFullAmount: () => void;
 }) {
+  const { t } = useLingui();
+  const name = member.name;
   const [draft, setDraft] = useState(value ? String(value) : "");
   const factor = 10 ** decimals;
   const commit = () => {
@@ -57,8 +60,8 @@ function AllocationInput({
         <button
           type="button"
           className="inline-flex items-center h-[33px] px-2.5 rounded-[9px] border border-[#ebe9e3] bg-white font-grotesk font-semibold text-[11px] text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19]"
-          title={`由 ${member.name} 承担全部金额`}
-          aria-label={`由 ${member.name} 承担全部金额`}
+          title={t`由 ${name} 承担全部金额`}
+          aria-label={t`由 ${name} 承担全部金额`}
           onClick={onTakeFullAmount}
         >
           100%
@@ -75,7 +78,7 @@ function AllocationInput({
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            aria-label={`${member.name} 承担金额`}
+            aria-label={t`${name} 承担金额`}
             placeholder={decimals ? "0.00" : "0"}
             onChange={(event) => setDraft(event.target.value)}
             onBlur={commit}
@@ -92,6 +95,7 @@ function AllocationInput({
 // `undefined` is the durable AA default. A concrete map is a custom allocation
 // whose cents must reconcile to the expense's net amount before it can be saved.
 export function ExpenseAllocation({ amount, travelers, value, onChange, currency }: Props) {
+  const { t } = useLingui();
   const memberIds = travelers.map((member) => member.id);
   const symbol = currencySymbol(currency ?? DEFAULT_CURRENCY);
   const decimals = currencyDecimals(currency ?? DEFAULT_CURRENCY);
@@ -99,11 +103,12 @@ export function ExpenseAllocation({ amount, travelers, value, onChange, currency
   const total = expenseAllocationTotal(allocation, memberIds);
   const matches = expenseAllocationMatches(value, amount, memberIds);
   const difference = round2(amount - total);
+  const differenceLabel = fmtMoney(Math.abs(difference), currency);
 
   if (travelers.length === 0) {
     return (
       <div className="font-cjk text-[12px] leading-[1.6] text-[#9b988f]">
-        请先邀请同行人，再设置每个人的承担金额。
+        <Trans>请先邀请同行人，再设置每个人的承担金额。</Trans>
       </div>
     );
   }
@@ -112,7 +117,7 @@ export function ExpenseAllocation({ amount, travelers, value, onChange, currency
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between gap-2.5">
         <span className="font-cjk text-[11.5px] text-[#76726a]">
-          {value ? "自定义金额" : "默认 AA，可直接修改任意一人"}
+          {value ? t`自定义金额` : t`默认 AA，可直接修改任意一人`}
         </span>
         {value && (
           <button
@@ -121,7 +126,7 @@ export function ExpenseAllocation({ amount, travelers, value, onChange, currency
             onClick={() => onChange(undefined)}
           >
             <Icons.swap sw={2.2} />
-            恢复 AA
+            <Trans>恢复 AA</Trans>
           </button>
         )}
       </div>
@@ -148,10 +153,10 @@ export function ExpenseAllocation({ amount, travelers, value, onChange, currency
       >
         <span>
           {matches
-            ? "已完整分配"
+            ? t`已完整分配`
             : difference > 0
-              ? `还需分配 ${fmtMoney(difference, currency)}`
-              : `已超出 ${fmtMoney(Math.abs(difference), currency)}`}
+              ? t`还需分配 ${differenceLabel}`
+              : t`已超出 ${differenceLabel}`}
         </span>
         <span className="font-sans">
           {fmtMoney(total, currency)} / {fmtMoney(amount, currency)}

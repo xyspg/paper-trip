@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { intlLocale } from "../locale";
 import { fmtCurrency } from "../trip/currency";
 
 export type StopCat = "transit" | "food" | "event" | "stay" | "misc";
@@ -20,12 +22,40 @@ export type { Expense } from "../trip/types";
 // ---- Category palette (shared with itinerary page) ----
 // Editorial paper hues (slate / ochre / alert / plum / accent). Literal hex so
 // the itinerary can derive translucent tints via `color + '55'` / `+ '12'`.
-export const CATS: Record<StopCat, { label: string; color: string }> = {
-  transit: { label: "交通 · Transit", color: "#5b7a99" },
-  food: { label: "用餐 · Food", color: "#b08648" },
-  event: { label: "活动 · Event", color: "#c2553f" },
-  stay: { label: "酒店 · Stay", color: "#7a5c84" },
-  misc: { label: "杂项 · Misc", color: "#3f6f5b" },
+// Labels are display-only getters that translate on read: the locale is
+// activated after modules load, so a module-level string would freeze in the
+// source language, and a getter keeps `label: string` for every caller.
+export const CATS: Record<StopCat, { readonly label: string; color: string }> = {
+  transit: {
+    get label() {
+      return t`交通 · Transit`;
+    },
+    color: "#5b7a99",
+  },
+  food: {
+    get label() {
+      return t`用餐 · Food`;
+    },
+    color: "#b08648",
+  },
+  event: {
+    get label() {
+      return t`活动 · Event`;
+    },
+    color: "#c2553f",
+  },
+  stay: {
+    get label() {
+      return t`酒店 · Stay`;
+    },
+    color: "#7a5c84",
+  },
+  misc: {
+    get label() {
+      return t`杂项 · Misc`;
+    },
+    color: "#3f6f5b",
+  },
 };
 
 // Category keys in declaration order, derived once so the add/edit modals share
@@ -46,7 +76,7 @@ export const fmtMoney = (n: number, currency?: string): string => fmtCurrency(n,
 export const fmtTime = (iso: string): string => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("zh-CN", {
+  return d.toLocaleString(intlLocale(), {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",

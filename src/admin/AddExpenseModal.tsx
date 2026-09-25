@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { AdminModal } from "./AdminModal";
 import type { Expense, StopCat } from "./adminData";
 import type {
@@ -57,6 +58,7 @@ type Props = {
 // keying the parent; this inner component always starts from fresh defaults.
 function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
   const { travelers, currency: baseCurrency } = useAdmin();
+  const { t } = useLingui();
   const editing = Boolean(initial);
   const initialCurrency = initial ? expenseCurrency(initial, baseCurrency) : baseCurrency;
   const [name, setName] = useState(initial?.name ?? "");
@@ -119,13 +121,15 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
     <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
       <ModalHeader
         icon={editing ? <Icons.pencil sw={2.6} /> : <Icons.plus sw={2.6} />}
-        title={editing ? "编辑花销条目" : "新增花销条目"}
+        title={editing ? t`编辑花销条目` : t`新增花销条目`}
         onClose={onClose}
       />
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>名称</span>
+          <span className={FIELD_LABEL}>
+            <Trans>名称</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={name}
@@ -133,26 +137,30 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="例如 景点门票 · 三日通票"
+            placeholder={t`例如 景点门票 · 三日通票`}
             onChange={(e) => setName(e.target.value)}
           />
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>明细（可选）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>明细（可选）</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={sub}
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="例如 2 人 / 3 天"
+            placeholder={t`例如 2 人 / 3 天`}
             onChange={(e) => setSub(e.target.value)}
           />
         </label>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>金额</span>
+          <span className={FIELD_LABEL}>
+            <Trans>金额</Trans>
+          </span>
           <div className="grid grid-cols-[150px_1fr] gap-[7px] max-[440px]:grid-cols-1">
             <CurrencySelect value={currency} onChange={changeCurrency} />
             <input
@@ -166,7 +174,7 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
               data-1p-ignore
               data-lpignore="true"
               placeholder={decimals ? "0.00" : "0"}
-              aria-label="金额"
+              aria-label={t`金额`}
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
@@ -180,7 +188,9 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </div>
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>Credit 抵扣金额（{currency}）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>Credit 抵扣金额（{currency}）</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             type="number"
@@ -192,40 +202,46 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            aria-label="Credit 抵扣金额"
+            aria-label={t`Credit 抵扣金额`}
             aria-invalid={!creditValid}
             onChange={(e) => setCredit(e.target.value)}
           />
           {!creditValid && (
             <span role="alert" className="font-cjk text-[12px] text-[#c2553f]">
-              抵扣金额须在 0 与花销金额之间。
+              <Trans>抵扣金额须在 0 与花销金额之间。</Trans>
             </span>
           )}
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>Credit 描述（可选）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>Credit 描述（可选）</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={creditDescription}
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="填写账单上的原始描述"
+            placeholder={t`填写账单上的原始描述`}
             onChange={(e) => setCreditDescription(e.target.value)}
           />
           <span className="font-cjk text-[11.5px] text-[#76726a]">
-            在账目和 PDF 的 credit 条目中原样显示。
+            <Trans>在账目和 PDF 的 credit 条目中原样显示。</Trans>
           </span>
         </label>
 
         <div className="col-span-full flex items-center justify-between gap-3 font-cjk text-[12px] text-[#3f6f5b]">
-          <span>抵扣后实付</span>
+          <span>
+            <Trans>抵扣后实付</Trans>
+          </span>
           <span className="font-sans font-semibold">{fmtCurrency(netAmount, currency)}</span>
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>谁付的（垫付）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>谁付的（垫付）</Trans>
+          </span>
           <PaymentSplit
             value={split}
             onChange={setSplit}
@@ -236,7 +252,9 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>谁承担（每人金额）</span>
+          <span className={FIELD_LABEL}>
+            <Trans>谁承担（每人金额）</Trans>
+          </span>
           <ExpenseAllocation
             value={owedBy}
             onChange={setOwedBy}
@@ -247,14 +265,16 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
         </div>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>类别</span>
+          <span className={FIELD_LABEL}>
+            <Trans>类别</Trans>
+          </span>
           <CategoryChips value={cat} onChange={setCat} />
         </div>
       </div>
 
       <ModalFooter>
         <button type="button" className={`${BTN} ${BTN_GHOST}`} onClick={onClose}>
-          取消
+          <Trans>取消</Trans>
         </button>
         <span className="ml-auto" />
         <button
@@ -263,7 +283,7 @@ function Form({ onClose, onSubmit, initial }: Omit<Props, "isOpen">) {
           disabled={!canSubmit}
         >
           {editing ? <Icons.check sw={2.6} /> : <Icons.plus sw={2.6} />}
-          {editing ? "保存修改" : "添加条目"}
+          {editing ? <Trans>保存修改</Trans> : <Trans>添加条目</Trans>}
         </button>
       </ModalFooter>
     </form>

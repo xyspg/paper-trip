@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { allocateByWeight } from "../trip/expenses";
 
 // Client for the admin receipt scanner. Downscales the photo in-browser (camera
@@ -75,12 +76,13 @@ export async function parseReceipt(tripId: string, file: File): Promise<ParsedRe
     body: JSON.stringify({ image: data, mimeType }),
   });
   if (!res.ok) {
-    if (res.status === 403) throw new Error("请先登录管理后台");
-    if (res.status === 504) throw new Error("识别超时，请重试");
-    throw new Error(`识别失败 (${res.status})`);
+    const status = res.status;
+    if (status === 403) throw new Error(t`请先登录管理后台`);
+    if (status === 504) throw new Error(t`识别超时，请重试`);
+    throw new Error(t`识别失败 (${status})`);
   }
   const json = (await res.json()) as ParsedReceipt;
-  if (!json.items?.length) throw new Error("没有从收据中识别到商品，请换一张更清晰的照片");
+  if (!json.items?.length) throw new Error(t`没有从收据中识别到商品，请换一张更清晰的照片`);
   return json;
 }
 
