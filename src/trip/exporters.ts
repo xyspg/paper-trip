@@ -1,26 +1,28 @@
+import { t } from "@lingui/core/macro";
+import { intlLocale } from "../locale";
 import type { Trip, TripItem } from "./types";
 
-const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-});
-
-export const formatDate = (value: string) => dateFormatter.format(new Date(`${value}T12:00:00`));
+// Built per call so the weekday/month names follow the active UI language.
+export const formatDate = (value: string) =>
+  new Intl.DateTimeFormat(intlLocale(), {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${value}T12:00:00`));
 
 export const formatDuration = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
 
   if (hours === 0) {
-    return `${remainder} 分钟`;
+    return t`${remainder} 分钟`;
   }
 
   if (remainder === 0) {
-    return `${hours} 小时`;
+    return t`${hours} 小时`;
   }
 
-  return `${hours} 小时 ${remainder} 分钟`;
+  return t`${hours} 小时 ${remainder} 分钟`;
 };
 
 export const groupItemsByDate = (items: TripItem[]) => {
@@ -32,6 +34,24 @@ export const groupItemsByDate = (items: TripItem[]) => {
   }, {});
 };
 
+const parkingLines = (parking: NonNullable<TripItem["parking"]>) => {
+  const { primary, reservationId, address, validFrom, validTo, price, backup, warning } = parking;
+  const priceText = typeof price === "number" ? `$${price.toFixed(2)}` : "";
+  return [
+    `    - ${t`停车：${primary}`}`,
+    reservationId ? `    - ${t`预订号：${reservationId}`}` : "",
+    address ? `    - ${t`停车地址：${address}`}` : "",
+    validFrom && validTo ? `    - ${t`有效时间：${validFrom} - ${validTo}`}` : "",
+    priceText ? `    - ${t`价格：${priceText}`}` : "",
+    parking.inOutAllowed ? "    - In & Out Allowed" : "",
+    backup ? `    - ${t`备用停车：${backup}`}` : "",
+    warning ? `    - ${t`提醒：${warning}`}` : "",
+    ...(parking.notes ?? []).map((note) => `    - ${note}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
+
 export const toMarkdown = (trip: Trip) => {
   const days = groupItemsByDate(trip.items);
   const dayBlocks = Object.entries(days)
@@ -39,33 +59,16 @@ export const toMarkdown = (trip: Trip) => {
       const itemLines = items
         .map((item) => {
           const notes = item.notes.map((note) => `    - ${note}`).join("\n");
-          const parking = item.parking
-            ? [
-                `    - 停车：${item.parking.primary}`,
-                item.parking.reservationId ? `    - 预订号：${item.parking.reservationId}` : "",
-                item.parking.address ? `    - 停车地址：${item.parking.address}` : "",
-                item.parking.validFrom && item.parking.validTo
-                  ? `    - 有效时间：${item.parking.validFrom} - ${item.parking.validTo}`
-                  : "",
-                typeof item.parking.price === "number"
-                  ? `    - 价格：$${item.parking.price.toFixed(2)}`
-                  : "",
-                item.parking.inOutAllowed ? "    - In & Out Allowed" : "",
-                item.parking.backup ? `    - 备用停车：${item.parking.backup}` : "",
-                item.parking.warning ? `    - 提醒：${item.parking.warning}` : "",
-                ...(item.parking.notes ?? []).map((note) => `    - ${note}`),
-              ]
-                .filter(Boolean)
-                .join("\n")
-            : "";
+          const parking = item.parking ? parkingLines(item.parking) : "";
+          const { location, address, leaveBy } = item;
 
           return [
             `- ${item.time} ${item.title}`,
-            `  - 地点：${item.location}`,
-            `  - 地址：${item.address}`,
-            item.leaveBy ? `  - 最晚离开：${item.leaveBy}` : "",
-            notes ? `  - 备注：\n${notes}` : "",
-            parking ? `  - 后勤：\n${parking}` : "",
+            `  - ${t`地点：${location}`}`,
+            `  - ${t`地址：${address}`}`,
+            leaveBy ? `  - ${t`最晚离开：${leaveBy}`}` : "",
+            notes ? `  - ${t`备注：`}\n${notes}` : "",
+            parking ? `  - ${t`后勤：`}\n${parking}` : "",
           ]
             .filter(Boolean)
             .join("\n");
@@ -85,7 +88,8 @@ export const toMarkdown = (trip: Trip) => {
     })
     .join("\n\n");
 
-  return `# ${trip.title}\n\n${trip.subtitle}\n\n据点：${trip.base.hotel}\n车辆：${trip.base.car}\n\n${dayBlocks}\n\n# 清单\n\n${checklists}\n`;
+  const { hotel, car } = trip.base;
+  return `# ${trip.title}\n\n${trip.subtitle}\n\n${t`据点：${hotel}`}\n${t`车辆：${car}`}\n\n${dayBlocks}\n\n# ${t`清单`}\n\n${checklists}\n`;
 };
 
 export const downloadText = (filename: string, text: string, type = "text/plain") => {

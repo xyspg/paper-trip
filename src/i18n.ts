@@ -1,11 +1,10 @@
 import { i18n, type Messages } from "@lingui/core";
 import { messages as enMessages } from "./locales/en/messages.po";
 import { messages as zhMessages } from "./locales/zh/messages.po";
+import { INTL_LOCALES, isLocale, type Locale } from "./locale";
 
-export const LOCALES = ["zh", "en"] as const;
-export type Locale = (typeof LOCALES)[number];
-
-export const LOCALE_LABELS: Record<Locale, string> = { zh: "中文", en: "English" };
+// Browser boot and switching only. Shared code reads the active locale from
+// ./locale instead, which pulls in neither the DOM nor the catalogs.
 
 const LOCALE_STORAGE_KEY = "papertrip.locale";
 
@@ -13,13 +12,7 @@ const LOCALE_STORAGE_KEY = "papertrip.locale";
 // request that can fail or hang before first render in flaky in-app webviews.
 const CATALOGS: Record<Locale, Messages> = { zh: zhMessages, en: enMessages };
 
-// Lingui locales stay short; Intl formatters and <html lang> want a region.
-const INTL_LOCALES: Record<Locale, string> = { zh: "zh-CN", en: "en-US" };
-
-function isLocale(value: unknown): value is Locale {
-  return LOCALES.includes(value as Locale);
-}
-
+// index.html mirrors this for the pre-boot failure page; keep them in sync.
 export function detectLocale(): Locale {
   try {
     const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
@@ -50,13 +43,4 @@ export function switchLocale(locale: Locale) {
     return;
   }
   window.location.reload();
-}
-
-export function currentLocale(): Locale {
-  return isLocale(i18n.locale) ? i18n.locale : "zh";
-}
-
-/** BCP 47 tag for `Intl.*` / `toLocale*` calls that should follow the UI language. */
-export function intlLocale(): string {
-  return INTL_LOCALES[currentLocale()];
 }

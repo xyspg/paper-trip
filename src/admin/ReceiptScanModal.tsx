@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { AdminModal } from "./AdminModal";
 import { fmtMoney, round2, uid } from "./adminData";
 import { useAdmin } from "./AdminContext";
@@ -58,6 +59,7 @@ type Phase = "pick" | "loading" | "review" | "error";
 
 function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const { tripId, travelers, currency: baseCurrency } = useAdmin();
+  const { t } = useLingui();
   const travelerIds = travelers.map((m) => m.id);
   // Two inputs so the user picks the source instead of iOS forcing the camera:
   // the album input omits `capture` (opens the photo library / file picker),
@@ -112,7 +114,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       const taxGuess =
         r.tax ??
         (typeof r.total === "number" ? Math.max(0, r.total - sumPrices(r.items) - printedTip) : 0);
-      setMerchant(r.merchant || "餐厅收据");
+      setMerchant(r.merchant || t`餐厅收据`);
       // Adopt the OCR currency up front so the tax/tip seeds below round at
       // that currency's own precision (whole yen, not hundredths).
       const cur = normalizeCurrency(r.currency) ?? baseCurrency;
@@ -139,7 +141,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       setPayment(defaultSplit(travelers));
       setPhase("review");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "识别失败，请重试");
+      setError(err instanceof Error ? err.message : t`识别失败，请重试`);
       setPhase("error");
     }
   };
@@ -231,6 +233,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
   const foreign = currency !== baseCurrency;
   const fxRate = useEntryFxRate(baseCurrency, currency, fxOverride);
   const symbol = currencySymbol(currency);
+  const tipLabel = fmtMoney(tip, currency);
+  const preTipLabel = fmtMoney(preTip, currency);
+  const zeroLabel = fmtMoney(0, currency);
+  const targetLabel = fmtMoney(totalTarget ?? 0, currency);
 
   // Drop blank scratch rows (no name, no price) before persisting / counting.
   const cleanRows = rows.filter((r) => r.name.trim() !== "" || r.price > 0);
@@ -243,15 +249,18 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
     const items: ExpenseItem[] = cleanRows.map((r) => {
       const who = r.who.filter((id) => travelerIds.includes(id));
       return {
-        name: r.name.trim() || "未命名",
+        name: r.name.trim() || t`未命名`,
         quantity: r.quantity,
         price: rDec(r.price),
         who: isAA(who, travelerIds) ? undefined : who,
       };
     });
+    const itemCount = items.length;
+    // Defaults are written in the creator's UI language; stored data is not
+    // translated afterwards.
     onSubmit({
-      name: merchant.trim() || "餐厅收据",
-      sub: `${items.length} 项 · 扫描收据`,
+      name: merchant.trim() || t`餐厅收据`,
+      sub: t`${itemCount} 项 · 扫描收据`,
       amount: grandTotal,
       cat: "food",
       payer,
@@ -275,21 +284,21 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         onChange={onFile}
       />
 
-      <ModalHeader icon={<Icons.camera sw={2.4} />} title="扫描收据分账" onClose={onClose} />
+      <ModalHeader icon={<Icons.camera sw={2.4} />} title={t`扫描收据分账`} onClose={onClose} />
 
       {phase === "pick" && (
         <ScanState
           icon={<Icons.camera sw={1.8} />}
-          title="拍下餐厅小票"
-          body="iOS 27 同款 AI 识别"
+          title={t`拍下餐厅小票`}
+          body={t`iOS 27 同款 AI 识别`}
           actions={[
             {
-              label: "从相册选择",
+              label: t`从相册选择`,
               icon: <Icons.image sw={2.4} />,
               onAction: pickAlbum,
               primary: true,
             },
-            { label: "拍照", icon: <Icons.camera sw={2.4} />, onAction: pickCamera },
+            { label: t`拍照`, icon: <Icons.camera sw={2.4} />, onAction: pickCamera },
           ]}
         />
       )}
@@ -297,7 +306,9 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
       {phase === "loading" && (
         <div className="flex flex-col items-center text-center gap-3 px-7 py-10">
           <div className="w-[38px] h-[38px] border-[3px] border-[#ebe9e3] border-t-[#1c1b19] rounded-full animate-[spin_0.8s_linear_infinite]" />
-          <div className="font-sans font-bold text-[19px]">正在识别收据…</div>
+          <div className="font-sans font-bold text-[19px]">
+            <Trans>正在识别收据…</Trans>
+          </div>
           <div className="font-cjk text-[13px] leading-[1.6] text-[#76726a] max-w-[320px]">
             Claude Fable 5 is currently unavailable.
           </div>
@@ -308,16 +319,16 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         <ScanState
           tone="alert"
           icon={<Icons.x sw={2.2} />}
-          title="识别失败"
+          title={t`识别失败`}
           body={error}
           actions={[
             {
-              label: "从相册选择",
+              label: t`从相册选择`,
               icon: <Icons.image sw={2.4} />,
               onAction: pickAlbum,
               primary: true,
             },
-            { label: "重新拍照", icon: <Icons.camera sw={2.4} />, onAction: pickCamera },
+            { label: t`重新拍照`, icon: <Icons.camera sw={2.4} />, onAction: pickCamera },
           ]}
         />
       )}
@@ -326,20 +337,24 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
         <>
           <div className="flex flex-col gap-4 p-[18px] overflow-y-auto">
             <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-              <span className={FIELD_LABEL}>商家名称</span>
+              <span className={FIELD_LABEL}>
+                <Trans>商家名称</Trans>
+              </span>
               <input
                 className={FIELD_INPUT}
                 value={merchant}
                 autoComplete="off"
                 data-1p-ignore
                 data-lpignore="true"
-                placeholder="餐厅名"
+                placeholder={t`餐厅名`}
                 onChange={(e) => setMerchant(e.target.value)}
               />
             </label>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-              <span className={FIELD_LABEL}>收据币种（识别自小票，可修改）</span>
+              <span className={FIELD_LABEL}>
+                <Trans>收据币种（识别自小票，可修改）</Trans>
+              </span>
               <CurrencySelect
                 value={currency}
                 onChange={(next) => {
@@ -358,11 +373,12 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <span className={FIELD_LABEL}>
-                菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）
+                <Trans>菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）</Trans>
               </span>
               <div className="flex flex-col gap-[9px]">
                 {rows.map((row) => {
                   const rowIsAA = isAA(row.who, travelerIds);
+                  const sharers = row.who.length;
                   return (
                     <div
                       className="border border-[#ebe9e3] rounded-xl bg-white px-3 py-2.5"
@@ -376,7 +392,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           min="1"
                           step="1"
                           defaultValue={row.quantity}
-                          aria-label="数量"
+                          aria-label={t`数量`}
                           onBlur={(e) => {
                             const n = parseInt(e.target.value, 10);
                             patchRow(row.id, { quantity: Number.isFinite(n) && n > 0 ? n : 1 });
@@ -392,8 +408,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           autoComplete="off"
                           data-1p-ignore
                           data-lpignore="true"
-                          placeholder="菜名"
-                          aria-label="菜名"
+                          placeholder={t`菜名`}
+                          aria-label={t`菜名`}
                           onChange={(e) => patchRow(row.id, { name: e.target.value })}
                         />
                         <span className="inline-flex items-center gap-[2px] shrink-0 w-[92px] px-2 py-[5px] border border-[#ebe9e3] rounded-lg bg-white transition-colors focus-within:border-[#1c1b19]">
@@ -407,7 +423,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                             step={moneyStep}
                             min="0"
                             defaultValue={row.price || ""}
-                            aria-label="价格"
+                            aria-label={t`价格`}
                             placeholder={moneyZero}
                             onBlur={(e) => {
                               const n = parseFloat(e.target.value);
@@ -423,8 +439,8 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         <button
                           type="button"
                           className="grid place-items-center shrink-0 w-[30px] h-[30px] border border-[#ecccc2] rounded-lg bg-white text-[#c2553f] cursor-pointer transition-colors hover:bg-[#c2553f] hover:text-white [&_svg]:size-[15px]"
-                          title="删除这一项"
-                          aria-label="删除这一项"
+                          title={t`删除这一项`}
+                          aria-label={t`删除这一项`}
                           onClick={() => removeRow(row.id)}
                         >
                           <Icons.trash sw={2.2} />
@@ -443,11 +459,11 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           </button>
                         ))}
                         <span className="ml-auto font-grotesk font-semibold text-[10px] tracking-[0.06em] uppercase text-[#9b988f]">
-                          {row.who.length === 0
-                            ? "未选 → 全员"
+                          {sharers === 0
+                            ? t`未选 → 全员`
                             : rowIsAA
-                              ? "AA 均摊"
-                              : `${row.who.length} 人分`}
+                              ? t`AA 均摊`
+                              : t`${sharers} 人分`}
                         </span>
                       </div>
                     </div>
@@ -460,12 +476,14 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                 onClick={addRow}
               >
                 <Icons.plus sw={2.4} />
-                添加一项
+                <Trans>添加一项</Trans>
               </button>
             </div>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-              <span className={FIELD_LABEL}>税费 / 服务费（按比例分摊）</span>
+              <span className={FIELD_LABEL}>
+                <Trans>税费 / 服务费（按比例分摊）</Trans>
+              </span>
               <div className="inline-flex items-center gap-1 max-w-[180px]">
                 <span className="font-grotesk font-semibold text-[#9b988f]">{symbol}</span>
                 <input
@@ -491,7 +509,9 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
             </div>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-              <span className={FIELD_LABEL}>小费（按比例分摊）</span>
+              <span className={FIELD_LABEL}>
+                <Trans>小费（按比例分摊）</Trans>
+              </span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {suggestedPcts.map((p) => {
                   const on = tipMode === "percent" && tipPct === p;
@@ -515,20 +535,22 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   className={`font-cjk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${tipMode === "amount" ? CHIP_ON : CHIP_OFF}`}
                   onClick={() => setTipMode("amount")}
                 >
-                  金额
+                  <Trans>金额</Trans>
                 </button>
                 <button
                   type="button"
                   className={`font-cjk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${tipMode === "total" ? CHIP_ON : CHIP_OFF}`}
                   onClick={() => setTipMode("total")}
                 >
-                  凑整
+                  <Trans>凑整</Trans>
                 </button>
               </div>
 
               {tipMode === "percent" && tipPct != null && (
                 <span className="font-cjk text-[12px] text-[#76726a]">
-                  按菜品小计 {tipPct}% = {fmtMoney(tip, currency)}
+                  <Trans>
+                    按菜品小计 {tipPct}% = {tipLabel}
+                  </Trans>
                 </span>
               )}
 
@@ -569,8 +591,10 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                           className={`font-grotesk font-semibold text-[12px] cursor-pointer border rounded-full py-1.5 px-3 transition-colors ${on ? CHIP_ON : CHIP_OFF}`}
                           onClick={() => setTotalTarget(n)}
                         >
-                          付 {symbol}
-                          {n}
+                          <Trans>
+                            付 {symbol}
+                            {n}
+                          </Trans>
                         </button>
                       );
                     })}
@@ -586,7 +610,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                         autoComplete="off"
                         data-1p-ignore
                         data-lpignore="true"
-                        placeholder="最终付了多少"
+                        placeholder={t`最终付了多少`}
                         onBlur={(e) => {
                           const n = parseFloat(e.target.value);
                           setTotalTarget(Number.isFinite(n) && n > 0 ? rDec(n) : null);
@@ -599,17 +623,19 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                   </div>
                   <span className="font-cjk text-[12px] text-[#76726a]">
                     {totalTarget == null
-                      ? `税后合计 ${fmtMoney(preTip, currency)}，选一个凑整数或直接填实付金额`
+                      ? t`税后合计 ${preTipLabel}，选一个凑整数或直接填实付金额`
                       : totalTarget < preTip
-                        ? `低于税后合计 ${fmtMoney(preTip, currency)}，小费按 ${fmtMoney(0, currency)} 计`
-                        : `付 ${fmtMoney(totalTarget, currency)} → 小费 ${fmtMoney(tip, currency)}`}
+                        ? t`低于税后合计 ${preTipLabel}，小费按 ${zeroLabel} 计`
+                        : t`付 ${targetLabel} → 小费 ${tipLabel}`}
                   </span>
                 </>
               )}
             </div>
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-              <span className={FIELD_LABEL}>谁付的（垫付）</span>
+              <span className={FIELD_LABEL}>
+                <Trans>谁付的（垫付）</Trans>
+              </span>
               <PaymentSplit
                 value={payment}
                 onChange={setPayment}
@@ -621,7 +647,9 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
 
             <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
               <div className="flex items-center justify-between gap-2.5 mb-2">
-                <span className={FIELD_LABEL}>每人承担金额（可手动修改）</span>
+                <span className={FIELD_LABEL}>
+                  <Trans>每人承担金额（可手动修改）</Trans>
+                </span>
                 {hasOverride && (
                   <button
                     type="button"
@@ -629,75 +657,86 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
                     onClick={clearOverrides}
                   >
                     <Icons.swap sw={2.2} />
-                    恢复自动
+                    <Trans>恢复自动</Trans>
                   </button>
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                {travelers.map((m) => (
-                  <div
-                    className="flex items-center justify-between gap-2.5 px-3 py-2 border border-[#ebe9e3] rounded-xl bg-white"
-                    key={m.id}
-                  >
-                    <span className="inline-flex items-center gap-2 font-cjk font-semibold text-sm text-[#1c1b19]">
-                      <Avatar m={m} size="xs" />
-                      {m.name}
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-[3px] border rounded-[10px] px-2.5 py-[5px] transition-colors ${manual[m.id] != null ? "border-[#5b7a99] bg-[#eef2f6]" : "border-[#ebe9e3] bg-white"}`}
+                {travelers.map((m) => {
+                  const name = m.name;
+                  return (
+                    <div
+                      className="flex items-center justify-between gap-2.5 px-3 py-2 border border-[#ebe9e3] rounded-xl bg-white"
+                      key={m.id}
                     >
-                      <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">
-                        {symbol}
+                      <span className="inline-flex items-center gap-2 font-cjk font-semibold text-sm text-[#1c1b19]">
+                        <Avatar m={m} size="xs" />
+                        {m.name}
                       </span>
-                      <input
-                        key={`${m.id}-${recalc}-${round2(auto[m.id] ?? 0)}`}
-                        className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
-                        type="number"
-                        inputMode="decimal"
-                        step={moneyStep}
-                        min="0"
-                        defaultValue={rDec(finalOf(m.id))}
-                        autoComplete="off"
-                        data-1p-ignore
-                        data-lpignore="true"
-                        aria-label={`${m.name} 承担金额`}
-                        onBlur={(e) => setManualAmount(m.id, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (isEnterKey(e)) e.currentTarget.blur();
-                        }}
-                      />
-                    </span>
-                  </div>
-                ))}
+                      <span
+                        className={`inline-flex items-center gap-[3px] border rounded-[10px] px-2.5 py-[5px] transition-colors ${manual[m.id] != null ? "border-[#5b7a99] bg-[#eef2f6]" : "border-[#ebe9e3] bg-white"}`}
+                      >
+                        <span className="font-grotesk font-semibold text-[13px] text-[#9b988f]">
+                          {symbol}
+                        </span>
+                        <input
+                          key={`${m.id}-${recalc}-${round2(auto[m.id] ?? 0)}`}
+                          className="w-[74px] border-none bg-transparent outline-none font-grotesk font-semibold text-[15px] text-[#1c1b19] text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
+                          type="number"
+                          inputMode="decimal"
+                          step={moneyStep}
+                          min="0"
+                          defaultValue={rDec(finalOf(m.id))}
+                          autoComplete="off"
+                          data-1p-ignore
+                          data-lpignore="true"
+                          aria-label={t`${name} 承担金额`}
+                          onBlur={(e) => setManualAmount(m.id, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (isEnterKey(e)) e.currentTarget.blur();
+                          }}
+                        />
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div className="flex flex-col gap-[5px] px-3.5 py-3 border border-[#ebe9e3] rounded-xl bg-[#fdfdfb] col-span-full">
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
-                <span>菜品小计</span>
+                <span>
+                  <Trans>菜品小计</Trans>
+                </span>
                 <span className="font-sans font-semibold">{fmtMoney(lineSubtotal, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
-                <span>税费 / 服务费</span>
+                <span>
+                  <Trans>税费 / 服务费</Trans>
+                </span>
                 <span className="font-sans font-semibold">{fmtMoney(tax, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-medium text-[13px] text-[#76726a]">
                 <span>
-                  小费
-                  {tipMode === "percent" && tipPct != null && ` · ${tipPct}%`}
-                  {tipMode === "total" &&
-                    totalTarget != null &&
-                    ` · 凑整到 ${fmtMoney(totalTarget, currency)}`}
+                  {tipMode === "percent" && tipPct != null
+                    ? t`小费 · ${tipPct}%`
+                    : tipMode === "total" && totalTarget != null
+                      ? t`小费 · 凑整到 ${targetLabel}`
+                      : t`小费`}
                 </span>
                 <span className="font-sans font-semibold">{fmtMoney(tip, currency)}</span>
               </div>
               <div className="flex items-center justify-between font-cjk font-bold text-base text-[#1c1b19] mt-1 pt-2 border-t border-dashed border-[#ebe9e3]">
-                <span>合计</span>
+                <span>
+                  <Trans>合计</Trans>
+                </span>
                 <span className="font-sans font-bold">{fmtMoney(grandTotal, currency)}</span>
               </div>
               {foreign && fxRate != null && (
                 <div className="flex items-center justify-between font-cjk font-medium text-[12px] text-[#9b988f]">
-                  <span>折合本位币</span>
+                  <span>
+                    <Trans>折合本位币</Trans>
+                  </span>
                   <span className="font-sans font-semibold">
                     {fmtMoney(grandTotal * fxRate, baseCurrency)}
                   </span>
@@ -713,7 +752,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               onClick={pickAlbum}
             >
               <Icons.image sw={2.4} />
-              相册
+              <Trans>相册</Trans>
             </button>
             <button
               type="button"
@@ -721,7 +760,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               onClick={pickCamera}
             >
               <Icons.camera sw={2.4} />
-              拍照
+              <Trans>拍照</Trans>
             </button>
             <span className="ml-auto" />
             <button
@@ -731,7 +770,7 @@ function Scanner({ onClose, onSubmit }: Omit<Props, "isOpen">) {
               onClick={submit}
             >
               <Icons.plus sw={2.6} />
-              添加为花销
+              <Trans>添加为花销</Trans>
             </button>
           </ModalFooter>
         </>

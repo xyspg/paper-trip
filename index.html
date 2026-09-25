@@ -104,14 +104,60 @@
           return Promise.all(cleanup);
         }
 
+        // Lingui is not loaded yet, so the failure page carries its own copy.
+        // Mirrors detectLocale() in src/i18n.ts: saved choice, then browser
+        // languages, then English.
+        var failureCopy = {
+          zh: {
+            lang: "zh-CN",
+            title: "Papertrip 页面加载失败",
+            body: "页面资源两次都没能加载完成，可能是网络不稳定，也可能是浏览器还在使用旧版资源。可以点击下方按钮重试；如果你在应用内浏览器中，请选择「在 Safari 中打开」。",
+            retry: "重新加载",
+          },
+          en: {
+            lang: "en-US",
+            title: "Papertrip couldn't load",
+            body: 'The page failed to load twice. The network may be unstable, or your browser may still be using outdated files. Tap the button below to try again. If you\'re in an in-app browser, choose "Open in Safari".',
+            retry: "Reload",
+          },
+        };
+
+        function detectLocale() {
+          try {
+            var stored = localStorage.getItem("papertrip.locale");
+            if (stored === "zh" || stored === "en") return stored;
+          } catch (e) {
+            // Storage can be blocked (private mode, webviews).
+          }
+          var preferred =
+            navigator.languages && navigator.languages.length
+              ? navigator.languages
+              : [navigator.language];
+          for (var i = 0; i < preferred.length; i++) {
+            var base = String(preferred[i] || "")
+              .toLowerCase()
+              .split("-")[0];
+            if (base === "zh" || base === "en") return base;
+          }
+          return "en";
+        }
+
         function showFailure() {
           var root = document.getElementById("root");
           if (!root) return;
+          var copy = failureCopy[detectLocale()];
+          document.documentElement.lang = copy.lang;
           root.innerHTML =
             '<main style="box-sizing:border-box;max-width:520px;margin:12vh auto;padding:24px;font:15px/1.7 system-ui,sans-serif;color:#1c1b19">' +
-            '<h1 style="font-size:21px;margin:0 0 10px">Papertrip 页面加载失败</h1>' +
-            '<p style="margin:0">页面资源两次都没能加载完成，可能是网络不稳定，也可能是浏览器还在使用旧版资源。可以点击下方按钮重试；如果你在应用内浏览器中，请选择「在 Safari 中打开」。</p>' +
-            '<button id="papertrip-retry" style="margin-top:18px;padding:10px 22px;font:600 15px system-ui,sans-serif;color:#fafaf8;background:#1c1b19;border:0;border-radius:8px">重新加载</button>' +
+            '<h1 style="font-size:21px;margin:0 0 10px">' +
+            copy.title +
+            "</h1>" +
+            '<p style="margin:0">' +
+            copy.body +
+            "</p>" +
+            '<button id="papertrip-retry" style="margin-top:18px;padding:10px 22px;font:600 15px system-ui,sans-serif;color:#fafaf8;background:#1c1b19;border:0;border-radius:8px">' +
+            copy.retry +
+            "</button>" +
             "</main>";
           var retry = document.getElementById("papertrip-retry");
           if (retry) {

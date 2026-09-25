@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { mintAgentToken } from "../trip/api";
 import type { AgentTokenGrant } from "../trip/api";
 import {
@@ -28,6 +29,7 @@ export function AgentSection({ toast }: Props) {
   const [ttlDays, setTtlDays] = useState<number>(90);
   const [grant, setGrant] = useState<AgentTokenGrant | null>(null);
   const [busy, setBusy] = useState(false);
+  const { t } = useLingui();
 
   const origin = window.location.origin;
   const prompt = grant
@@ -43,9 +45,9 @@ export function AgentSection({ toast }: Props) {
     setBusy(true);
     try {
       setGrant(await mintAgentToken(tripId, ttlDays));
-      toast("已生成 agent token");
+      toast(t`已生成 agent token`);
     } catch {
-      toast("生成失败（仅行程创建者可签发 token）", "warn");
+      toast(t`生成失败（仅行程创建者可签发 token）`, "warn");
     } finally {
       setBusy(false);
     }
@@ -54,32 +56,36 @@ export function AgentSection({ toast }: Props) {
   const copy = async (text: string, what: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast(`已复制${what}`);
+      toast(t`已复制${what}`);
     } catch {
-      toast("复制失败", "warn");
+      toast(t`复制失败`, "warn");
     }
   };
 
   return (
     <div>
-      <SectionHead kicker="06 · Agent" title="Agent 协作" desc="让本地 agent 直接读写行程" />
+      <SectionHead kicker="06 · Agent" title={t`Agent 协作`} desc={t`让本地 agent 直接读写行程`} />
 
       <section className="mt-6 bg-white border border-[#ebe9e3] rounded-[14px] p-5 grid gap-4">
         <p className="m-0 font-cjk text-[13.5px] leading-relaxed text-[#3b3833]">
-          本地 agent 读取{" "}
-          <a
-            className="text-[#3f6f5b] font-semibold"
-            href="/SKILL.md"
-            target="_blank"
-            rel="noreferrer"
-          >
-            /SKILL.md
-          </a>{" "}
-          后，凭下面的 token 调用 trip API
+          <Trans>
+            本地 agent 读取{" "}
+            <a
+              className="text-[#3f6f5b] font-semibold"
+              href="/SKILL.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              /SKILL.md
+            </a>{" "}
+            后，凭下面的 token 调用 trip API
+          </Trans>
         </p>
 
         <div className="grid gap-1.5">
-          <span className={FIELD_LABEL}>有效期</span>
+          <span className={FIELD_LABEL}>
+            <Trans>有效期</Trans>
+          </span>
           <div className="flex gap-2">
             {TTL_OPTIONS.map((d) => (
               <button
@@ -87,7 +93,7 @@ export function AgentSection({ toast }: Props) {
                 className={`${BTN_SM} border ${ttlDays === d ? CHIP_ON : CHIP_OFF}`}
                 onClick={() => setTtlDays(d)}
               >
-                {d} 天
+                <Trans>{d} 天</Trans>
               </button>
             ))}
           </div>
@@ -95,7 +101,7 @@ export function AgentSection({ toast }: Props) {
 
         <div>
           <button className={`${BTN} ${BTN_ACCENT}`} disabled={busy} onClick={generate}>
-            {grant ? "重新生成 token" : "生成 token"}
+            {grant ? <Trans>重新生成 token</Trans> : <Trans>生成 token</Trans>}
           </button>
         </div>
       </section>

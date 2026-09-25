@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
 import { useAudit } from "../trip/hooks";
 import type { AuditEntry } from "../trip/api";
 import type { TripOp } from "../trip/ops";
@@ -9,40 +12,42 @@ import { useAdmin } from "./AdminContext";
 // Human-readable label per TripOp type, so the log reads as actions rather than
 // raw op identifiers. Typed to the TripOp union so adding an op fails the build
 // here until it is labeled, matching the exhaustive opTarget() switch in the worker.
+// The keys are the stored op identifiers; only the labels are translated.
 const OP_LABEL: Record<
   TripOp["type"] | "createBackup" | "deleteBackup" | "restoreBackup" | "replaceTrip",
-  string
+  MessageDescriptor
 > = {
-  setItemStatus: "更新停靠点状态",
-  updateItem: "编辑停靠点",
-  addItem: "新增停靠点",
-  deleteItem: "删除停靠点",
-  setChecklistItem: "勾选清单项",
-  addSuggestion: "提交建议",
-  setSuggestionStatus: "处理建议",
-  deleteSuggestion: "删除建议",
-  clearSuggestions: "清空建议",
-  addExpense: "添加花销",
-  updateExpense: "编辑花销",
-  deleteExpense: "删除花销",
-  setExpenseAmount: "修改金额",
-  setExpensePayer: "修改付款人",
-  setExpenseSplit: "修改分账",
-  addPayment: "记录还款",
-  updatePayment: "编辑还款",
-  deletePayment: "删除还款",
-  resetExpenses: "恢复原始账目",
-  reset: "重置全部数据",
-  addFlight: "添加航班",
-  updateFlight: "更新航班",
-  deleteFlight: "删除航班",
-  createBackup: "创建备份",
-  deleteBackup: "删除备份",
-  restoreBackup: "恢复备份",
-  replaceTrip: "整份替换行程",
+  setItemStatus: msg`更新停靠点状态`,
+  updateItem: msg`编辑停靠点`,
+  addItem: msg`新增停靠点`,
+  deleteItem: msg`删除停靠点`,
+  setChecklistItem: msg`勾选清单项`,
+  addSuggestion: msg`提交建议`,
+  setSuggestionStatus: msg`处理建议`,
+  deleteSuggestion: msg`删除建议`,
+  clearSuggestions: msg`清空建议`,
+  addExpense: msg`添加花销`,
+  updateExpense: msg`编辑花销`,
+  deleteExpense: msg`删除花销`,
+  setExpenseAmount: msg`修改金额`,
+  setExpensePayer: msg`修改付款人`,
+  setExpenseSplit: msg`修改分账`,
+  addPayment: msg`记录还款`,
+  updatePayment: msg`编辑还款`,
+  deletePayment: msg`删除还款`,
+  resetExpenses: msg`恢复原始账目`,
+  reset: msg`重置全部数据`,
+  addFlight: msg`添加航班`,
+  updateFlight: msg`更新航班`,
+  deleteFlight: msg`删除航班`,
+  createBackup: msg`创建备份`,
+  deleteBackup: msg`删除备份`,
+  restoreBackup: msg`恢复备份`,
+  replaceTrip: msg`整份替换行程`,
 };
 
 function ActorCell({ e }: { e: AuditEntry }) {
+  const { t } = useLingui();
   const isPublic = e.actorLogin === "public";
   return (
     <span className="grid grid-cols-[auto_1fr] grid-rows-[auto_auto] gap-x-2 items-center min-w-0">
@@ -51,10 +56,10 @@ function ActorCell({ e }: { e: AuditEntry }) {
         style={{ background: isPublic ? "#9b988f" : "#3f6f5b" }}
       />
       <span className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
-        {isPublic ? "访客" : e.actorLogin}
+        {isPublic ? t`访客` : e.actorLogin}
       </span>
       <span className="col-start-2 font-mono text-[10.5px] text-[#9b988f] whitespace-nowrap overflow-hidden text-ellipsis">
-        {isPublic ? e.ip || "未知 IP" : e.actorEmail || `#${e.actorId ?? "?"}`}
+        {isPublic ? e.ip || t`未知 IP` : e.actorEmail || `#${e.actorId ?? "?"}`}
       </span>
     </span>
   );
@@ -62,30 +67,39 @@ function ActorCell({ e }: { e: AuditEntry }) {
 
 export function AuditSection() {
   const { tripId } = useAdmin();
+  const { t } = useLingui();
   const { data: entries, isLoading, isError, refetch, isFetching } = useAudit(tripId);
+  const opLabel = (op: string) => {
+    const label = OP_LABEL[op as keyof typeof OP_LABEL];
+    return label ? t(label) : op;
+  };
 
   return (
     <div>
       <SectionHead
         kicker="04 · Audit"
-        title="操作记录"
-        desc="每一次写操作的审计日志 · 记录操作人、动作、对象与时间 · 仅管理员可见"
+        title={t`操作记录`}
+        desc={t`每一次写操作的审计日志 · 记录操作人、动作、对象与时间 · 仅管理员可见`}
         actions={<RefreshButton onClick={() => refetch()} busy={isFetching} />}
       />
 
       <div className="mt-7">
         {isLoading ? (
           <AdminEmptyState
-            title="加载中…"
-            body="正在读取审计日志。"
+            title={t`加载中…`}
+            body={t`正在读取审计日志。`}
             icon={<Icons.repo sw={2.2} />}
           />
         ) : isError ? (
-          <AdminEmptyState title="无法加载审计日志" body="请确认你已登录管理员账号后重试。" warn />
+          <AdminEmptyState
+            title={t`无法加载审计日志`}
+            body={t`请确认你已登录管理员账号后重试。`}
+            warn
+          />
         ) : !entries || entries.length === 0 ? (
           <AdminEmptyState
-            title="暂无记录"
-            body="发生写操作后，记录会出现在这里。"
+            title={t`暂无记录`}
+            body={t`发生写操作后，记录会出现在这里。`}
             icon={<Icons.repo sw={2.2} />}
           />
         ) : (
@@ -100,9 +114,7 @@ export function AuditSection() {
                     {fmtTime(e.at)}
                   </span>
                   <ActorCell e={e} />
-                  <span className="font-semibold whitespace-nowrap">
-                    {OP_LABEL[e.op as keyof typeof OP_LABEL] ?? e.op}
-                  </span>
+                  <span className="font-semibold whitespace-nowrap">{opLabel(e.op)}</span>
                   <span className="font-mono text-[11.5px] text-[#9b988f] whitespace-nowrap overflow-hidden text-ellipsis">
                     {e.target ?? "-"}
                   </span>

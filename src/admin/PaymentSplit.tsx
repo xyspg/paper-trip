@@ -1,3 +1,6 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
 import { fmtMoney, round2 } from "./adminData";
 import type { AdminMember } from "./adminData";
 import { DEFAULT_CURRENCY, currencySymbol } from "../trip/currency";
@@ -46,10 +49,10 @@ export const splitFromExpense = (e: { payer: string; split?: ExpenseSplit }): Sp
     ? { mode: e.split.mode, shares: { ...e.split.shares } }
     : { mode: "single", payer: e.payer };
 
-const MODES: { key: SplitValue["mode"]; label: string }[] = [
-  { key: "single", label: "单人付款" },
-  { key: "percent", label: "按比例 %" },
-  { key: "amount", label: "按金额" },
+const MODES: { key: SplitValue["mode"]; label: MessageDescriptor }[] = [
+  { key: "single", label: msg`单人付款` },
+  { key: "percent", label: msg`按比例 %` },
+  { key: "amount", label: msg`按金额` },
 ];
 
 // Even percentage seed (e.g. 50 / 50 for two travelers), remainder on the last.
@@ -84,6 +87,7 @@ type Props = {
 // a proportional split by percentage or amount. The numbers are normalized, so
 // "80 / 20" and "300 / 10" both just describe proportions.
 export function PaymentSplit({ value, onChange, amount, travelers, currency }: Props) {
+  const { t } = useLingui();
   const travelerIds = travelers.map((m) => m.id);
   const mode = value.mode;
   const shares = mode === "single" ? {} : value.shares;
@@ -160,6 +164,7 @@ export function PaymentSplit({ value, onChange, amount, travelers, currency }: P
     mode === "single"
       ? 0
       : travelerIds.reduce((s, id) => s + Math.max(0, Number(shares[id]) || 0), 0);
+  const weightLabel = fmtMoney(weightSum, currency);
 
   return (
     <div className="flex flex-col gap-[9px] w-full">
@@ -171,7 +176,7 @@ export function PaymentSplit({ value, onChange, amount, travelers, currency }: P
             className={`font-grotesk font-semibold text-[10px] tracking-[0.06em] uppercase cursor-pointer border rounded-full py-1 px-[11px] transition-colors ${mode === m.key ? CHIP_ON : CHIP_OFF}`}
             onClick={() => setMode(m.key)}
           >
-            {m.label}
+            {t(m.label)}
           </button>
         ))}
       </div>
@@ -194,6 +199,7 @@ export function PaymentSplit({ value, onChange, amount, travelers, currency }: P
         <div className="flex flex-col gap-[7px]">
           {travelers.map((m) => {
             const cur = Math.max(0, Number(shares[m.id]) || 0);
+            const name = m.name;
             return (
               <div className="flex items-center gap-2.5" key={`${m.id}-${mode}`}>
                 <span className="inline-flex items-center gap-1.5 font-cjk font-semibold text-[12px] min-w-[92px]">
@@ -213,7 +219,7 @@ export function PaymentSplit({ value, onChange, amount, travelers, currency }: P
                     data-1p-ignore
                     data-lpignore="true"
                     placeholder="0"
-                    aria-label={`${m.name} ${mode === "percent" ? "比例" : "金额"}`}
+                    aria-label={mode === "percent" ? t`${name} 比例` : t`${name} 金额`}
                     onBlur={(e) => updShare(m.id, e.target.value)}
                     onKeyDown={(e) => {
                       if (isEnterKey(e)) e.currentTarget.blur();
@@ -233,10 +239,10 @@ export function PaymentSplit({ value, onChange, amount, travelers, currency }: P
             className={`font-grotesk font-semibold text-[10px] tracking-[0.04em] ${weightSum <= 0 ? "text-[#c2553f]" : "text-[#9b988f]"}`}
           >
             {weightSum <= 0
-              ? "请为至少一人填写分摊"
+              ? t`请为至少一人填写分摊`
               : mode === "percent"
-                ? `合计 ${weightSum}%（按比例折算）`
-                : `输入合计 ${fmtMoney(weightSum, currency)}（按比例折算到实付）`}
+                ? t`合计 ${weightSum}%（按比例折算）`
+                : t`输入合计 ${weightLabel}（按比例折算到实付）`}
           </div>
         </div>
       )}

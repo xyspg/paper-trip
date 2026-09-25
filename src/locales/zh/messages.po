@@ -7,26 +7,2727 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: zh\n"
 
+#: src/admin/AgentSection.tsx
+msgid "{d} 天"
+msgstr "{d} 天"
+
+#: src/trip/relativeTime.ts
+msgid "{days} 天前"
+msgstr "{days} 天前"
+
+#: src/pages/PaperLedger.tsx
+msgid "{expenseCount} 笔花销 · {paymentCount} 笔还款 · {travelerCount} 位同行人"
+msgstr "{expenseCount} 笔花销 · {paymentCount} 笔还款 · {travelerCount} 位同行人"
+
+#: src/pages/PaperLedger.tsx
+msgid "{expenseCount} 笔花销 · {travelerCount} 位同行人"
+msgstr "{expenseCount} 笔花销 · {travelerCount} 位同行人"
+
+#: src/admin/MembersSection.tsx
+msgid "{expiresOn} 到期"
+msgstr "{expiresOn} 到期"
+
+#: src/trip/exporters.ts
+msgid "{hours} 小时"
+msgstr "{hours} 小时"
+
+#: src/trip/exporters.ts
+msgid "{hours} 小时 {remainder} 分钟"
+msgstr "{hours} 小时 {remainder} 分钟"
+
+#: src/trip/relativeTime.ts
+msgid "{hr} 小时前"
+msgstr "{hr} 小时前"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "{inviterName} 邀请你一起规划这次行程：共享时间线、预订信息和分账账目。"
+msgstr "{inviterName} 邀请你一起规划这次行程：共享时间线、预订信息和分账账目。"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "{itemCount} 项 · 扫描收据"
+msgstr "{itemCount} 项 · 扫描收据"
+
+#: src/admin/ItinerarySection.tsx
+msgid "{label}内容"
+msgstr "{label}内容"
+
+#: src/admin/ItinerarySection.tsx
+msgid "{label}待补充"
+msgstr "{label}待补充"
+
+#: src/trip/relativeTime.ts
+msgid "{min} 分钟前"
+msgstr "{min} 分钟前"
+
+#: src/admin/ExpenseAllocation.tsx
+#: src/admin/ReceiptScanModal.tsx
+msgid "{name} 承担金额"
+msgstr "{name} 承担金额"
+
+#: src/admin/PaymentSplit.tsx
+msgid "{name} 比例"
+msgstr "{name} 比例"
+
+#: src/admin/PaymentSplit.tsx
+#: src/admin/SplitSection.tsx
+msgid "{name} 金额"
+msgstr "{name} 金额"
+
+#: src/admin/SplitSection.tsx
+msgid "{paymentCount} 笔"
+msgstr "{paymentCount} 笔"
+
+#: src/pages/PaperTimeline.tsx
+msgid "{provider} Pass · 登录打开"
+msgstr "{provider} Pass · 登录打开"
+
+#: src/trip/exporters.ts
+msgid "{remainder} 分钟"
+msgstr "{remainder} 分钟"
+
+#: src/pages/BookingsPage.tsx
+msgid "{selectedName} 还没有航班"
+msgstr "{selectedName} 还没有航班"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "{sharers} 人分"
+msgstr "{sharers} 人分"
+
+#: src/admin/SplitSection.tsx
+msgid "{transferCount} 笔转账可结清"
+msgstr "{transferCount} 笔转账可结清"
+
+#: src/pages/PaperLedger.tsx
+msgid "{travelerCount} 位同行人按明细分别承担"
+msgstr "{travelerCount} 位同行人按明细分别承担"
+
+#: src/pages/DashboardPage.tsx
+msgid "{tripCount} 个行程"
+msgstr "{tripCount} 个行程"
+
+#: src/pages/AdminPage.tsx
+msgid "{tripTitle} · 后台"
+msgstr "{tripTitle} · 后台"
+
+#: src/pages/PaperTimeline.tsx
+msgid "{zone} 当地"
+msgstr "{zone} 当地"
+
+#: src/pages/LandingPage.tsx
+msgid "「{say}」"
+msgstr "「{say}」"
+
+#: src/pages/LandingPage.tsx
+msgid "「<0>{chars}</0>」"
+msgstr "「<0>{chars}</0>」"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "<0>{selectedCount}</0><1>条已选 · 批量处理</1>"
+msgstr "<0>{selectedCount}</0><1>条已选 · 批量处理</1>"
+
+#: src/pages/LandingPage.tsx
+msgid "● 已同步 · rev 129"
+msgstr "● 已同步 · rev 129"
+
+#: src/admin/CurrencyFields.tsx
+msgid "1 {currency} 折合 {base}"
+msgstr "1 {currency} 折合 {base}"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "AA 均摊"
+msgstr "AA 均摊"
+
+#: src/pages/LandingPage.tsx
+msgid "AA 或自定义比例，自动算清谁欠谁，行程结束一键导出 PDF 对账单。"
+msgstr "AA 或自定义比例，自动算清谁欠谁，行程结束一键导出 PDF 对账单。"
+
+#: src/admin/AdminLogin.tsx
+msgid "Admin · 行程作战表后台"
+msgstr "Admin · 行程作战表后台"
+
+#: src/pages/LandingPage.tsx
+msgid "Agent API"
+msgstr "Agent API"
+
+#: src/admin/AgentSection.tsx
+msgid "Agent 协作"
+msgstr "Agent 协作"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "Agent 协作"
+msgstr "Agent 协作"
+
+#: src/pages/LandingPage.tsx
+msgid "Agent 接入"
+msgstr "Agent 接入"
+
+#: src/pages/LandingPage.tsx
+msgid "Agent 改的不是聊天记录，是行程本身：每条指令落成一次带审计的写入，所有人立刻看到。"
+msgstr "Agent 改的不是聊天记录，是行程本身：每条指令落成一次带审计的写入，所有人立刻看到。"
+
+#: src/pages/LandingPage.tsx
+msgid "Amtrak 517 南下"
+msgstr "Amtrak 517 南下"
+
+#: src/components/AddressLink.tsx
+msgid "Apple 地图"
+msgstr "Apple 地图"
+
+#: src/components/FlightCard.tsx
+msgid "Arrival · 到达"
+msgstr "Arrival · 到达"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "Credit 抵扣金额"
+msgstr "Credit 抵扣金额"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "Credit 抵扣金额（{currency}）"
+msgstr "Credit 抵扣金额（{currency}）"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "Credit 描述（可选）"
+msgstr "Credit 描述（可选）"
+
+#: src/components/FlightCard.tsx
+msgid "Departure · 出发"
+msgstr "Departure · 出发"
+
+#: src/pages/BookingsPage.tsx
+msgid "Flights · 航班信息"
+msgstr "Flights · 航班信息"
+
+#: src/pages/LandingPage.tsx
+msgid "GitHub 一键登录，起个名字、定好日期，行程纸就铺开了。"
+msgstr "GitHub 一键登录，起个名字、定好日期，行程纸就铺开了。"
+
+#: src/components/AddressLink.tsx
+msgid "Google 地图"
+msgstr "Google 地图"
+
+#: src/pages/LandingPage.tsx
+msgid "Granville Island 午餐"
+msgstr "Granville Island 午餐"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "iOS 27 同款 AI 识别"
+msgstr "iOS 27 同款 AI 识别"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "Papertrip 资源加载失败"
+msgstr "Papertrip 资源加载失败"
+
+#: src/pages/LedgerAutoExport.tsx
+msgid "PDF 生成失败，请点击「导出 PDF」重试"
+msgstr "PDF 生成失败，请点击「导出 PDF」重试"
+
+#: src/pages/LedgerAutoExport.tsx
+msgid "PDF 账单已生成 · 点击保存"
+msgstr "PDF 账单已生成 · 点击保存"
+
+#: src/pages/LandingPage.tsx
+msgid "rev 129 → 130 · 已同步给 2 位成员"
+msgstr "rev 129 → 130 · 已同步给 2 位成员"
+
+#: src/pages/LandingPage.tsx
+msgid "Seawall · 租车点集合"
+msgstr "Seawall · 租车点集合"
+
+#: src/pages/LandingPage.tsx
+msgid "Stanley Park · 骑行"
+msgstr "Stanley Park · 骑行"
+
+#: src/pages/LandingPage.tsx
+msgid "Stanley Park 骑行"
+msgstr "Stanley Park 骑行"
+
+#: src/pages/LandingPage.tsx
+msgid "T1 值机 · 18A/18B"
+msgstr "T1 值机 · 18A/18B"
+
+#: src/pages/LandingPage.tsx
+msgid "WebSocket 推送 + 乐观更新，改一处所有人立刻看到；按天折叠，过去的日程自动归档。"
+msgstr "WebSocket 推送 + 乐观更新，改一处所有人立刻看到；按天折叠，过去的日程自动归档。"
+
+#: src/pages/LandingPage.tsx
+msgid "一份行程该有的，都在"
+msgstr "一份行程该有的，都在"
+
+#: src/pages/LandingPage.tsx
+msgid "一封邀请邮件，GitHub 登录即加入；成员进出由创建者掌握，随时移除。"
+msgstr "一封邀请邮件，GitHub 登录即加入；成员进出由创建者掌握，随时移除。"
+
+#: src/pages/PaperTimeline.tsx
+msgid "下一步行动"
+msgstr "下一步行动"
+
+#: src/pages/LandingPage.tsx
+msgid "下一趟旅行，<0/>带上你的 <1>Agent</1>"
+msgstr "下一趟旅行，<0/>带上你的 <1>Agent</1>"
+
+#: src/admin/BackupSection.tsx
+msgid "下载当前 JSON"
+msgstr "下载当前 JSON"
+
+#: src/admin/SplitSection.tsx
+msgid "不计入结算"
+msgstr "不计入结算"
+
+#: src/pages/BookingsPage.tsx
+msgid "为 {selectedName} 添加"
+msgstr "为 {selectedName} 添加"
+
+#: src/admin/FlightsSection.tsx
+msgid "为成员添加航班"
+msgstr "为成员添加航班"
+
+#: src/pages/LandingPage.tsx
+msgid "为每个行程签发限时 Bearer 令牌，配套 SKILL.md 说明书，Claude 们开箱即用。"
+msgstr "为每个行程签发限时 Bearer 令牌，配套 SKILL.md 说明书，Claude 们开箱即用。"
+
+#: src/admin/itineraryAdapter.ts
+#: src/pages/timelineShared.tsx
+msgid "主方案"
+msgstr "主方案"
+
+#: src/pages/LandingPage.tsx
+msgid "了解功能"
+msgstr "了解功能"
+
+#: src/pages/LandingPage.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "交通"
+msgstr "交通"
+
+#: src/pages/PaperTimeline.tsx
+msgid "交通 · Drive"
+msgstr "交通 · Drive"
+
+#: src/admin/adminData.ts
+#: src/pages/PaperTimeline.tsx
+msgid "交通 · Transit"
+msgstr "交通 · Transit"
+
+#: src/pages/LandingPage.tsx
+msgid "人和 Agent 共写的行程工作台"
+msgstr "人和 Agent 共写的行程工作台"
+
+#: src/trip/currency.ts
+msgid "人民币"
+msgstr "人民币"
+
+#: src/admin/AdminLogin.tsx
+msgid "仅行程 <0>成员</0> 可管理内容"
+msgstr "仅行程 <0>成员</0> 可管理内容"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "从相册选择"
+msgstr "从相册选择"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "付 {symbol}{n}"
+msgstr "付 {symbol}{n}"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "付 {targetLabel} → 小费 {tipLabel}"
+msgstr "付 {targetLabel} → 小费 {tipLabel}"
+
+#: src/pages/LandingPage.tsx
+msgid "令牌只对单个行程有效、限时、可随时吊销；配套的 SKILL.md 把行程 API 讲给 Agent 听。Claude Code、或任何会发 HTTP 的东西，都能替你打理行程。"
+msgstr "令牌只对单个行程有效、限时、可随时吊销；配套的 SKILL.md 把行程 API 讲给 Agent 听。Claude Code、或任何会发 HTTP 的东西，都能替你打理行程。"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "以 @{login} 的身份加入"
+msgstr "以 @{login} 的身份加入"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "价格"
+msgstr "价格"
+
+#: src/trip/exporters.ts
+msgid "价格：{priceText}"
+msgstr "价格：{priceText}"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "低于税后合计 {preTipLabel}，小费按 {zeroLabel} 计"
+msgstr "低于税后合计 {preTipLabel}，小费按 {zeroLabel} 计"
+
+#: src/pages/LandingPage.tsx
+msgid "你"
+msgstr "你"
+
+#: src/components/TripLayout.tsx
+#: src/pages/AdminPage.tsx
+msgid "你不是该行程的成员"
+msgstr "你不是该行程的成员"
+
+#: src/pages/DashboardPage.tsx
+msgid "你创建的行程"
+msgstr "你创建的行程"
+
+#: src/pages/LandingPage.tsx
+msgid "你负责旅行，<0/><1>Agent</1> 负责行程"
+msgstr "你负责旅行，<0/><1>Agent</1> 负责行程"
+
 #: src/components/PageNav.tsx
 msgid "使用 GitHub 登录"
 msgstr "使用 GitHub 登录"
+
+#: src/pages/PaperTimeline.tsx
+msgid "使用 GitHub 登录后打开"
+msgstr "使用 GitHub 登录后打开"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "例如 2 人 / 3 天"
+msgstr "例如 2 人 / 3 天"
+
+#: src/components/CreateTripModal.tsx
+msgid "例如 东京夏日之旅"
+msgstr "例如 东京夏日之旅"
+
+#: src/admin/PaymentModal.tsx
+msgid "例如 微信转账"
+msgstr "例如 微信转账"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "例如 景点门票 · 三日通票"
+msgstr "例如 景点门票 · 三日通票"
+
+#: src/admin/AddExpenseModal.tsx
+#: src/admin/SettingsSection.tsx
+msgid "保存修改"
+msgstr "保存修改"
+
+#: src/admin/FlightsSection.tsx
+#: src/admin/ItinerarySection.tsx
+#: src/admin/SettingsSection.tsx
+#: src/pages/BookingsPage.tsx
+msgid "保存失败，请重试"
+msgstr "保存失败，请重试"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "保存航班"
+msgstr "保存航班"
+
+#: src/admin/AuditSection.tsx
+msgid "修改付款人"
+msgstr "修改付款人"
+
+#: src/admin/AuditSection.tsx
+msgid "修改分账"
+msgstr "修改分账"
+
+#: src/admin/SettingsSection.tsx
+msgid "修改可见性失败，请重试"
+msgstr "修改可见性失败，请重试"
+
+#: src/admin/AuditSection.tsx
+msgid "修改金额"
+msgstr "修改金额"
+
+#: src/trip/exporters.ts
+msgid "停车：{primary}"
+msgstr "停车：{primary}"
+
+#: src/trip/exporters.ts
+msgid "停车地址：{address}"
+msgstr "停车地址：{address}"
+
+#: src/admin/ItinerarySection.tsx
+msgid "停靠点"
+msgstr "停靠点"
+
+#: src/pages/PaperTimeline.tsx
+msgid "停靠点 · 横跨 {dayCount} 天"
+msgstr "停靠点 · 横跨 {dayCount} 天"
+
+#: src/admin/FlightsSection.tsx
+msgid "先邀请同行成员加入行程，再为他们添加航班。"
+msgstr "先邀请同行成员加入行程，再为他们添加航班。"
+
+#: src/pages/LandingPage.tsx
+msgid "免费使用，登录即开工。"
+msgstr "免费使用，登录即开工。"
+
+#: src/pages/LandingPage.tsx
+msgid "入住 · 确认码 7N4PQ"
+msgstr "入住 · 确认码 7N4PQ"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "全部忽略"
+msgstr "全部忽略"
+
+#: src/pages/BookingsPage.tsx
+msgid "全部成员"
+msgstr "全部成员"
+
+#: src/pages/BookingsPage.tsx
+msgid "全部航班"
+msgstr "全部航班"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "全部采纳"
+msgstr "全部采纳"
+
+#: src/pages/DashboardPage.tsx
+msgid "公开"
+msgstr "公开"
+
+#: src/components/CreateTripModal.tsx
+msgid "公开 · 任何人可读"
+msgstr "公开 · 任何人可读"
+
+#: src/admin/SettingsSection.tsx
+msgid "公开 · 链接可读"
+msgstr "公开 · 链接可读"
+
+#: src/admin/SettingsSection.tsx
+msgid "公开行程任何拿到链接的人都能浏览时间线 / 账目，还能匿名提建议；私密行程仅成员可见。"
+msgstr "公开行程任何拿到链接的人都能浏览时间线 / 账目，还能匿名提建议；私密行程仅成员可见。"
+
+#: src/pages/BookingsPage.tsx
+msgid "共 {memberCount} 位同行人"
+msgstr "共 {memberCount} 位同行人"
+
+#: src/admin/FlightsSection.tsx
+msgid "共 {travelerCount} 位同行人"
+msgstr "共 {travelerCount} 位同行人"
+
+#: src/admin/adminUi.tsx
+#: src/components/SuggestBox.tsx
+msgid "关闭"
+msgstr "关闭"
+
+#: src/trip/exporters.ts
+msgid "最晚离开：{leaveBy}"
+msgstr "最晚离开：{leaveBy}"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "最终付了多少"
+msgstr "最终付了多少"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "凑整"
+msgstr "凑整"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "出发"
+msgstr "出发"
+
+#: src/pages/PaperLedger.tsx
+msgid "分摊垫付 Split"
+msgstr "分摊垫付 Split"
+
+#: src/pages/LandingPage.tsx
+msgid "分账账本"
+msgstr "分账账本"
+
+#: src/admin/SplitSection.tsx
+msgid "分账金额"
+msgstr "分账金额"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "分账金额"
+msgstr "分账金额"
+
+#: src/trip/relativeTime.ts
+msgid "刚刚"
+msgstr "刚刚"
+
+#: src/components/CreateTripModal.tsx
+msgid "创建中…"
+msgstr "创建中…"
+
+#: src/admin/AddStopModal.tsx
+msgid "创建停靠点"
+msgstr "创建停靠点"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/BackupSection.tsx
+msgid "创建备份"
+msgstr "创建备份"
+
+#: src/admin/BackupSection.tsx
+msgid "创建备份失败，请重试"
+msgstr "创建备份失败，请重试"
+
+#: src/components/CreateTripModal.tsx
+msgid "创建失败，请重试"
+msgstr "创建失败，请重试"
+
+#: src/admin/BackupSection.tsx
+msgid "创建第一个备份后，会在这里显示可恢复的快照。"
+msgstr "创建第一个备份后，会在这里显示可恢复的快照。"
+
+#: src/admin/MembersSection.tsx
+#: src/pages/DashboardPage.tsx
+msgid "创建者"
+msgstr "创建者"
+
+#: src/components/CreateTripModal.tsx
+msgid "创建行程"
+msgstr "创建行程"
+
+#: src/pages/DashboardPage.tsx
+msgid "创建行程、邀请同行人，时间线 / 预订 / 账目全套视图，每个行程一份。"
+msgstr "创建行程、邀请同行人，时间线 / 预订 / 账目全套视图，每个行程一份。"
+
+#: src/admin/BackupSection.tsx
+#: src/admin/ConfirmModal.tsx
+#: src/admin/FlightsSection.tsx
+#: src/admin/SuggestionsSection.tsx
+msgid "删除"
+msgstr "删除"
+
+#: src/admin/SplitSection.tsx
+msgid "删除 {name}"
+msgstr "删除 {name}"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/ItinerarySection.tsx
+msgid "删除停靠点"
+msgstr "删除停靠点"
+
+#: src/admin/BackupSection.tsx
+msgid "删除后不能从后台恢复这个快照。当前行程不会受影响。"
+msgstr "删除后不能从后台恢复这个快照。当前行程不会受影响。"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/BackupSection.tsx
+msgid "删除备份"
+msgstr "删除备份"
+
+#: src/admin/BackupSection.tsx
+#: src/admin/FlightsSection.tsx
+#: src/admin/SettingsSection.tsx
+#: src/pages/BookingsPage.tsx
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "删除失败，请重试"
+msgstr "删除失败，请重试"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/SuggestionsSection.tsx
+msgid "删除建议"
+msgstr "删除建议"
+
+#: src/admin/ItinerarySection.tsx
+msgid "删除方案"
+msgstr "删除方案"
+
+#: src/admin/SplitSection.tsx
+msgid "删除条目"
+msgstr "删除条目"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/FlightsSection.tsx
+#: src/pages/BookingsPage.tsx
+msgid "删除航班"
+msgstr "删除航班"
+
+#: src/admin/AuditSection.tsx
+msgid "删除花销"
+msgstr "删除花销"
+
+#: src/admin/SettingsSection.tsx
+msgid "删除行程"
+msgstr "删除行程"
+
+#: src/admin/SettingsSection.tsx
+msgid "删除行程会同时清空它的 Durable Object 存储：时间线、账目、备份、审计日志一并消失。"
+msgstr "删除行程会同时清空它的 Durable Object 存储：时间线、账目、备份、审计日志一并消失。"
+
+#: src/admin/SplitSection.tsx
+msgid "删除记录"
+msgstr "删除记录"
+
+#: src/admin/ItinerarySection.tsx
+msgid "删除该{label}"
+msgstr "删除该{label}"
+
+#: src/admin/AuditSection.tsx
+msgid "删除还款"
+msgstr "删除还款"
+
+#: src/admin/SplitSection.tsx
+msgid "删除还款记录"
+msgstr "删除还款记录"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "删除这一项"
+msgstr "删除这一项"
+
+#: src/admin/BackupSection.tsx
+msgid "删除这个备份？"
+msgstr "删除这个备份？"
+
+#: src/admin/SettingsSection.tsx
+msgid "删除这个行程？"
+msgstr "删除这个行程？"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "到达"
+msgstr "到达"
+
+#: src/admin/adminUi.tsx
+msgid "刷新"
+msgstr "刷新"
+
+#: src/admin/adminUi.tsx
+msgid "刷新中"
+msgstr "刷新中"
+
+#: src/pages/LandingPage.tsx
+msgid "功能"
+msgstr "功能"
+
+#: src/trip/currency.ts
+msgid "加元"
+msgstr "加元"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "加入「{tripTitle}」"
+msgstr "加入「{tripTitle}」"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "加入中…"
+msgstr "加入中…"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "加入失败，请重试。"
+msgstr "加入失败，请重试。"
+
+#: src/admin/ItinerarySection.tsx
+msgid "加备注"
+msgstr "加备注"
+
+#: src/admin/ItinerarySection.tsx
+msgid "加方案"
+msgstr "加方案"
+
+#: src/pages/DashboardPage.tsx
+msgid "加载中"
+msgstr "加载中"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/BackupSection.tsx
+#: src/admin/MembersSection.tsx
+msgid "加载中…"
+msgstr "加载中…"
+
+#: src/admin/AuditSection.tsx
+msgid "勾选清单项"
+msgstr "勾选清单项"
+
+#: src/pages/LandingPage.tsx
+msgid "北美西海岸<0>之旅</0>"
+msgstr "北美西海岸<0>之旅</0>"
+
+#: src/admin/PaymentSplit.tsx
+msgid "单人付款"
+msgstr "单人付款"
+
+#: src/pages/LandingPage.tsx
+msgid "南下 · 确认码 R4K8M"
+msgstr "南下 · 确认码 R4K8M"
+
+#: src/admin/SettingsSection.tsx
+msgid "危险区"
+msgstr "危险区"
+
+#: src/admin/AuditSection.tsx
+msgid "发生写操作后，记录会出现在这里。"
+msgstr "发生写操作后，记录会出现在这里。"
+
+#: src/admin/MembersSection.tsx
+msgid "发送中…"
+msgstr "发送中…"
+
+#: src/components/SuggestBox.tsx
+msgid "发送建议"
+msgstr "发送建议"
+
+#: src/admin/MembersSection.tsx
+msgid "发送邀请"
+msgstr "发送邀请"
+
+#: src/admin/MembersSection.tsx
+msgid "发送邀请失败，请重试"
+msgstr "发送邀请失败，请重试"
+
+#: src/admin/AddExpenseModal.tsx
+#: src/admin/AddStopModal.tsx
+#: src/admin/ConfirmModal.tsx
+#: src/admin/FlightEditorModal.tsx
+#: src/admin/PaymentModal.tsx
+#: src/admin/SuggestionsSection.tsx
+#: src/components/CreateTripModal.tsx
+#: src/components/SuggestBox.tsx
+msgid "取消"
+msgstr "取消"
+
+#: src/pages/BookingsPage.tsx
+msgid "另有 {legacyCount} 条旧版航班停靠点仍保留在<0>行程时间线</0>中；新录入的个人航班不会覆盖它们。"
+msgstr "另有 {legacyCount} 条旧版航班停靠点仍保留在<0>行程时间线</0>中；新录入的个人航班不会覆盖它们。"
+
+#: src/admin/SettingsSection.tsx
+#: src/components/CreateTripModal.tsx
+msgid "可见性"
+msgstr "可见性"
+
+#: src/pages/BookingsPage.tsx
+msgid "各自出发，同程抵达"
+msgstr "各自出发，同程抵达"
+
+#: src/admin/ReceiptScanModal.tsx
+#: src/pages/LandingPage.tsx
+msgid "合计"
+msgstr "合计"
+
+#: src/admin/PaymentSplit.tsx
+msgid "合计 {weightSum}%（按比例折算）"
+msgstr "合计 {weightSum}%（按比例折算）"
+
+#: src/admin/SettingsSection.tsx
+msgid "合计、余额与结算将改按 <0>{currency}</0> 显示。已有账目保留原币种与金额不变，折算到新本位币的汇率会按当前汇率重新计算。"
+msgstr "合计、余额与结算将改按 <0>{currency}</0> 显示。已有账目保留原币种与金额不变，折算到新本位币的汇率会按当前汇率重新计算。"
+
+#: src/admin/SettingsSection.tsx
+msgid "合计与结算按本位币显示；各笔花销可用其他币种记录，按录入时的汇率折算。"
+msgstr "合计与结算按本位币显示；各笔花销可用其他币种记录，按录入时的汇率折算。"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "同行人"
+msgstr "同行人"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "同行人从行程页提交的评论 · 采纳或忽略后会同步给所有人"
+msgstr "同行人从行程页提交的评论 · 采纳或忽略后会同步给所有人"
+
+#: src/pages/PaperLedger.tsx
+msgid "同行人各自结算金额"
+msgstr "同行人各自结算金额"
+
+#: src/pages/PaperTimeline.tsx
+msgid "同行人数 · Travelers"
+msgstr "同行人数 · Travelers"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "名称"
+msgstr "名称"
+
+#: src/admin/SettingsSection.tsx
+msgid "名称 / 日期 / 时区 / 本位币 / 可见性 · 仅创建者可修改"
+msgstr "名称 / 日期 / 时区 / 本位币 / 可见性 · 仅创建者可修改"
+
+#: src/trip/exporters.ts
+msgid "后勤："
+msgstr "后勤："
+
+#: src/pages/LandingPage.tsx
+msgid "后台一键签发令牌，把 SKILL.md 丢给你的 Agent，开始使唤它。"
+msgstr "后台一键签发令牌，把 SKILL.md 丢给你的 Agent，开始使唤它。"
+
+#: src/components/TripLayout.tsx
+msgid "向行程创建者索取邀请链接后即可加入。"
+msgstr "向行程创建者索取邀请链接后即可加入。"
+
+#: src/pages/AdminPage.tsx
+msgid "向行程创建者索取邀请链接后即可进入后台。"
+msgstr "向行程创建者索取邀请链接后即可进入后台。"
+
+#: src/pages/LandingPage.tsx
+msgid "周六下午排太满了，帮我匀开一点"
+msgstr "周六下午排太满了，帮我匀开一点"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "商家名称"
+msgstr "商家名称"
+
+#: src/pages/PaperTimeline.tsx
+msgid "图例 · Legend"
+msgstr "图例 · Legend"
+
+#: src/pages/PaperTimeline.tsx
+msgid "在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。"
+msgstr "在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。"
+
+#: src/components/AddressLink.tsx
+msgid "在地图中打开"
+msgstr "在地图中打开"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "在账目和 PDF 的 credit 条目中原样显示。"
+msgstr "在账目和 PDF 的 credit 条目中原样显示。"
+
+#: src/admin/ItinerarySection.tsx
+msgid "地址"
+msgstr "地址"
+
+#: src/trip/exporters.ts
+msgid "地址：{address}"
+msgstr "地址：{address}"
+
+#: src/admin/ItinerarySection.tsx
+msgid "地址（可选）"
+msgstr "地址（可选）"
+
+#: src/admin/ItinerarySection.tsx
+msgid "地点"
+msgstr "地点"
+
+#: src/trip/exporters.ts
+msgid "地点：{location}"
+msgstr "地点：{location}"
+
+#: src/admin/ItinerarySection.tsx
+msgid "地点待定"
+msgstr "地点待定"
+
+#: src/pages/PaperLedger.tsx
+msgid "垫付 Paid by"
+msgstr "垫付 Paid by"
+
+#: src/pages/LandingPage.tsx
+msgid "填个邮箱发出邀请，对方点开链接登录即加入，无需注册流程。"
+msgstr "填个邮箱发出邀请，对方点开链接登录即加入，无需注册流程。"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "填写账单上的原始描述"
+msgstr "填写账单上的原始描述"
+
+#: src/admin/AuditSection.tsx
+msgid "处理建议"
+msgstr "处理建议"
+
+#: src/pages/LandingPage.tsx
+msgid "备份与审计"
+msgstr "备份与审计"
+
+#: src/admin/BackupSection.tsx
+msgid "备份与恢复"
+msgstr "备份与恢复"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "备份恢复"
+msgstr "备份恢复"
+
+#: src/admin/BackupSection.tsx
+msgid "备份标签"
+msgstr "备份标签"
+
+#: src/admin/itineraryAdapter.ts
+#: src/pages/timelineShared.tsx
+msgid "备注"
+msgstr "备注"
+
+#: src/trip/exporters.ts
+msgid "备注："
+msgstr "备注："
+
+#: src/admin/FlightEditorModal.tsx
+#: src/admin/PaymentModal.tsx
+msgid "备注（可选）"
+msgstr "备注（可选）"
+
+#: src/admin/itineraryAdapter.ts
+#: src/pages/timelineShared.tsx
+msgid "备用"
+msgstr "备用"
+
+#: src/trip/exporters.ts
+msgid "备用停车：{backup}"
+msgstr "备用停车：{backup}"
+
+#: src/pages/PaperLedger.tsx
+msgid "复制 PDF 自动导出链接"
+msgstr "复制 PDF 自动导出链接"
+
+#: src/admin/AgentSection.tsx
+msgid "复制失败"
+msgstr "复制失败"
+
+#: src/admin/MembersSection.tsx
+msgid "复制失败，请手动选择复制"
+msgstr "复制失败，请手动选择复制"
+
+#: src/admin/MembersSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "复制链接"
+msgstr "复制链接"
+
+#: src/pages/PaperLedger.tsx
+msgid "复制链接失败，请重试"
+msgstr "复制链接失败，请重试"
+
+#: src/components/TripLayout.tsx
+msgid "它可能已被删除，或链接有误。"
+msgstr "它可能已被删除，或链接有误。"
+
+#: src/admin/SplitSection.tsx
+msgid "实付 <0>{netLabel}</0>"
+msgstr "实付 <0>{netLabel}</0>"
+
+#: src/pages/PaperLedger.tsx
+msgid "实付 <0>{netText}</0>"
+msgstr "实付 <0>{netText}</0>"
+
+#: src/admin/SplitSection.tsx
+msgid "实付合计 ({currency})"
+msgstr "实付合计 ({currency})"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "实付合计 Net Total"
+msgstr "实付合计 Net Total"
+
+#: src/pages/PaperLedger.tsx
+msgid "实付合计 Total ({baseCurrency})"
+msgstr "实付合计 Total ({baseCurrency})"
+
+#: src/pages/LandingPage.tsx
+msgid "实时同步 · 2 人在线 · rev 129"
+msgstr "实时同步 · 2 人在线 · rev 129"
+
+#: src/pages/LandingPage.tsx
+msgid "实时时间线"
+msgstr "实时时间线"
+
+#: src/pages/LandingPage.tsx
+msgid "审计日志：agent · addStop"
+msgstr "审计日志：agent · addStop"
+
+#: src/pages/LandingPage.tsx
+msgid "对 Agent 说"
+msgstr "对 Agent 说"
+
+#: src/pages/LandingPage.tsx
+msgid "对着行程，直接说"
+msgstr "对着行程，直接说"
+
+#: src/components/SuggestBox.tsx
+msgid "对这个停靠点有想法？停车、时间、备选方案都行…"
+msgstr "对这个停靠点有想法？停车、时间、备选方案都行…"
+
+#: src/pages/PaperLedger.tsx
+msgid "导出 PDF"
+msgstr "导出 PDF"
+
+#: src/pages/PaperLedger.tsx
+msgid "导出 PDF 失败，请重试"
+msgstr "导出 PDF 失败，请重试"
+
+#: src/admin/BackupSection.tsx
+msgid "将把当前行程恢复到 <0>rev {rev}</0> 的快照。当前状态会被覆盖，但这次恢复动作会进入审计日志。"
+msgstr "将把当前行程恢复到 <0>rev {rev}</0> 的快照。当前状态会被覆盖，但这次恢复动作会进入审计日志。"
+
+#: src/pages/PaperLedger.tsx
+msgid "小计 Subtotal ({baseCurrency})"
+msgstr "小计 Subtotal ({baseCurrency})"
+
+#: src/admin/SplitSection.tsx
+msgid "小计 Subtotal ({currency})"
+msgstr "小计 Subtotal ({currency})"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "小费"
+msgstr "小费"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "小费 · {tipPct}%"
+msgstr "小费 · {tipPct}%"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "小费 · 凑整到 {targetLabel}"
+msgstr "小费 · 凑整到 {targetLabel}"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "小费（按比例分摊）"
+msgstr "小费（按比例分摊）"
+
+#: src/admin/FlightsSection.tsx
+msgid "尚无航班信息"
+msgstr "尚无航班信息"
+
+#: src/pages/PaperTimeline.tsx
+msgid "展开当天日程"
+msgstr "展开当天日程"
+
+#: src/admin/SettingsSection.tsx
+msgid "已保存行程设置"
+msgstr "已保存行程设置"
+
+#: src/pages/PaperLedger.tsx
+msgid "已分配 <0>{allocatedText}</0>"
+msgstr "已分配 <0>{allocatedText}</0>"
+
+#: src/admin/BackupSection.tsx
+msgid "已创建备份"
+msgstr "已创建备份"
+
+#: src/admin/ItinerarySection.tsx
+msgid "已删除停靠点"
+msgstr "已删除停靠点"
+
+#: src/admin/BackupSection.tsx
+msgid "已删除备份"
+msgstr "已删除备份"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已删除建议"
+msgstr "已删除建议"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "已删除条目"
+msgstr "已删除条目"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已删除的停靠点"
+msgstr "已删除的停靠点"
+
+#: src/admin/FlightsSection.tsx
+msgid "已删除航班"
+msgstr "已删除航班"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "已删除还款记录"
+msgstr "已删除还款记录"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "已垫付"
+msgstr "已垫付"
+
+#: src/pages/PaperLedger.tsx
+msgid "已复制"
+msgstr "已复制"
+
+#: src/admin/AgentSection.tsx
+msgid "已复制{what}"
+msgstr "已复制{what}"
+
+#: src/admin/MembersSection.tsx
+msgid "已复制邀请链接"
+msgstr "已复制邀请链接"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/ItinerarySection.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "已完成"
+msgstr "已完成"
+
+#: src/pages/PaperTimeline.tsx
+msgid "已完成 Done"
+msgstr "已完成 Done"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "已完整分配"
+msgstr "已完整分配"
+
+#: src/admin/FlightsSection.tsx
+#: src/pages/BookingsPage.tsx
+msgid "已录入成员"
+msgstr "已录入成员"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已忽略"
+msgstr "已忽略"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已忽略 {selectedCount} 条"
+msgstr "已忽略 {selectedCount} 条"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已忽略建议"
+msgstr "已忽略建议"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已恢复到待审"
+msgstr "已恢复到待审"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "已恢复原始账目"
+msgstr "已恢复原始账目"
+
+#: src/admin/BackupSection.tsx
+msgid "已恢复备份"
+msgstr "已恢复备份"
+
+#: src/admin/SplitSection.tsx
+msgid "已抵扣 credit {creditLabel}"
+msgstr "已抵扣 credit {creditLabel}"
+
+#: src/pages/PaperLedger.tsx
+msgid "已抵扣 Credit <0>−{creditText}</0>"
+msgstr "已抵扣 Credit <0>−{creditText}</0>"
+
+#: src/components/SuggestBox.tsx
+msgid "已接受"
+msgstr "已接受"
+
+#: src/admin/MembersSection.tsx
+msgid "已撤销邀请"
+msgstr "已撤销邀请"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "已收款"
+msgstr "已收款"
+
+#: src/admin/ItinerarySection.tsx
+msgid "已新增停靠点"
+msgstr "已新增停靠点"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "已更新条目"
+msgstr "已更新条目"
+
+#: src/admin/FlightsSection.tsx
+msgid "已更新航班"
+msgstr "已更新航班"
+
+#: src/admin/FlightsSection.tsx
+msgid "已添加航班"
+msgstr "已添加航班"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "已添加花销条目"
+msgstr "已添加花销条目"
+
+#: src/admin/AgentSection.tsx
+msgid "已生成 agent token"
+msgstr "已生成 agent token"
+
+#: src/admin/MembersSection.tsx
+msgid "已生成邀请链接（邮件未发出，可手动复制）"
+msgstr "已生成邀请链接（邮件未发出，可手动复制）"
+
+#: src/admin/MembersSection.tsx
+msgid "已移除成员"
+msgstr "已移除成员"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "已结清"
+msgstr "已结清"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "已记录还款"
+msgstr "已记录还款"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "已超出 {differenceLabel}"
+msgstr "已超出 {differenceLabel}"
+
+#: src/admin/MembersSection.tsx
+msgid "已过期"
+msgstr "已过期"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "已还款"
+msgstr "已还款"
+
+#: src/pages/AdminPage.tsx
+msgid "已退出登录"
+msgstr "已退出登录"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已采纳"
+msgstr "已采纳"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已采纳 {selectedCount} 条建议"
+msgstr "已采纳 {selectedCount} 条建议"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "已采纳建议"
+msgstr "已采纳建议"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/ItinerarySection.tsx
+#: src/pages/LandingPage.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "已锁定"
+msgstr "已锁定"
+
+#: src/pages/PaperTimeline.tsx
+msgid "已锁定 Locked"
+msgstr "已锁定 Locked"
+
+#: src/admin/CurrencyFields.tsx
+msgid "币种"
+msgstr "币种"
+
+#: src/pages/LandingPage.tsx
+msgid "帮我把今晚的酒店确认加进行程"
+msgstr "帮我把今晚的酒店确认加进行程"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "应承担"
+msgstr "应承担"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "应收回"
+msgstr "应收回"
+
+#: src/admin/SettingsSection.tsx
+#: src/components/CreateTripModal.tsx
+msgid "开始日期"
+msgstr "开始日期"
+
+#: src/pages/BookingsPage.tsx
+msgid "当前视图"
+msgstr "当前视图"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "当地时间"
+msgstr "当地时间"
+
+#: src/admin/SuggestionsSection.tsx
+#: src/components/SuggestBox.tsx
+msgid "待审"
+msgstr "待审"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "待审建议"
+msgstr "待审建议"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "待审建议"
+msgstr "待审建议"
+
+#: src/admin/MembersSection.tsx
+msgid "待接受的邀请"
+msgstr "待接受的邀请"
+
+#: src/admin/SplitSection.tsx
+msgid "待结算"
+msgstr "待结算"
+
+#: src/pages/PaperLedger.tsx
+msgid "待结算 Outstanding"
+msgstr "待结算 Outstanding"
+
+#: src/admin/FlightsSection.tsx
+msgid "待补充"
+msgstr "待补充"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "忽略"
+msgstr "忽略"
+
+#: src/admin/BackupSection.tsx
+msgid "恢复"
+msgstr "恢复"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "恢复 AA"
+msgstr "恢复 AA"
+
+#: src/admin/SplitSection.tsx
+msgid "恢复原始"
+msgstr "恢复原始"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/SplitSection.tsx
+msgid "恢复原始账目"
+msgstr "恢复原始账目"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/BackupSection.tsx
+msgid "恢复备份"
+msgstr "恢复备份"
+
+#: src/admin/BackupSection.tsx
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "恢复失败，请重试"
+msgstr "恢复失败，请重试"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "恢复自动"
+msgstr "恢复自动"
+
+#: src/admin/BackupSection.tsx
+msgid "恢复这个备份？"
+msgstr "恢复这个备份？"
+
+#: src/admin/MembersSection.tsx
+#: src/pages/AdminPage.tsx
+#: src/pages/DashboardPage.tsx
+msgid "成员"
+msgstr "成员"
+
+#: src/admin/MembersSection.tsx
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "成员"
+msgstr "成员"
+
+#: src/pages/PaperLedger.tsx
+msgid "成员间转账，只影响待结算"
+msgstr "成员间转账，只影响待结算"
+
+#: src/pages/BookingsPage.tsx
+msgid "我的航班"
+msgstr "我的航班"
+
+#: src/pages/DashboardPage.tsx
+msgid "我的行程"
+msgstr "我的行程"
+
+#: src/admin/SplitSection.tsx
+msgid "所有人已结清，无需互相转账。"
+msgstr "所有人已结清，无需互相转账。"
+
+#: src/admin/BackupSection.tsx
+msgid "手动保存当前 trip JSON · 一键恢复快照 · 操作写入审计日志"
+msgstr "手动保存当前 trip JSON · 一键恢复快照 · 操作写入审计日志"
+
+#: src/admin/TimezoneCombobox.tsx
+msgid "打开时区列表"
+msgstr "打开时区列表"
 
 #: src/components/PageNav.tsx
 msgid "打开管理后台"
 msgstr "打开管理后台"
 
+#: src/admin/SplitSection.tsx
+msgid "扫描收据"
+msgstr "扫描收据"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "扫描收据分账"
+msgstr "扫描收据分账"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "批量选择"
+msgstr "批量选择"
+
+#: src/pages/PaperLedger.tsx
+msgid "承担 Owed by"
+msgstr "承担 Owed by"
+
+#: src/pages/PaperLedger.tsx
+msgid "承担合计 Allocated"
+msgstr "承担合计 Allocated"
+
+#: src/pages/LandingPage.tsx
+msgid "把同行人请进来"
+msgstr "把同行人请进来"
+
+#: src/pages/LandingPage.tsx
+msgid "把这个预订信息加进去"
+msgstr "把这个预订信息加进去"
+
+#: src/pages/PaperTimeline.tsx
+msgid "折叠当天日程"
+msgstr "折叠当天日程"
+
+#: src/admin/CurrencyFields.tsx
+msgid "折合 <0>{converted}</0>"
+msgstr "折合 <0>{converted}</0>"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "折合本位币"
+msgstr "折合本位币"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "抵扣 Credit"
+msgstr "抵扣 Credit"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "抵扣后实付"
+msgstr "抵扣后实付"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "抵扣金额须在 0 与花销金额之间。"
+msgstr "抵扣金额须在 0 与花销金额之间。"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "拍下餐厅小票"
+msgstr "拍下餐厅小票"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "拍照"
+msgstr "拍照"
+
+#: src/admin/FlightsSection.tsx
+msgid "按同行人记录多段航班 · 管理员可代为添加、修改或删除"
+msgstr "按同行人记录多段航班 · 管理员可代为添加、修改或删除"
+
+#: src/admin/PaymentSplit.tsx
+msgid "按比例 %"
+msgstr "按比例 %"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "按菜品小计 {tipPct}% = {tipLabel}"
+msgstr "按菜品小计 {tipPct}% = {tipLabel}"
+
+#: src/admin/PaymentSplit.tsx
+msgid "按金额"
+msgstr "按金额"
+
+#: src/trip/exporters.ts
+msgid "据点：{hotel}"
+msgstr "据点：{hotel}"
+
+#: src/admin/AdminLogin.tsx
+msgid "授权范围"
+msgstr "授权范围"
+
+#: src/admin/AuditSection.tsx
+msgid "提交建议"
+msgstr "提交建议"
+
+#: src/components/SuggestBox.tsx
+msgid "提建议"
+msgstr "提建议"
+
+#: src/admin/itineraryAdapter.ts
+#: src/pages/timelineShared.tsx
+msgid "提示"
+msgstr "提示"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "提给"
+msgstr "提给"
+
+#: src/admin/itineraryAdapter.ts
+#: src/pages/timelineShared.tsx
+msgid "提醒"
+msgstr "提醒"
+
+#: src/trip/exporters.ts
+msgid "提醒：{warning}"
+msgstr "提醒：{warning}"
+
+#: src/admin/TimezoneCombobox.tsx
+msgid "搜索城市或时区，如 New York"
+msgstr "搜索城市或时区，如 New York"
+
+#: src/admin/MembersSection.tsx
+msgid "撤销"
+msgstr "撤销"
+
+#: src/admin/SuggestionsSection.tsx
+msgctxt "suggestion"
+msgid "撤销"
+msgstr "撤销"
+
+#: src/admin/MembersSection.tsx
+msgid "撤销失败，请重试"
+msgstr "撤销失败，请重试"
+
+#: src/admin/BackupSection.tsx
+msgid "操作者"
+msgstr "操作者"
+
+#: src/admin/AuditSection.tsx
+msgid "操作记录"
+msgstr "操作记录"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "操作记录"
+msgstr "操作记录"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "收件箱已清空"
+msgstr "收件箱已清空"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "收到"
+msgstr "收到"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "收据币种（识别自小票，可修改）"
+msgstr "收据币种（识别自小票，可修改）"
+
+#: src/admin/AddStopModal.tsx
+msgid "放在哪一天"
+msgstr "放在哪一天"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "数量"
+msgstr "数量"
+
+#: src/admin/AuditSection.tsx
+msgid "整份替换行程"
+msgstr "整份替换行程"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/ItinerarySection.tsx
+msgid "新停靠点"
+msgstr "新停靠点"
+
+#: src/trip/currency.ts
+msgid "新加坡元"
+msgstr "新加坡元"
+
+#: src/trip/currency.ts
+msgid "新台币"
+msgstr "新台币"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/AuditSection.tsx
+#: src/admin/ItinerarySection.tsx
+msgid "新增停靠点"
+msgstr "新增停靠点"
+
+#: src/admin/SplitSection.tsx
+msgid "新增条目"
+msgstr "新增条目"
+
+#: src/admin/ItinerarySection.tsx
+msgid "新增第一站后，它会立即同步到这个行程的时间线。"
+msgstr "新增第一站后，它会立即同步到这个行程的时间线。"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "新增花销条目"
+msgstr "新增花销条目"
+
+#: src/pages/LandingPage.tsx
+msgid "新增预订 · Amtrak 517 · 8/16 14:20 南下"
+msgstr "新增预订 · Amtrak 517 · 8/16 14:20 南下"
+
+#: src/components/CreateTripModal.tsx
+#: src/pages/DashboardPage.tsx
+msgid "新建行程"
+msgstr "新建行程"
+
+#: src/admin/BackupSection.tsx
+msgid "无法加载备份"
+msgstr "无法加载备份"
+
+#: src/admin/AuditSection.tsx
+msgid "无法加载审计日志"
+msgstr "无法加载审计日志"
+
+#: src/admin/MembersSection.tsx
+msgid "无法加载成员"
+msgstr "无法加载成员"
+
+#: src/trip/currency.ts
+msgid "日元"
+msgstr "日元"
+
+#: src/admin/FlightEditorModal.tsx
+#: src/admin/PaymentModal.tsx
+msgid "日期"
+msgstr "日期"
+
+#: src/components/FlightCard.tsx
+#: src/pages/DashboardPage.tsx
+msgid "日期待定"
+msgstr "日期待定"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "时区（可选）"
+msgstr "时区（可选）"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/BackupSection.tsx
+#: src/admin/ItinerarySection.tsx
+msgid "时间"
+msgstr "时间"
+
+#: src/pages/LandingPage.tsx
+msgid "时间线"
+msgstr "时间线"
+
+#: src/pages/LandingPage.tsx
+msgid "时间线、预订、分账，一份行程实时同步。朋友从浏览器进来，Agent 拿着令牌从 API 进来——写的是同一张纸。"
+msgstr "时间线、预订、分账，一份行程实时同步。朋友从浏览器进来，Agent 拿着令牌从 API 进来——写的是同一张纸。"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "明细（可选）"
+msgstr "明细（可选）"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "显示已处理"
+msgstr "显示已处理"
+
+#: src/pages/LandingPage.tsx
+msgid "晚餐 · Gastown"
+msgstr "晚餐 · Gastown"
+
+#: src/admin/BackupSection.tsx
+msgid "暂无备份"
+msgstr "暂无备份"
+
+#: src/admin/AuditSection.tsx
+msgid "暂无记录"
+msgstr "暂无记录"
+
+#: src/admin/SettingsSection.tsx
+msgid "更改本位币"
+msgstr "更改本位币"
+
+#: src/admin/SettingsSection.tsx
+msgid "更改记账本位币？"
+msgstr "更改记账本位币？"
+
+#: src/admin/AuditSection.tsx
+msgid "更新停靠点状态"
+msgstr "更新停靠点状态"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "更新失败，请重试"
+msgstr "更新失败，请重试"
+
+#: src/admin/AuditSection.tsx
+msgid "更新航班"
+msgstr "更新航班"
+
+#: src/trip/exporters.ts
+msgid "有效时间：{validFrom} - {validTo}"
+msgstr "有效时间：{validFrom} - {validTo}"
+
+#: src/admin/AgentSection.tsx
+msgid "有效期"
+msgstr "有效期"
+
+#: src/admin/ItinerarySection.tsx
+#: src/admin/ReceiptScanModal.tsx
+msgid "未命名"
+msgstr "未命名"
+
+#: src/admin/AuditSection.tsx
+msgid "未知 IP"
+msgstr "未知 IP"
+
+#: src/admin/CurrencyFields.tsx
+msgid "未获取到汇率，请手动填写"
+msgstr "未获取到汇率，请手动填写"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "未选 → 全员"
+msgstr "未选 → 全员"
+
+#: src/admin/MembersSection.tsx
+msgid "未配置"
+msgstr "未配置"
+
+#: src/admin/AgentSection.tsx
+msgid "本地 agent 读取 <0>/SKILL.md</0> 后，凭下面的 token 调用 trip API"
+msgstr "本地 agent 读取 <0>/SKILL.md</0> 后，凭下面的 token 调用 trip API"
+
+#: src/admin/ItinerarySection.tsx
+msgid "本日加一站"
+msgstr "本日加一站"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "机场 / 城市"
+msgstr "机场 / 城市"
+
+#: src/pages/LandingPage.tsx
+msgid "机票、酒店、确认码、停车方案，全放进同一张纸，出发当天不用再翻邮箱。"
+msgstr "机票、酒店、确认码、停车方案，全放进同一张纸，出发当天不用再翻邮箱。"
+
+#: src/pages/PaperTimeline.tsx
+msgid "杂项"
+msgstr "杂项"
+
+#: src/admin/adminData.ts
+#: src/pages/PaperTimeline.tsx
+msgid "杂项 · Misc"
+msgstr "杂项 · Misc"
+
+#: src/admin/SplitSection.tsx
+msgid "条目"
+msgstr "条目"
+
+#: src/trip/currency.ts
+msgid "林吉特"
+msgstr "林吉特"
+
+#: src/pages/PaperTimeline.tsx
+msgid "查看已归档日程（{archivedCount} 天）"
+msgstr "查看已归档日程（{archivedCount} 天）"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/ItinerarySection.tsx
+msgid "标题"
+msgstr "标题"
+
+#: src/admin/AdminLogin.tsx
+msgid "校验你的行程成员身份"
+msgstr "校验你的行程成员身份"
+
+#: src/admin/ItinerarySection.tsx
+msgid "横跨 {dayCount} 天"
+msgstr "横跨 {dayCount} 天"
+
+#: src/trip/currency.ts
+msgid "欧元"
+msgstr "欧元"
+
+#: src/pages/PaperLedger.tsx
+msgid "正在导出…"
+msgstr "正在导出…"
+
+#: src/pages/LedgerAutoExport.tsx
+msgid "正在生成 PDF 账单…"
+msgstr "正在生成 PDF 账单…"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "正在识别收据…"
+msgstr "正在识别收据…"
+
+#: src/admin/BackupSection.tsx
+msgid "正在读取备份列表。"
+msgstr "正在读取备份列表。"
+
+#: src/admin/AuditSection.tsx
+msgid "正在读取审计日志。"
+msgstr "正在读取审计日志。"
+
+#: src/admin/MembersSection.tsx
+msgid "正在读取成员列表。"
+msgstr "正在读取成员列表。"
+
+#: src/admin/AdminLogin.tsx
+msgid "正在跳转 GitHub…"
+msgstr "正在跳转 GitHub…"
+
+#: src/admin/ConfirmModal.tsx
+msgid "此操作无法撤销，确定继续吗？"
+msgstr "此操作无法撤销，确定继续吗？"
+
+#: src/admin/AuditSection.tsx
+msgid "每一次写操作的审计日志 · 记录操作人、动作、对象与时间 · 仅管理员可见"
+msgstr "每一次写操作的审计日志 · 记录操作人、动作、对象与时间 · 仅管理员可见"
+
+#: src/pages/LandingPage.tsx
+msgid "每一步写入都进审计日志，改错了随时快照回滚。"
+msgstr "每一步写入都进审计日志，改错了随时快照回滚。"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "每个邀请链接只能加入一个人。如果这是你本人，直接打开行程即可。"
+msgstr "每个邀请链接只能加入一个人。如果这是你本人，直接打开行程即可。"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "每人承担金额（可手动修改）"
+msgstr "每人承担金额（可手动修改）"
+
+#: src/pages/BookingsPage.tsx
+msgid "每位同行人可以记录多段航班；登录后会先显示你自己的，也可以随时查看大家的到达与返程安排。"
+msgstr "每位同行人可以记录多段航班；登录后会先显示你自己的，也可以随时查看大家的到达与返程安排。"
+
+#: src/pages/LandingPage.tsx
+msgid "每次改动留痕、可追责到人（或 Agent）；一键快照，误操作随时回滚。"
+msgstr "每次改动留痕、可追责到人（或 Agent）；一键快照，误操作随时回滚。"
+
+#: src/admin/SplitSection.tsx
+msgid "每笔分别设置谁垫付、每个人承担多少；默认 AA，也可以精确到个人金额"
+msgstr "每笔分别设置谁垫付、每个人承担多少；默认 AA，也可以精确到个人金额"
+
+#: src/admin/SettingsSection.tsx
+msgid "永久删除"
+msgstr "永久删除"
+
+#: src/admin/CurrencyFields.tsx
+msgid "汇率 1 {currency} ="
+msgstr "汇率 1 {currency} ="
+
+#: src/admin/receipt.ts
+msgid "没有从收据中识别到商品，请换一张更清晰的照片"
+msgstr "没有从收据中识别到商品，请换一张更清晰的照片"
+
+#: src/admin/TimezoneCombobox.tsx
+msgid "没有匹配的时区"
+msgstr "没有匹配的时区"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "没有待审建议了。新建议会出现在这里。"
+msgstr "没有待审建议了。新建议会出现在这里。"
+
+#: src/trip/currency.ts
+msgid "泰铢"
+msgstr "泰铢"
+
+#: src/pages/LandingPage.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "活动"
+msgstr "活动"
+
+#: src/admin/adminData.ts
+#: src/pages/PaperTimeline.tsx
+msgid "活动 · Event"
+msgstr "活动 · Event"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "浏览器仍在使用旧版页面资源。请关闭这个页面后重新打开；如果你在应用内浏览器中，请选择「在 Safari 中打开」。"
+msgstr "浏览器仍在使用旧版页面资源。请关闭这个页面后重新打开；如果你在应用内浏览器中，请选择「在 Safari 中打开」。"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "添加一项"
+msgstr "添加一项"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "添加为花销"
+msgstr "添加为花销"
+
+#: src/pages/BookingsPage.tsx
+msgid "添加出发与到达信息后，同行人就能在这里统一查看。"
+msgstr "添加出发与到达信息后，同行人就能在这里统一查看。"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "添加失败，请重试"
+msgstr "添加失败，请重试"
+
+#: src/pages/BookingsPage.tsx
+msgid "添加我的航班"
+msgstr "添加我的航班"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "添加条目"
+msgstr "添加条目"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/FlightEditorModal.tsx
+msgid "添加航班"
+msgstr "添加航班"
+
+#: src/admin/AuditSection.tsx
+msgid "添加花销"
+msgstr "添加花销"
+
+#: src/trip/exporters.ts
+msgid "清单"
+msgstr "清单"
+
+#: src/admin/AuditSection.tsx
+msgid "清空建议"
+msgstr "清空建议"
+
+#: src/trip/currency.ts
+msgid "港币"
+msgstr "港币"
+
+#: src/trip/currency.ts
+msgid "澳元"
+msgstr "澳元"
+
+#: src/admin/ItinerarySection.tsx
+msgid "点任意字段直接改 · 增删停靠点与方案 · 切换状态 / 类别"
+msgstr "点任意字段直接改 · 增删停靠点与方案 · 切换状态 / 类别"
+
+#: src/admin/ItinerarySection.tsx
+msgid "点击切换状态"
+msgstr "点击切换状态"
+
+#: src/admin/ItinerarySection.tsx
+msgid "点击切换类别"
+msgstr "点击切换类别"
+
+#: src/pages/DashboardPage.tsx
+msgid "点右上角「新建行程」，或等朋友把邀请链接发给你。"
+msgstr "点右上角「新建行程」，或等朋友把邀请链接发给你。"
+
+#: src/admin/SplitSection.tsx
+msgid "点金额可改 · 铅笔内设置每人承担"
+msgstr "点金额可改 · 铅笔内设置每人承担"
+
+#: src/admin/AddStopModal.tsx
+msgid "状态"
+msgstr "状态"
+
+#: src/trip/currency.ts
+msgid "瑞士法郎"
+msgstr "瑞士法郎"
+
+#: src/admin/AgentSection.tsx
+msgid "生成 token"
+msgstr "生成 token"
+
+#: src/admin/AgentSection.tsx
+msgid "生成失败（仅行程创建者可签发 token）"
+msgstr "生成失败（仅行程创建者可签发 token）"
+
+#: src/admin/AdminLogin.tsx
+#: src/components/TripLayout.tsx
+#: src/pages/LandingPage.tsx
+msgid "用 GitHub 登录"
+msgstr "用 GitHub 登录"
+
+#: src/pages/LandingPage.tsx
+msgid "用 GitHub 登录，免费开始"
+msgstr "用 GitHub 登录，免费开始"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "用 GitHub 登录后加入"
+msgstr "用 GitHub 登录后加入"
+
+#: src/admin/TimezoneCombobox.tsx
+msgid "用于“今天”的判定和日程归档；跨时区的停靠点可以带自己的时区。"
+msgstr "用于“今天”的判定和日程归档；跨时区的停靠点可以带自己的时区。"
+
+#: src/pages/PaperTimeline.tsx
+msgid "用餐"
+msgstr "用餐"
+
+#: src/admin/adminData.ts
+#: src/pages/PaperTimeline.tsx
+msgid "用餐 · Food"
+msgstr "用餐 · Food"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "由 {name} 承担全部金额"
+msgstr "由 {name} 承担全部金额"
+
+#: src/pages/LandingPage.tsx
+msgid "由 Agent 添加"
+msgstr "由 Agent 添加"
+
+#: src/pages/BookingsPage.tsx
+#: src/pages/LandingPage.tsx
+msgid "登录"
+msgstr "登录"
+
+#: src/pages/LandingPage.tsx
+msgid "登录，建一个行程"
+msgstr "登录，建一个行程"
+
+#: src/components/TripLayout.tsx
+msgid "登录后如果你是该行程的成员，即可查看和编辑。"
+msgstr "登录后如果你是该行程的成员，即可查看和编辑。"
+
+#: src/admin/AdminLogin.tsx
+msgid "登录失败，请重试。"
+msgstr "登录失败，请重试。"
+
+#: src/pages/BookingsPage.tsx
+msgid "登录并加入这个行程后，可以维护你自己的航班信息。"
+msgstr "登录并加入这个行程后，可以维护你自己的航班信息。"
+
+#: src/admin/AdminLogin.tsx
+msgid "登录管理后台"
+msgstr "登录管理后台"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "相册"
+msgstr "相册"
+
+#: src/pages/BookingsPage.tsx
+msgid "确定删除 {flightNumber} 吗？"
+msgstr "确定删除 {flightNumber} 吗？"
+
+#: src/admin/FlightsSection.tsx
+msgid "确定删除 {name} 的 {flightNumber} 吗？"
+msgstr "确定删除 {name} 的 {flightNumber} 吗？"
+
+#: src/admin/FlightsSection.tsx
+msgid "确定删除 {name} 的 这趟航班 吗？"
+msgstr "确定删除 {name} 的 这趟航班 吗？"
+
+#: src/admin/ItinerarySection.tsx
+msgid "确定删除停靠点<0>「{stopTitle}」</0>吗？该停靠点下的所有方案也会一并删除，且无法恢复。"
+msgstr "确定删除停靠点<0>「{stopTitle}」</0>吗？该停靠点下的所有方案也会一并删除，且无法恢复。"
+
+#: src/admin/ItinerarySection.tsx
+msgid "确定删除停靠点吗？该停靠点下的所有方案也会一并删除，且无法恢复。"
+msgstr "确定删除停靠点吗？该停靠点下的所有方案也会一并删除，且无法恢复。"
+
+#: src/admin/SplitSection.tsx
+msgid "确定删除花销条目<0>「{name}」</0>吗？删除后无法恢复。"
+msgstr "确定删除花销条目<0>「{name}」</0>吗？删除后无法恢复。"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "确定删除这条建议吗？删除后无法恢复。"
+msgstr "确定删除这条建议吗？删除后无法恢复。"
+
+#: src/admin/ItinerarySection.tsx
+msgid "确定删除这条方案吗？删除后无法恢复。"
+msgstr "确定删除这条方案吗？删除后无法恢复。"
+
+#: src/admin/SplitSection.tsx
+msgid "确定删除这笔<0>{amount}</0>的还款记录吗？删除后对应欠款会重新计入待结算。"
+msgstr "确定删除这笔<0>{amount}</0>的还款记录吗？删除后对应欠款会重新计入待结算。"
+
+#: src/admin/SplitSection.tsx
+msgid "确定删除这笔<0>{amount}</0>的还款记录吗？这笔记录本来就不计入结算，删除不会改变任何余额。"
+msgstr "确定删除这笔<0>{amount}</0>的还款记录吗？这笔记录本来就不计入结算，删除不会改变任何余额。"
+
+#: src/pages/BookingsPage.tsx
+msgid "确定删除这趟航班吗？"
+msgstr "确定删除这趟航班吗？"
+
+#: src/admin/ConfirmModal.tsx
+msgid "确认删除"
+msgstr "确认删除"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "确认号（可选）"
+msgstr "确认号（可选）"
+
+#: src/pages/DashboardPage.tsx
+msgid "私密"
+msgstr "私密"
+
+#: src/admin/SettingsSection.tsx
+msgid "私密 · 仅成员"
+msgstr "私密 · 仅成员"
+
+#: src/components/CreateTripModal.tsx
+msgid "私密 · 仅成员可见"
+msgstr "私密 · 仅成员可见"
+
+#: src/pages/LandingPage.tsx
+msgid "租车 · 三日"
+msgstr "租车 · 三日"
+
+#: src/pages/LandingPage.tsx
+msgid "移动 2 个日程 · 已实时同步给所有成员"
+msgstr "移动 2 个日程 · 已实时同步给所有成员"
+
+#: src/admin/MembersSection.tsx
+msgid "移除"
+msgstr "移除"
+
+#: src/admin/MembersSection.tsx
+msgid "移除 {name}？"
+msgstr "移除 {name}？"
+
+#: src/admin/MembersSection.tsx
+msgid "移除后 TA 将立即失去该行程的访问与编辑权限（含已签发的 agent token）。账目里已有的分摊记录不受影响。"
+msgstr "移除后 TA 将立即失去该行程的访问与编辑权限（含已签发的 agent token）。账目里已有的分摊记录不受影响。"
+
+#: src/admin/MembersSection.tsx
+msgid "移除失败，请重试"
+msgstr "移除失败，请重试"
+
+#: src/admin/MembersSection.tsx
+msgid "移除成员"
+msgstr "移除成员"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "税后合计 {preTipLabel}，选一个凑整数或直接填实付金额"
+msgstr "税后合计 {preTipLabel}，选一个凑整数或直接填实付金额"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "税费 / 服务费"
+msgstr "税费 / 服务费"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "税费 / 服务费（按比例分摊）"
+msgstr "税费 / 服务费（按比例分摊）"
+
+#: src/pages/PaperTimeline.tsx
+msgid "第 {dayNumber} 天"
+msgstr "第 {dayNumber} 天"
+
+#: src/pages/PaperTimeline.tsx
+msgid "第 {dayNumber} 天 · {stopCount} 站"
+msgstr "第 {dayNumber} 天 · {stopCount} 站"
+
+#: src/pages/AdminPage.tsx
+msgid "管理区"
+msgstr "管理区"
+
+#: src/pages/AdminPage.tsx
+msgid "管理员"
+msgstr "管理员"
+
+#: src/admin/AdminLogin.tsx
+msgid "管理行程停靠点、审批同行人建议、更新分账金额。仅该行程的成员可进入。"
+msgstr "管理行程停靠点、审批同行人建议、更新分账金额。仅该行程的成员可进入。"
+
+#: src/admin/AddExpenseModal.tsx
+#: src/admin/AddStopModal.tsx
+msgid "类别"
+msgstr "类别"
+
+#: src/admin/SettingsSection.tsx
+#: src/components/CreateTripModal.tsx
+msgid "结束日期"
+msgstr "结束日期"
+
+#: src/admin/SplitSection.tsx
+msgid "结算"
+msgstr "结算"
+
+#: src/admin/SplitSection.tsx
+msgid "结算 · Settle up"
+msgstr "结算 · Settle up"
+
+#: src/pages/LandingPage.tsx
+msgid "结算：同行者 → 你 $183.00"
+msgstr "结算：同行者 → 你 $183.00"
+
+#: src/pages/LandingPage.tsx
+msgid "给 Agent 一张<0/>进入行程的门票"
+msgstr "给 Agent 一张<0/>进入行程的门票"
+
+#: src/pages/LandingPage.tsx
+msgid "给 Agent 发张门票"
+msgstr "给 Agent 发张门票"
+
+#: src/pages/LandingPage.tsx
+msgid "给爱做攻略的人一张认真的纸：不是备忘录，也不用拉一个共享表格。"
+msgstr "给爱做攻略的人一张认真的纸：不是备忘录，也不用拉一个共享表格。"
+
+#: src/admin/FlightsSection.tsx
+msgid "编辑"
+msgstr "编辑"
+
+#: src/admin/SplitSection.tsx
+msgid "编辑 {name}"
+msgstr "编辑 {name}"
+
+#: src/admin/AuditSection.tsx
+msgid "编辑停靠点"
+msgstr "编辑停靠点"
+
+#: src/admin/SplitSection.tsx
+msgid "编辑条目"
+msgstr "编辑条目"
+
+#: src/admin/FlightEditorModal.tsx
+#: src/pages/BookingsPage.tsx
+msgid "编辑航班"
+msgstr "编辑航班"
+
+#: src/admin/AuditSection.tsx
+msgid "编辑花销"
+msgstr "编辑花销"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "编辑花销条目"
+msgstr "编辑花销条目"
+
+#: src/admin/AuditSection.tsx
+msgid "编辑还款"
+msgstr "编辑还款"
+
+#: src/trip/currency.ts
+msgid "美元"
+msgstr "美元"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "自定义金额"
+msgstr "自定义金额"
+
+#: src/admin/FlightsSection.tsx
+#: src/pages/BookingsPage.tsx
+msgid "航班"
+msgstr "航班"
+
+#: src/admin/FlightsSection.tsx
+msgid "航班信息"
+msgstr "航班信息"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "航班信息"
+msgstr "航班信息"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "航班号（可选）"
+msgstr "航班号（可选）"
+
+#: src/pages/BookingsPage.tsx
+msgid "航班已删除"
+msgstr "航班已删除"
+
+#: src/pages/BookingsPage.tsx
+msgid "航班已更新"
+msgstr "航班已更新"
+
+#: src/pages/BookingsPage.tsx
+msgid "航班已添加"
+msgstr "航班已添加"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "航空公司（可选）"
+msgstr "航空公司（可选）"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "花销明细 · Ledger"
+msgstr "花销明细 · Ledger"
+
+#: src/trip/currency.ts
+msgid "英镑"
+msgstr "英镑"
+
+#: src/admin/CurrencyFields.tsx
+msgid "获取中…"
+msgstr "获取中…"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "菜名"
+msgstr "菜名"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）"
+msgstr "菜品 · 可改名/改价/增删 · 选择谁分摊（默认 AA 均摊）"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "菜品小计"
+msgstr "菜品小计"
+
+#: src/pages/PaperLedger.tsx
+msgid "行程<0>花销</0>"
+msgstr "行程<0>花销</0>"
+
+#: src/components/TripLayout.tsx
+msgid "行程不存在"
+msgstr "行程不存在"
+
+#: src/pages/PaperTimeline.tsx
+msgid "行程作战表 · Travel Ops"
+msgstr "行程作战表 · Travel Ops"
+
+#: src/admin/ItinerarySection.tsx
+msgid "行程停靠点"
+msgstr "行程停靠点"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "行程停靠点"
+msgstr "行程停靠点"
+
+#: src/pages/LandingPage.tsx
+msgid "行程可设为公开：任何人可以围观时间线，还能给你提建议。"
+msgstr "行程可设为公开：任何人可以围观时间线，还能给你提建议。"
+
+#: src/admin/SettingsSection.tsx
+#: src/components/CreateTripModal.tsx
+msgid "行程名称"
+msgstr "行程名称"
+
+#: src/admin/SettingsSection.tsx
+msgid "行程名称不能为空"
+msgstr "行程名称不能为空"
+
+#: src/pages/DashboardPage.tsx
+msgid "行程工作台 · Trips"
+msgstr "行程工作台 · Trips"
+
+#: src/admin/SettingsSection.tsx
+msgid "行程已设为公开"
+msgstr "行程已设为公开"
+
+#: src/admin/SettingsSection.tsx
+msgid "行程已设为私密"
+msgstr "行程已设为私密"
+
+#: src/pages/PaperTimeline.tsx
+msgid "行程日期 · Travel dates"
+msgstr "行程日期 · Travel dates"
+
 #: src/routes.ts
 msgid "行程时间线"
 msgstr "行程时间线"
+
+#: src/admin/SettingsSection.tsx
+msgid "行程的全部内容（时间线、账目、建议、备份、操作记录）都会被永久删除，无法恢复。"
+msgstr "行程的全部内容（时间线、账目、建议、备份、操作记录）都会被永久删除，无法恢复。"
+
+#: src/admin/MembersSection.tsx
+msgid "行程的同行人 · 分账的花名册 · 仅创建者可邀请或移除成员"
+msgstr "行程的同行人 · 分账的花名册 · 仅创建者可邀请或移除成员"
+
+#: src/admin/SettingsSection.tsx
+msgid "行程设置"
+msgstr "行程设置"
+
+#: src/pages/AdminPage.tsx
+msgctxt "admin-section"
+msgid "行程设置"
+msgstr "行程设置"
+
+#: src/pages/LandingPage.tsx
+msgid "西海岸<0>之旅</0>"
+msgstr "西海岸<0>之旅</0>"
+
+#: src/admin/AddStopModal.tsx
+#: src/admin/ItinerarySection.tsx
+#: src/pages/LandingPage.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "计划中"
+msgstr "计划中"
+
+#: src/pages/PaperTimeline.tsx
+msgid "计划中 Planned"
+msgstr "计划中 Planned"
+
+#: src/pages/LandingPage.tsx
+msgid "计算一下费用"
+msgstr "计算一下费用"
+
+#: src/admin/AgentSection.tsx
+msgid "让本地 agent 直接读写行程"
+msgstr "让本地 agent 直接读写行程"
+
+#: src/routes/t.$tripId.admin.split.tsx
+msgid "记录失败，请重试"
+msgstr "记录失败，请重试"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/PaymentModal.tsx
+#: src/admin/SplitSection.tsx
+msgid "记录还款"
+msgstr "记录还款"
+
+#: src/admin/SettingsSection.tsx
+#: src/components/CreateTripModal.tsx
+msgid "记账本位币"
+msgstr "记账本位币"
+
+#: src/admin/AuditSection.tsx
+msgid "访客"
+msgstr "访客"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "评论"
+msgstr "评论"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "识别失败"
+msgstr "识别失败"
+
+#: src/admin/receipt.ts
+msgid "识别失败 ({status})"
+msgstr "识别失败 ({status})"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "识别失败，请重试"
+msgstr "识别失败，请重试"
+
+#: src/admin/receipt.ts
+msgid "识别超时，请重试"
+msgstr "识别超时，请重试"
+
+#: src/admin/FlightsSection.tsx
+msgid "该成员"
+msgstr "该成员"
+
+#: src/admin/PaymentSplit.tsx
+msgid "请为至少一人填写分摊"
+msgstr "请为至少一人填写分摊"
+
+#: src/admin/receipt.ts
+msgid "请先登录管理后台"
+msgstr "请先登录管理后台"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "请先邀请同行人，再设置每个人的承担金额。"
+msgstr "请先邀请同行人，再设置每个人的承担金额。"
+
+#: src/admin/MembersSection.tsx
+msgid "请刷新重试。"
+msgstr "请刷新重试。"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "请填写出发和到达机场、日期与时间"
+msgstr "请填写出发和到达机场、日期与时间"
+
+#: src/admin/AuditSection.tsx
+#: src/admin/BackupSection.tsx
+msgid "请确认你已登录管理员账号后重试。"
+msgstr "请确认你已登录管理员账号后重试。"
+
+#: src/admin/MembersSection.tsx
+msgid "请输入有效的邮箱地址"
+msgstr "请输入有效的邮箱地址"
+
+#: src/admin/FlightEditorModal.tsx
+msgid "请选择同行人"
+msgstr "请选择同行人"
+
+#: src/admin/AdminLogin.tsx
+msgid "读写行程 / 建议 / 账目内容"
+msgstr "读写行程 / 建议 / 账目内容"
+
+#: src/pages/LandingPage.tsx
+msgid "读取 SKILL.md · 行程 API 已就绪"
+msgstr "读取 SKILL.md · 行程 API 已就绪"
+
+#: src/admin/AdminLogin.tsx
+msgid "读取你的 GitHub 身份与头像"
+msgstr "读取你的 GitHub 身份与头像"
+
+#: src/admin/SplitSection.tsx
+msgid "谁付的"
+msgstr "谁付的"
+
+#: src/admin/AddExpenseModal.tsx
+#: src/admin/ReceiptScanModal.tsx
+msgid "谁付的（垫付）"
+msgstr "谁付的（垫付）"
+
+#: src/admin/SplitSection.tsx
+msgid "谁承担"
+msgstr "谁承担"
+
+#: src/admin/AddExpenseModal.tsx
+msgid "谁承担（每人金额）"
+msgstr "谁承担（每人金额）"
+
+#: src/admin/PaymentModal.tsx
+msgid "谁还款"
+msgstr "谁还款"
+
+#: src/pages/LandingPage.tsx
+msgid "账本 · Ledger"
+msgstr "账本 · Ledger"
+
+#: src/pages/LandingPage.tsx
+msgid "账本已结清 · 3 笔支出 · 同行者应付你 $183.00"
+msgstr "账本已结清 · 3 笔支出 · 同行者应付你 $183.00"
 
 #: src/routes.ts
 msgid "账目明细"
 msgstr "账目明细"
 
+#: src/pages/PaperLedger.tsx
+msgid "账目明细 · Trip Expenses"
+msgstr "账目明细 · Trip Expenses"
+
+#: src/trip/currency.ts
+msgid "越南盾"
+msgstr "越南盾"
+
+#: src/trip/exporters.ts
+msgid "车辆：{car}"
+msgstr "车辆：{car}"
+
+#: src/admin/SplitSection.tsx
+msgid "转 <0>{amount}</0>"
+msgstr "转 <0>{amount}</0>"
+
+#: src/admin/ConfirmModal.tsx
+msgid "输入 <0>{requirePhrase}</0> 以确认"
+msgstr "输入 <0>{requirePhrase}</0> 以确认"
+
+#: src/admin/PaymentSplit.tsx
+msgid "输入合计 {weightLabel}（按比例折算到实付）"
+msgstr "输入合计 {weightLabel}（按比例折算到实付）"
+
+#: src/admin/MembersSection.tsx
+msgid "输入对方邮箱发送邀请链接（7 天有效）。链接即凭证：任何用它登录的 GitHub 账号都会加入。"
+msgstr "输入对方邮箱发送邀请链接（7 天有效）。链接即凭证：任何用它登录的 GitHub 账号都会加入。"
+
+#: src/pages/AdminPage.tsx
+msgid "返回行程页"
+msgstr "返回行程页"
+
+#: src/components/TripLayout.tsx
+msgid "返回首页"
+msgstr "返回首页"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "还款记录 · Payments"
+msgstr "还款记录 · Payments"
+
+#: src/admin/ItinerarySection.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "还没有停靠点"
+msgstr "还没有停靠点"
+
+#: src/pages/BookingsPage.tsx
+msgid "还没有录入航班"
+msgstr "还没有录入航班"
+
+#: src/admin/FlightsSection.tsx
+msgid "还没有航班信息"
+msgstr "还没有航班信息"
+
+#: src/pages/DashboardPage.tsx
+msgid "还没有行程"
+msgstr "还没有行程"
+
+#: src/admin/PaymentModal.tsx
+msgid "还给谁"
+msgstr "还给谁"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "还需分配 {differenceLabel}"
+msgstr "还需分配 {differenceLabel}"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "这个邀请已被其他人使用。"
+msgstr "这个邀请已被其他人使用。"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "这个邀请已过期，请向创建者要一个新链接。"
+msgstr "这个邀请已过期，请向创建者要一个新链接。"
+
+#: src/admin/SplitSection.tsx
+msgid "这会丢弃<0>所有</0>改动，把分账明细恢复成初始数据，并<1>一并删除全部还款记录</1>（成员之间的实际转账，无法从初始数据重建），且<2>无法撤销</2>。"
+msgstr "这会丢弃<0>所有</0>改动，把分账明细恢复成初始数据，并<1>一并删除全部还款记录</1>（成员之间的实际转账，无法从初始数据重建），且<2>无法撤销</2>。"
+
+#: src/components/TripLayout.tsx
+msgid "这是一个私密行程"
+msgstr "这是一个私密行程"
+
+#: src/pages/AdminPage.tsx
+msgid "退出登录"
+msgstr "退出登录"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "选择以批量处理"
+msgstr "选择以批量处理"
+
+#: src/pages/BookingsPage.tsx
+msgid "选择其他同行人可以查看他们的航班安排。"
+msgstr "选择其他同行人可以查看他们的航班安排。"
+
+#: src/pages/BookingsPage.tsx
+msgid "选择同行人"
+msgstr "选择同行人"
+
+#: src/admin/FlightsSection.tsx
+msgid "选择同行人并录入出发、到达机场与当地时间。"
+msgstr "选择同行人并录入出发、到达机场与当地时间。"
+
+#: src/pages/PaperLedger.tsx
+msgid "邀请同行人后计算"
+msgstr "邀请同行人后计算"
+
+#: src/admin/MembersSection.tsx
+msgid "邀请已发往 {inviteEmail}，也可以直接把链接发给对方："
+msgstr "邀请已发往 {inviteEmail}，也可以直接把链接发给对方："
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "邀请已被使用"
+msgstr "邀请已被使用"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "邀请已过期"
+msgstr "邀请已过期"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "邀请无效"
+msgstr "邀请无效"
+
+#: src/admin/MembersSection.tsx
+msgid "邀请邮件已发送"
+msgstr "邀请邮件已发送"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "邀请链接 7 天内有效，请向创建者要一个新链接。"
+msgstr "邀请链接 7 天内有效，请向创建者要一个新链接。"
+
+#: src/admin/MembersSection.tsx
+msgid "邮件未发出（{emailError}），请手动把链接发给 {inviteEmail}："
+msgstr "邮件未发出（{emailError}），请手动把链接发给 {inviteEmail}："
+
+#: src/admin/MembersSection.tsx
+msgid "邮件邀请"
+msgstr "邮件邀请"
+
+#: src/pages/LandingPage.tsx
+msgid "邮件邀请协作"
+msgstr "邮件邀请协作"
+
+#: src/pages/LandingPage.tsx
+#: src/pages/PaperTimeline.tsx
+msgid "酒店"
+msgstr "酒店"
+
+#: src/admin/adminData.ts
+#: src/pages/PaperTimeline.tsx
+msgid "酒店 · Stay"
+msgstr "酒店 · Stay"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "采纳"
+msgstr "采纳"
+
+#: src/components/AppErrorBoundary.tsx
+msgid "重新加载"
+msgstr "重新加载"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "重新拍照"
+msgstr "重新拍照"
+
+#: src/admin/AgentSection.tsx
+msgid "重新生成 token"
+msgstr "重新生成 token"
+
+#: src/admin/AuditSection.tsx
+msgid "重置全部数据"
+msgstr "重置全部数据"
+
+#: src/admin/AddExpenseModal.tsx
+#: src/admin/PaymentModal.tsx
+#: src/admin/ReceiptScanModal.tsx
+msgid "金额"
+msgstr "金额"
+
+#: src/admin/SplitSection.tsx
+msgid "金额需大于 0，且付款人与收款人必须是不同的同行成员"
+msgstr "金额需大于 0，且付款人与收款人必须是不同的同行成员"
+
+#: src/pages/InviteAcceptPage.tsx
+msgid "链接可能有误，或邀请已被撤销。"
+msgstr "链接可能有误，或邀请已被撤销。"
+
+#: src/pages/LandingPage.tsx
+msgid "门票 · 吊桥公园"
+msgstr "门票 · 吊桥公园"
+
+#: src/admin/SuggestionsSection.tsx
+msgid "隐藏已处理"
+msgstr "隐藏已处理"
+
+#: src/pages/PaperLedger.tsx
+msgid "集中记录共同花销、抵扣与垫付；每一笔都能按实际情况分配到同行人。"
+msgstr "集中记录共同花销、抵扣与垫付；每一笔都能按实际情况分配到同行人。"
+
+#: src/admin/SplitSection.tsx
+#: src/pages/PaperLedger.tsx
+msgid "需补付"
+msgstr "需补付"
+
+#: src/trip/currency.ts
+msgid "韩元"
+msgstr "韩元"
+
 #: src/components/PageNav.tsx
 msgid "页面导航"
 msgstr "页面导航"
 
+#: src/pages/LandingPage.tsx
+msgid "预订"
+msgstr "预订"
+
+#: src/pages/LandingPage.tsx
+msgid "预订一页收齐"
+msgstr "预订一页收齐"
+
 #: src/routes.ts
 msgid "预订信息"
 msgstr "预订信息"
+
+#: src/trip/exporters.ts
+msgid "预订号：{reservationId}"
+msgstr "预订号：{reservationId}"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "餐厅名"
+msgstr "餐厅名"
+
+#: src/admin/ReceiptScanModal.tsx
+msgid "餐厅收据"
+msgstr "餐厅收据"
+
+#: src/admin/ExpenseAllocation.tsx
+msgid "默认 AA，可直接修改任意一人"
+msgstr "默认 AA，可直接修改任意一人"
+
+#: src/admin/TimezoneCombobox.tsx
+msgid "默认时区"
+msgstr "默认时区"

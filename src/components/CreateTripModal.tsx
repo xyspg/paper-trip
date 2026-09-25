@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { AdminModal } from "../admin/AdminModal";
 import { Icons } from "../admin/AdminIcons";
 import {
@@ -34,6 +35,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
   const [visibility, setVisibility] = useState<TripVisibility>("private");
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [error, setError] = useState("");
+  const { t } = useLingui();
 
   const canSubmit = title.trim().length > 0 && !createTrip.isPending;
 
@@ -55,17 +57,19 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
       });
       onCreated(trip);
     } catch {
-      setError("创建失败，请重试");
+      setError(t`创建失败，请重试`);
     }
   };
 
   return (
     <form className="flex flex-col" onSubmit={submit} onKeyDown={blockImeSubmit}>
-      <ModalHeader icon={<Icons.plus sw={2.6} />} title="新建行程" onClose={onClose} />
+      <ModalHeader icon={<Icons.plus sw={2.6} />} title={t`新建行程`} onClose={onClose} />
 
       <div className="grid grid-cols-2 gap-y-[15px] gap-x-[14px] p-[18px] max-[440px]:grid-cols-1">
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>行程名称</span>
+          <span className={FIELD_LABEL}>
+            <Trans>行程名称</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             value={title}
@@ -73,13 +77,15 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            placeholder="例如 东京夏日之旅"
+            placeholder={t`例如 东京夏日之旅`}
             onChange={(e) => setTitle(e.target.value)}
           />
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className={FIELD_LABEL}>开始日期</span>
+          <span className={FIELD_LABEL}>
+            <Trans>开始日期</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             type="date"
@@ -89,7 +95,9 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0">
-          <span className={FIELD_LABEL}>结束日期</span>
+          <span className={FIELD_LABEL}>
+            <Trans>结束日期</Trans>
+          </span>
           <input
             className={FIELD_INPUT}
             type="date"
@@ -99,17 +107,21 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
         </label>
 
         <label className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>记账本位币</span>
+          <span className={FIELD_LABEL}>
+            <Trans>记账本位币</Trans>
+          </span>
           <CurrencySelect value={currency} onChange={setCurrency} />
         </label>
 
         <div className="flex flex-col gap-[7px] min-w-0 col-span-full">
-          <span className={FIELD_LABEL}>可见性</span>
+          <span className={FIELD_LABEL}>
+            <Trans>可见性</Trans>
+          </span>
           <div className="inline-flex gap-[5px]">
             {(
               [
-                { key: "private", label: "私密 · 仅成员可见" },
-                { key: "public", label: "公开 · 任何人可读" },
+                { key: "private", label: t`私密 · 仅成员可见` },
+                { key: "public", label: t`公开 · 任何人可读` },
               ] as const
             ).map((v) => (
               <button
@@ -133,7 +145,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
 
       <ModalFooter>
         <button type="button" className={`${BTN} ${BTN_GHOST}`} onClick={onClose}>
-          取消
+          <Trans>取消</Trans>
         </button>
         <span className="ml-auto" />
         <button
@@ -142,7 +154,7 @@ function Form({ onClose, onCreated }: Omit<Props, "isOpen">) {
           disabled={!canSubmit}
         >
           <Icons.plus sw={2.6} />
-          {createTrip.isPending ? "创建中…" : "创建行程"}
+          {createTrip.isPending ? t`创建中…` : t`创建行程`}
         </button>
       </ModalFooter>
     </form>

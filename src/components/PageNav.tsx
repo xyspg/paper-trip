@@ -3,7 +3,8 @@ import { useLingui } from "@lingui/react/macro";
 import { UserRound } from "lucide-react";
 import { tripTabs } from "../routes";
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
-import { currentLocale, switchLocale } from "../i18n";
+import { switchLocale } from "../i18n";
+import { currentLocale } from "../locale";
 
 export function PageNav() {
   // Rendered above every non-admin page; the trip tabs only make sense when a

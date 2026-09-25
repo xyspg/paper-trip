@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { categoryColor } from "../trip/categoryColor";
 import { timeAgo } from "../trip/relativeTime";
 import type { SuggestionStatus, TripItem, TripSuggestion } from "../trip/types";
@@ -29,6 +30,7 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
   const [showDone, setShowDone] = useState(false);
   const [sel, setSel] = useState<Set<string>>(() => new Set());
   const { confirm, confirmModal } = useConfirm();
+  const { t } = useLingui();
 
   const pending = suggestions.filter((s) => s.status === "pending");
   const itemById = (id: string) => items.find((i) => i.id === id);
@@ -45,27 +47,27 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
 
   const adopt = (s: TripSuggestion) => {
     onSetStatus(s.id, "adopted");
-    toast("已采纳建议");
+    toast(t`已采纳建议`);
     clearSel(s.id);
   };
   const ignore = (s: TripSuggestion) => {
     onSetStatus(s.id, "ignored");
-    toast("已忽略建议", "warn");
+    toast(t`已忽略建议`, "warn");
     clearSel(s.id);
   };
   const undo = (s: TripSuggestion) => {
     onSetStatus(s.id, "pending");
-    toast("已恢复到待审");
+    toast(t`已恢复到待审`);
   };
   const remove = async (s: TripSuggestion) => {
     const ok = await confirm({
-      title: "删除建议",
-      message: "确定删除这条建议吗？删除后无法恢复。",
-      confirmLabel: "删除建议",
+      title: t`删除建议`,
+      message: t`确定删除这条建议吗？删除后无法恢复。`,
+      confirmLabel: t`删除建议`,
     });
     if (!ok) return;
     onDelete(s.id);
-    toast("已删除建议", "warn");
+    toast(t`已删除建议`, "warn");
     clearSel(s.id);
   };
 
@@ -86,19 +88,21 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
       (s): s is TripSuggestion => Boolean(s) && s!.status === "pending" && visibleIds.has(s!.id),
     );
 
+  const selectedCount = selPending.length;
+
   const dropFromSel = (ids: Set<string>) =>
     setSel((prev) => new Set([...prev].filter((id) => !ids.has(id))));
 
   const batchAdopt = () => {
     const ids = new Set(selPending.map((s) => s.id));
     selPending.forEach((s) => onSetStatus(s.id, "adopted"));
-    toast(`已采纳 ${selPending.length} 条建议`);
+    toast(t`已采纳 ${selectedCount} 条建议`);
     dropFromSel(ids);
   };
   const batchIgnore = () => {
     const ids = new Set(selPending.map((s) => s.id));
     selPending.forEach((s) => onSetStatus(s.id, "ignored"));
-    toast(`已忽略 ${selPending.length} 条`, "warn");
+    toast(t`已忽略 ${selectedCount} 条`, "warn");
     dropFromSel(ids);
   };
 
@@ -106,22 +110,22 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
     <div>
       <SectionHead
         kicker="02 · Suggestions"
-        title="待审建议"
-        desc="同行人从行程页提交的评论 · 采纳或忽略后会同步给所有人"
+        title={t`待审建议`}
+        desc={t`同行人从行程页提交的评论 · 采纳或忽略后会同步给所有人`}
       />
 
       <Metrics
         items={[
-          { k: "待审", v: pending.length, sub: "Pending", color: "#c2553f" },
-          { k: "收到", v: suggestions.length, sub: "Total", color: "#7a5c84" },
+          { k: t`待审`, v: pending.length, sub: "Pending", color: "#c2553f" },
+          { k: t`收到`, v: suggestions.length, sub: "Total", color: "#7a5c84" },
           {
-            k: "已采纳",
+            k: t`已采纳`,
             v: suggestions.filter((s) => s.status === "adopted").length,
             sub: "Adopted",
             color: "#3f6f5b",
           },
           {
-            k: "已忽略",
+            k: t`已忽略`,
             v: suggestions.filter((s) => s.status === "ignored").length,
             sub: "Ignored",
           },
@@ -130,7 +134,7 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
 
       <div className="flex gap-2 flex-wrap items-center mt-7">
         <span className="inline-flex items-center gap-2 font-grotesk font-semibold text-[11.5px] tracking-[0.02em] px-3 py-1.5 rounded-full bg-[#1c1b19] text-[#fafaf8]">
-          待审
+          <Trans>待审</Trans>
           <span className="font-mono text-[10px] rounded-full px-1.5 bg-white/[0.12] text-[#fafaf8]">
             {pending.length}
           </span>
@@ -140,13 +144,13 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
           className={`font-grotesk font-semibold text-[11.5px] px-3 py-1.5 rounded-full border transition-colors ${showDone ? CHIP_ON : CHIP_OFF}`}
           onClick={() => setShowDone((v) => !v)}
         >
-          {showDone ? "隐藏已处理" : "显示已处理"}
+          {showDone ? <Trans>隐藏已处理</Trans> : <Trans>显示已处理</Trans>}
         </button>
       </div>
 
       <div className="grid gap-3.5 mt-4">
         {visible.length === 0 && (
-          <AdminEmptyState title="收件箱已清空" body="没有待审建议了。新建议会出现在这里。" />
+          <AdminEmptyState title={t`收件箱已清空`} body={t`没有待审建议了。新建议会出现在这里。`} />
         )}
 
         {visible.map((s) => {
@@ -165,7 +169,7 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
                   className="font-grotesk text-[10px] font-bold tracking-[0.1em] uppercase rounded-full px-2.5 py-1 border"
                   style={{ color: "#5b7a99", borderColor: "#5b7a9955", background: "#5b7a9912" }}
                 >
-                  评论
+                  <Trans>评论</Trans>
                 </span>
                 <span className="ml-auto font-grotesk text-[11px] text-[#9b988f] whitespace-nowrap">
                   {timeAgo(s.createdAt)}
@@ -174,10 +178,12 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
 
               {/* target */}
               <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[#fafaf8] border-b border-dashed border-[#ebe9e3] font-cjk text-[12px] text-[#76726a]">
-                <span>提给</span>
+                <span>
+                  <Trans>提给</Trans>
+                </span>
                 <span className="inline-flex items-center gap-1.5 font-grotesk text-[10px] font-bold tracking-[0.04em] uppercase border border-[#ebe9e3] rounded-full px-2.5 py-1 text-[#3b3833] min-w-0 truncate">
                   <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: dotColor }} />
-                  {item ? item.title : "已删除的停靠点"}
+                  {item ? item.title : <Trans>已删除的停靠点</Trans>}
                 </span>
                 {item && <span className="font-mono text-[11px]">· {item.time}</span>}
               </div>
@@ -194,17 +200,17 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
                     className={`inline-flex items-center gap-1.5 font-grotesk text-[10.5px] font-bold tracking-[0.06em] uppercase border rounded-full px-2.5 py-1 [&_svg]:size-[13px] ${s.status === "adopted" ? "text-[#3f6f5b] border-[#cfe0d6] bg-[#eef4f0]" : "text-[#9b988f] border-[#ebe9e3] bg-white"}`}
                   >
                     {s.status === "adopted" ? <Icons.check sw={3} /> : <Icons.x sw={3} />}
-                    {s.status === "adopted" ? "已采纳" : "已忽略"}
+                    {s.status === "adopted" ? <Trans>已采纳</Trans> : <Trans>已忽略</Trans>}
                   </span>
                   <button className={`ml-auto ${BTN_SM} ${BTN_GHOST}`} onClick={() => undo(s)}>
-                    撤销
+                    <Trans context="suggestion">撤销</Trans>
                   </button>
                   <button
                     className={`${BTN_SM} ${BTN_DANGER} [&_svg]:size-[13px]`}
                     onClick={() => remove(s)}
                   >
                     <Icons.trash sw={2.2} />
-                    删除
+                    <Trans>删除</Trans>
                   </button>
                 </div>
               ) : (
@@ -212,13 +218,13 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
                   <button
                     className={`inline-flex items-center gap-2 rounded-md px-2 py-1 transition-colors border [&_svg]:size-3 ${sel.has(s.id) ? "bg-[#1c1b19] border-[#1c1b19] text-white" : "bg-white border-[#ebe9e3] text-[#76726a]"}`}
                     onClick={() => toggleSel(s.id)}
-                    aria-label="选择以批量处理"
+                    aria-label={t`选择以批量处理`}
                   >
                     <span className="w-4 h-4 grid place-items-center">
                       {sel.has(s.id) && <Icons.check sw={3} />}
                     </span>
                     <span className="font-grotesk text-[10.5px] font-semibold tracking-[0.04em]">
-                      批量选择
+                      <Trans>批量选择</Trans>
                     </span>
                   </button>
                   <span className="ml-auto" />
@@ -227,21 +233,21 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
                     onClick={() => remove(s)}
                   >
                     <Icons.trash sw={2.2} />
-                    删除
+                    <Trans>删除</Trans>
                   </button>
                   <button
                     className={`${BTN_SM} ${BTN_GHOST} [&_svg]:size-[13px]`}
                     onClick={() => ignore(s)}
                   >
                     <Icons.x sw={2.4} />
-                    忽略
+                    <Trans>忽略</Trans>
                   </button>
                   <button
                     className={`${BTN_SM} ${BTN_ACCENT} [&_svg]:size-[13px]`}
                     onClick={() => adopt(s)}
                   >
                     <Icons.check sw={2.6} />
-                    采纳
+                    <Trans>采纳</Trans>
                   </button>
                 </div>
               )}
@@ -255,25 +261,27 @@ export function SuggestionsSection({ suggestions, items, onSetStatus, onDelete, 
           className="sticky bottom-4 z-20 flex items-center gap-3 flex-wrap mt-5 px-4 py-3 bg-[#1c1b19] text-[#fafaf8] rounded-full"
           style={{ boxShadow: "0 18px 40px -18px rgba(20,20,30,0.6)" }}
         >
-          <span className="font-sans font-bold text-[15px] text-white">{selPending.length}</span>
-          <span className="font-cjk text-[12.5px] text-white/75">条已选 · 批量处理</span>
+          <Trans>
+            <span className="font-sans font-bold text-[15px] text-white">{selectedCount}</span>
+            <span className="font-cjk text-[12.5px] text-white/75">条已选 · 批量处理</span>
+          </Trans>
           <span className="ml-auto flex gap-2.5">
             <button
               className={`${BTN_SM} border border-white/25 text-[#fafaf8] hover:bg-white/10`}
               onClick={() => setSel(new Set())}
             >
-              取消
+              <Trans>取消</Trans>
             </button>
             <button
               className={`${BTN_SM} border border-white/25 text-[#fafaf8] hover:bg-white/10 [&_svg]:size-[13px]`}
               onClick={batchIgnore}
             >
               <Icons.x sw={2.4} />
-              全部忽略
+              <Trans>全部忽略</Trans>
             </button>
             <button className={`${BTN_SM} ${BTN_ACCENT} [&_svg]:size-[13px]`} onClick={batchAdopt}>
               <Icons.check sw={2.6} />
-              全部采纳
+              <Trans>全部采纳</Trans>
             </button>
           </span>
         </div>

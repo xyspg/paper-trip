@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Pencil, Plane, Plus, Trash2, UsersRound } from "lucide-react";
 import { FlightEditorModal } from "../admin/FlightEditorModal";
 import { signInWithGitHub, useAdminUser } from "../admin/auth";
@@ -25,6 +26,7 @@ function TravelerChip({
   mine: boolean;
   onClick: () => void;
 }) {
+  const { t } = useLingui();
   return (
     <button
       type="button"
@@ -41,7 +43,7 @@ function TravelerChip({
           {member.name.slice(0, 2).toUpperCase()}
         </span>
       )}
-      {mine ? "我的航班" : member.name}
+      {mine ? t`我的航班` : member.name}
       <span
         className={`grid min-w-5 place-items-center rounded-full px-1.5 font-mono text-[10px] ${active ? "bg-white/15" : "bg-[#fafaf8] text-[#9b988f]"}`}
       >
@@ -60,6 +62,7 @@ export function BookingsPage({ tripId }: { tripId: string }) {
   const [pickedTravelerId, setPickedTravelerId] = useState<string | "all" | null>(null);
   const [editing, setEditing] = useState<Flight | "new" | null>(null);
   const [notice, setNotice] = useState("");
+  const { t } = useLingui();
 
   const trip = data?.trip;
   if (!trip || userLoading) {
@@ -82,6 +85,7 @@ export function BookingsPage({ tripId }: { tripId: string }) {
       ? pickedTravelerId
       : (currentMember?.id ?? members[0]?.id ?? "all");
   const selectedMember = members.find((member) => member.id === selectedTravelerId);
+  const selectedName = selectedMember?.name ?? "";
   const editorTraveler =
     editing && editing !== "new"
       ? members.find((member) => member.id === editing.travelerId)
@@ -95,6 +99,8 @@ export function BookingsPage({ tripId }: { tripId: string }) {
   );
   const travelersWithFlights = new Set(flights.map((flight) => flight.travelerId)).size;
   const legacyFlights = trip.items.filter((item) => item.category === "flight");
+  const legacyCount = legacyFlights.length;
+  const memberCount = members.length;
 
   const saveFlight = (flight: Flight) => {
     const type = editing === "new" ? "addFlight" : "updateFlight";
@@ -104,20 +110,22 @@ export function BookingsPage({ tripId }: { tripId: string }) {
         onSuccess: () => {
           setEditing(null);
           setPickedTravelerId(flight.travelerId);
-          setNotice(type === "addFlight" ? "航班已添加" : "航班已更新");
+          setNotice(type === "addFlight" ? t`航班已添加` : t`航班已更新`);
         },
-        onError: () => setNotice("保存失败，请重试"),
+        onError: () => setNotice(t`保存失败，请重试`),
       },
     );
   };
 
   const deleteFlight = (flight: Flight) => {
-    if (!window.confirm(`确定删除 ${flight.flightNumber || "这趟航班"} 吗？`)) return;
+    const flightNumber = flight.flightNumber;
+    const question = flightNumber ? t`确定删除 ${flightNumber} 吗？` : t`确定删除这趟航班吗？`;
+    if (!window.confirm(question)) return;
     tripOp.mutate(
       { type: "deleteFlight", flightId: flight.id, travelerId: flight.travelerId },
       {
-        onSuccess: () => setNotice("航班已删除"),
-        onError: () => setNotice("删除失败，请重试"),
+        onSuccess: () => setNotice(t`航班已删除`),
+        onError: () => setNotice(t`删除失败，请重试`),
       },
     );
   };
@@ -126,15 +134,17 @@ export function BookingsPage({ tripId }: { tripId: string }) {
     <div className="font-sans text-[#1c1b19]">
       <header className="border-b border-[#ebe9e3] pb-7">
         <div className="font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3f6f5b]">
-          Flights · 航班信息
+          <Trans>Flights · 航班信息</Trans>
         </div>
         <div className="mt-3 flex flex-wrap items-end gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-[clamp(34px,6vw,54px)] font-extrabold leading-none tracking-[-0.035em]">
-              各自出发，同程抵达
+              <Trans>各自出发，同程抵达</Trans>
             </h1>
             <p className="mt-3 max-w-[62ch] font-cjk text-[14px] leading-relaxed text-[#76726a]">
-              每位同行人可以记录多段航班；登录后会先显示你自己的，也可以随时查看大家的到达与返程安排。
+              <Trans>
+                每位同行人可以记录多段航班；登录后会先显示你自己的，也可以随时查看大家的到达与返程安排。
+              </Trans>
             </p>
           </div>
           {canEditSelected && selectedMember && (
@@ -144,18 +154,20 @@ export function BookingsPage({ tripId }: { tripId: string }) {
               onClick={() => setEditing("new")}
             >
               <Plus size={15} strokeWidth={2.5} />
-              {currentMember?.id === selectedMember.id
-                ? "添加我的航班"
-                : `为 ${selectedMember.name} 添加`}
+              {currentMember?.id === selectedMember.id ? (
+                <Trans>添加我的航班</Trans>
+              ) : (
+                <Trans>为 {selectedName} 添加</Trans>
+              )}
             </button>
           )}
         </div>
 
         <div className="mt-6 grid grid-cols-3 overflow-hidden rounded-[14px] border border-[#ebe9e3] max-[620px]:grid-cols-1">
           {[
-            ["航班", flights.length, "Flight legs"],
-            ["已录入成员", travelersWithFlights, `共 ${members.length} 位同行人`],
-            ["当前视图", visibleFlights.length, selectedMember?.name ?? "全部成员"],
+            [t`航班`, flights.length, "Flight legs"],
+            [t`已录入成员`, travelersWithFlights, t`共 ${memberCount} 位同行人`],
+            [t`当前视图`, visibleFlights.length, selectedMember?.name ?? t`全部成员`],
           ].map(([label, value, sub], index) => (
             <div
               key={String(label)}
@@ -172,7 +184,7 @@ export function BookingsPage({ tripId }: { tripId: string }) {
       </header>
 
       {members.length > 0 && (
-        <section className="mt-6" aria-label="选择同行人">
+        <section className="mt-6" aria-label={t`选择同行人`}>
           <div className="flex flex-wrap gap-2">
             {orderedMembers.map((member) => (
               <TravelerChip
@@ -190,7 +202,7 @@ export function BookingsPage({ tripId }: { tripId: string }) {
               onClick={() => setPickedTravelerId("all")}
             >
               <UsersRound size={15} strokeWidth={2.2} />
-              全部航班
+              <Trans>全部航班</Trans>
               <span className="font-mono text-[10px] opacity-70">{flights.length}</span>
             </button>
           </div>
@@ -221,8 +233,8 @@ export function BookingsPage({ tripId }: { tripId: string }) {
                     <button
                       type="button"
                       className={EDIT_BUTTON}
-                      title="编辑航班"
-                      aria-label="编辑航班"
+                      title={t`编辑航班`}
+                      aria-label={t`编辑航班`}
                       onClick={() => setEditing(flight)}
                     >
                       <Pencil size={14} strokeWidth={2.2} />
@@ -230,8 +242,8 @@ export function BookingsPage({ tripId }: { tripId: string }) {
                     <button
                       type="button"
                       className={`${EDIT_BUTTON} hover:border-[#c2553f] hover:text-[#c2553f]`}
-                      title="删除航班"
-                      aria-label="删除航班"
+                      title={t`删除航班`}
+                      aria-label={t`删除航班`}
                       onClick={() => deleteFlight(flight)}
                     >
                       <Trash2 size={14} strokeWidth={2.2} />
@@ -250,12 +262,18 @@ export function BookingsPage({ tripId }: { tripId: string }) {
                 <Plane size={23} strokeWidth={2.1} />
               </span>
               <h2 className="mt-3 font-cjk text-[17px] font-bold">
-                {selectedMember ? `${selectedMember.name} 还没有航班` : "还没有录入航班"}
+                {selectedMember ? (
+                  <Trans>{selectedName} 还没有航班</Trans>
+                ) : (
+                  <Trans>还没有录入航班</Trans>
+                )}
               </h2>
               <p className="mt-2 font-cjk text-[12.5px] text-[#76726a]">
-                {canEditSelected
-                  ? "添加出发与到达信息后，同行人就能在这里统一查看。"
-                  : "选择其他同行人可以查看他们的航班安排。"}
+                {canEditSelected ? (
+                  <Trans>添加出发与到达信息后，同行人就能在这里统一查看。</Trans>
+                ) : (
+                  <Trans>选择其他同行人可以查看他们的航班安排。</Trans>
+                )}
               </p>
             </div>
           </div>
@@ -265,29 +283,31 @@ export function BookingsPage({ tripId }: { tripId: string }) {
       {!user && (
         <section className="mt-6 flex flex-wrap items-center gap-3 rounded-[14px] border border-[#ebe9e3] bg-white px-5 py-4">
           <div className="min-w-0 flex-1 font-cjk text-[12.5px] text-[#76726a]">
-            登录并加入这个行程后，可以维护你自己的航班信息。
+            <Trans>登录并加入这个行程后，可以维护你自己的航班信息。</Trans>
           </div>
           <button
             type="button"
             className="rounded-[9px] border border-[#1c1b19] px-3.5 py-2 font-cjk text-[12px] font-semibold"
             onClick={() => signInWithGitHub(window.location.pathname)}
           >
-            登录
+            <Trans>登录</Trans>
           </button>
         </section>
       )}
 
       {legacyFlights.length > 0 && (
         <section className="mt-6 rounded-[14px] border border-dashed border-[#d8d5cb] bg-[#fdfdfb] px-5 py-4 font-cjk text-[12.5px] leading-relaxed text-[#76726a]">
-          另有 {legacyFlights.length} 条旧版航班停靠点仍保留在
-          <Link
-            to="/t/$tripId/timeline"
-            params={{ tripId }}
-            className="mx-1 font-semibold text-[#3f6f5b] underline underline-offset-2"
-          >
-            行程时间线
-          </Link>
-          中；新录入的个人航班不会覆盖它们。
+          <Trans>
+            另有 {legacyCount} 条旧版航班停靠点仍保留在
+            <Link
+              to="/t/$tripId/timeline"
+              params={{ tripId }}
+              className="mx-1 font-semibold text-[#3f6f5b] underline underline-offset-2"
+            >
+              行程时间线
+            </Link>
+            中；新录入的个人航班不会覆盖它们。
+          </Trans>
         </section>
       )}
 

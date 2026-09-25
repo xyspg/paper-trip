@@ -1,4 +1,7 @@
 import { useState, type ReactNode } from "react";
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
   AlertTriangle,
   Archive,
@@ -41,19 +44,19 @@ type PaperTimelineProps = {
 
 type Swatch = { color: string; border: string; bg: string };
 
-const categoryMeta: Record<TripItem["category"], { name: string } & Swatch> = {
-  flight: { name: "交通 · Transit", color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
-  drive: { name: "交通 · Drive", color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
-  food: { name: "用餐 · Food", color: "#b08648", border: "#e6d3ad", bg: "#f7f0e2" },
-  event: { name: "活动 · Event", color: "#c2553f", border: "#ecccc2", bg: "#f8efec" },
-  hotel: { name: "酒店 · Stay", color: "#7a5c84", border: "#ddccdf", bg: "#f5eef6" },
-  errand: { name: "杂项 · Misc", color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
+const categoryMeta: Record<TripItem["category"], { name: MessageDescriptor } & Swatch> = {
+  flight: { name: msg`交通 · Transit`, color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
+  drive: { name: msg`交通 · Drive`, color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
+  food: { name: msg`用餐 · Food`, color: "#b08648", border: "#e6d3ad", bg: "#f7f0e2" },
+  event: { name: msg`活动 · Event`, color: "#c2553f", border: "#ecccc2", bg: "#f8efec" },
+  hotel: { name: msg`酒店 · Stay`, color: "#7a5c84", border: "#ddccdf", bg: "#f5eef6" },
+  errand: { name: msg`杂项 · Misc`, color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
 };
 
-const statusMeta: Record<ItemStatus, { label: string } & Swatch> = {
-  locked: { label: "已锁定", color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
-  planned: { label: "计划中", color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
-  done: { label: "已完成", color: "#76726a", border: "#ebe9e3", bg: "#fdfdfb" },
+const statusMeta: Record<ItemStatus, { label: MessageDescriptor } & Swatch> = {
+  locked: { label: msg`已锁定`, color: "#3f6f5b", border: "#cfe0d6", bg: "#eef4f0" },
+  planned: { label: msg`计划中`, color: "#5b7a99", border: "#cdd8e2", bg: "#eef2f6" },
+  done: { label: msg`已完成`, color: "#76726a", border: "#ebe9e3", bg: "#fdfdfb" },
 };
 
 const PAPER_BOLD = "font-bold text-[#1c1b19]";
@@ -83,6 +86,7 @@ export function PaperTimeline({
   travelerCount,
   dateRange,
 }: PaperTimelineProps) {
+  const { t } = useLingui();
   const titleWords = trip.title.trim().split(/\s+/);
   const titleYear = titleWords.length > 1 ? titleWords.pop() : undefined;
   const titleLead = titleWords.join(" ");
@@ -98,6 +102,8 @@ export function PaperTimeline({
   const today = todayIn(trip.base.timezone);
   const activeDates = orderedDates.filter((date) => date >= today);
   const archivedDates = orderedDates.filter((date) => date < today);
+  const dayCount = orderedDates.length;
+  const archivedCount = archivedDates.length;
   const [dayOverrides, setDayOverrides] = useState<Record<string, boolean>>({});
   const [archiveOpen, setArchiveOpen] = useState(false);
   const isDayCollapsed = (date: string) => dayOverrides[date] ?? date < today;
@@ -124,7 +130,7 @@ export function PaperTimeline({
       <header className="pb-[30px] border-b border-[#ebe9e3]">
         <span className="inline-flex gap-[9px] items-center font-grotesk text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3f6f5b]">
           <span className="w-[7px] h-[7px] rounded-full bg-[#3f6f5b]" />
-          行程作战表 · Travel Ops
+          <Trans>行程作战表 · Travel Ops</Trans>
         </span>
         <h1 className="mt-3.5 font-sans font-extrabold tracking-[-0.03em] leading-[0.98] text-[clamp(38px,7vw,60px)]">
           {titleLead}
@@ -135,13 +141,9 @@ export function PaperTimeline({
         </p>
 
         <div className="grid grid-cols-3 mt-6.5 overflow-hidden border border-[#ebe9e3] rounded-[14px] max-[620px]:grid-cols-1">
-          <Stat
-            k="Stops"
-            v={trip.items.length.toString()}
-            sub={`停靠点 · 横跨 ${orderedDates.length} 天`}
-          />
-          <Stat k="Travelers" v={travelerCount.toString()} sub="同行人数 · Travelers" />
-          <Stat k="Window" v={dateRange} sub="行程日期 · Travel dates" accent />
+          <Stat k="Stops" v={trip.items.length.toString()} sub={t`停靠点 · 横跨 ${dayCount} 天`} />
+          <Stat k="Travelers" v={travelerCount.toString()} sub={t`同行人数 · Travelers`} />
+          <Stat k="Window" v={dateRange} sub={t`行程日期 · Travel dates`} accent />
         </div>
       </header>
 
@@ -149,10 +151,10 @@ export function PaperTimeline({
       {nextItem && nextStatus && (
         <section
           className="flex gap-[18px] items-center flex-wrap mt-[22px] py-[18px] px-[22px] bg-white border border-[#ebe9e3] rounded-[14px]"
-          aria-label="下一步行动"
+          aria-label={t`下一步行动`}
         >
           <span className="font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-white bg-[#3f6f5b] rounded-full py-[5px] px-3">
-            下一步行动
+            <Trans>下一步行动</Trans>
           </span>
           <span className="font-grotesk font-bold text-[30px] tracking-[-0.02em]">
             {nextItem.time}
@@ -160,7 +162,7 @@ export function PaperTimeline({
           <div>
             <div className="font-cjk font-bold text-[17px]">{nextItem.title}</div>
             <div className="mt-[3px] font-cjk text-[12.5px] text-[#76726a]">
-              {nextPlan} · {nextStatus.label}
+              {nextPlan} · {t(nextStatus.label)}
             </div>
           </div>
           <span
@@ -171,7 +173,7 @@ export function PaperTimeline({
               background: nextStatus.bg,
             }}
           >
-            {nextStatus.label}
+            {t(nextStatus.label)}
           </span>
         </section>
       )}
@@ -183,9 +185,11 @@ export function PaperTimeline({
             <div className="font-grotesk text-[11px] tracking-[0.16em] uppercase text-[#3f6f5b]">
               Empty Timeline
             </div>
-            <div className="mt-2 font-sans font-bold text-[20px] tracking-tight">还没有停靠点</div>
+            <div className="mt-2 font-sans font-bold text-[20px] tracking-tight">
+              <Trans>还没有停靠点</Trans>
+            </div>
             <p className="mt-2 font-cjk text-[13px] text-[#76726a] leading-relaxed">
-              在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。
+              <Trans>在后台的「行程停靠点」里添加第一站，时间线就会出现在这里。</Trans>
             </p>
           </div>
         </section>
@@ -204,7 +208,7 @@ export function PaperTimeline({
             className="flex w-full items-center justify-center gap-2.5 py-3 px-[18px] bg-transparent border border-dashed border-[#cfccc2] rounded-[14px] font-cjk font-semibold text-[13px] text-[#76726a] cursor-pointer transition-colors hover:border-[#1c1b19] hover:text-[#1c1b19]"
           >
             <Archive size={15} strokeWidth={2.2} />
-            查看已归档日程（{archivedDates.length} 天）
+            <Trans>查看已归档日程（{archivedCount} 天）</Trans>
             <ChevronDown
               className={`transition-transform ${archiveOpen ? "rotate-180" : ""}`}
               size={16}
@@ -218,17 +222,17 @@ export function PaperTimeline({
       {/* LEGEND */}
       <section className="mt-[clamp(34px,6vw,48px)] p-[22px] bg-white border border-[#ebe9e3] rounded-[14px]">
         <h3 className="mb-4 font-grotesk font-bold text-[12px] uppercase tracking-[0.14em]">
-          图例 · Legend
+          <Trans>图例 · Legend</Trans>
         </h3>
         <div className="flex flex-wrap gap-x-[22px] gap-y-2.5">
-          <Legend color="#3f6f5b" label="已锁定 Locked" />
-          <Legend color="#5b7a99" label="计划中 Planned" />
-          <Legend color="#76726a" label="已完成 Done" />
-          <Legend color="#5b7a99" label="交通" />
-          <Legend color="#b08648" label="用餐" />
-          <Legend color="#c2553f" label="活动" />
-          <Legend color="#7a5c84" label="酒店" />
-          <Legend color="#3f6f5b" label="杂项" />
+          <Legend color="#3f6f5b" label={t`已锁定 Locked`} />
+          <Legend color="#5b7a99" label={t`计划中 Planned`} />
+          <Legend color="#76726a" label={t`已完成 Done`} />
+          <Legend color="#5b7a99" label={t`交通`} />
+          <Legend color="#b08648" label={t`用餐`} />
+          <Legend color="#c2553f" label={t`活动`} />
+          <Legend color="#7a5c84" label={t`酒店`} />
+          <Legend color="#3f6f5b" label={t`杂项`} />
         </div>
       </section>
     </div>
@@ -254,12 +258,14 @@ function DaySection({
   collapsed: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useLingui();
+  const stopCount = items.length;
   return (
     <section className="mt-[clamp(34px,6vw,48px)]">
       <button
         type="button"
         aria-expanded={!collapsed}
-        title={collapsed ? "展开当天日程" : "折叠当天日程"}
+        title={collapsed ? t`展开当天日程` : t`折叠当天日程`}
         onClick={onToggle}
         className="flex gap-[13px] items-center mb-1 w-full p-0 bg-transparent border-0 text-left text-inherit cursor-pointer group"
       >
@@ -271,7 +277,13 @@ function DaySection({
             {formatDayDate(date)}
           </span>
           <span className="block mt-px font-cjk text-[12.5px] text-[#76726a]">
-            第 {dayNumber} 天{collapsed && ` · ${items.length} 站`}
+            {collapsed ? (
+              <Trans>
+                第 {dayNumber} 天 · {stopCount} 站
+              </Trans>
+            ) : (
+              <Trans>第 {dayNumber} 天</Trans>
+            )}
           </span>
         </span>
         <span className="ml-auto flex shrink-0 items-center gap-2.5">
@@ -325,6 +337,7 @@ function Ticket({
   item: TripItem;
   stopNumber: number;
 }) {
+  const { t } = useLingui();
   const category = categoryMeta[item.category];
   const plans = itemPlans(item);
   const compact = !item.time.includes(":");
@@ -343,7 +356,7 @@ function Ticket({
             {item.time}
             {zone && (
               <span className="block mt-1 font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] text-[#b08648]">
-                {zone} 当地
+                <Trans>{zone} 当地</Trans>
               </span>
             )}
           </div>
@@ -351,7 +364,7 @@ function Ticket({
             className="font-grotesk font-semibold text-[9.5px] uppercase tracking-[0.08em] rounded-full py-1 px-2.5 border max-[620px]:ml-auto"
             style={{ color: category.color, borderColor: category.border, background: category.bg }}
           >
-            {category.name}
+            {t(category.name)}
           </span>
         </div>
 
@@ -527,6 +540,7 @@ function ParkingPassButton({
   provider: string;
 }) {
   const { data: user } = useAdminUser();
+  const { t } = useLingui();
   const className =
     "inline-flex items-center justify-center gap-2 py-2.5 px-[13px] rounded-[10px] border-0 bg-[#1c1b19] text-white no-underline font-grotesk font-semibold text-[10.5px] uppercase tracking-[0.1em] cursor-pointer hover:bg-[#3f6f5b]";
 
@@ -544,10 +558,10 @@ function ParkingPassButton({
     <button
       type="button"
       className={className}
-      title="使用 GitHub 登录后打开"
+      title={t`使用 GitHub 登录后打开`}
       onClick={() => signInWithGitHub(window.location.pathname)}
     >
-      {provider} Pass · 登录打开
+      <Trans>{provider} Pass · 登录打开</Trans>
       <Lock size={14} strokeWidth={2.4} />
     </button>
   );

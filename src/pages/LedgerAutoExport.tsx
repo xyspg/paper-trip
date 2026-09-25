@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { useRef, useState } from "react";
 import type { LedgerPdfStatement, StatementContext } from "../trip/exportLedgerPdf";
 import { tripTravelers } from "../trip/roster";
@@ -43,19 +44,19 @@ export function LedgerAutoExport({ trip, context }: { trip: Trip; context: State
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-full bg-[#1c1b19] px-5 py-2.5 font-cjk text-[13px] text-[#fafaf8] shadow-lg">
       {state.phase === "failed" ? (
-        "PDF 生成失败，请点击「导出 PDF」重试"
+        <Trans>PDF 生成失败，请点击「导出 PDF」重试</Trans>
       ) : state.phase === "ready" ? (
         <button
           type="button"
           className="cursor-pointer font-cjk text-[13px] font-semibold text-[#fafaf8]"
           onClick={() => void state.statement.deliver()}
         >
-          PDF 账单已生成 · 点击保存
+          <Trans>PDF 账单已生成 · 点击保存</Trans>
         </button>
       ) : (
         <>
           <span className="w-3.5 h-3.5 rounded-full border-2 border-[#fafaf8]/30 border-t-[#fafaf8] animate-[spin_0.7s_linear_infinite]" />
-          正在生成 PDF 账单…
+          <Trans>正在生成 PDF 账单…</Trans>
         </>
       )}
     </div>

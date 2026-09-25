@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { CATS, fmtMoney, uid } from "./adminData";
 import type { Expense } from "./adminData";
 import { ExpenseModal, buildExpense } from "./AddExpenseModal";
@@ -54,6 +55,7 @@ export function SplitSection({
   onReset,
 }: Props) {
   const { travelers, currency } = useAdmin();
+  const { t } = useLingui();
   const travelerIds = travelers.map((m) => m.id);
   const [addOpen, setAddOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
@@ -95,15 +97,15 @@ export function SplitSection({
 
   const handleReset = async () => {
     const ok = await confirm({
-      title: "恢复原始账目",
+      title: t`恢复原始账目`,
       message: (
-        <>
+        <Trans>
           这会丢弃<b>所有</b>改动，把分账明细恢复成初始数据，并
           <b>一并删除全部还款记录</b>（成员之间的实际转账，无法从初始数据重建），且
           <b>无法撤销</b>。
-        </>
+        </Trans>
       ),
-      confirmLabel: "恢复原始",
+      confirmLabel: t`恢复原始`,
       requirePhrase: "restore to original",
     });
     if (!ok) return;
@@ -117,32 +119,36 @@ export function SplitSection({
 
   const handleDeletePayment = async (p: Payment) => {
     const counted = countedPaymentIds.has(p.id);
+    const amount = fmtMoney(p.amount, expenseCurrency(p, currency));
     const ok = await confirm({
-      title: "删除还款记录",
-      message: (
-        <>
-          确定删除这笔<b>{fmtMoney(p.amount, expenseCurrency(p, currency))}</b>
-          的还款记录吗？
-          {counted
-            ? "删除后对应欠款会重新计入待结算。"
-            : "这笔记录本来就不计入结算，删除不会改变任何余额。"}
-        </>
+      title: t`删除还款记录`,
+      message: counted ? (
+        <Trans>
+          确定删除这笔<b>{amount}</b>
+          的还款记录吗？删除后对应欠款会重新计入待结算。
+        </Trans>
+      ) : (
+        <Trans>
+          确定删除这笔<b>{amount}</b>
+          的还款记录吗？这笔记录本来就不计入结算，删除不会改变任何余额。
+        </Trans>
       ),
-      confirmLabel: "删除记录",
+      confirmLabel: t`删除记录`,
     });
     if (!ok) return;
     onDeletePayment(p.id);
   };
 
   const handleDelete = async (e: Expense) => {
+    const name = e.name;
     const ok = await confirm({
-      title: "删除条目",
+      title: t`删除条目`,
       message: (
-        <>
-          确定删除花销条目<b>「{e.name}」</b>吗？删除后无法恢复。
-        </>
+        <Trans>
+          确定删除花销条目<b>「{name}」</b>吗？删除后无法恢复。
+        </Trans>
       ),
-      confirmLabel: "删除条目",
+      confirmLabel: t`删除条目`,
     });
     if (!ok) return;
     onDelete(e.id);
@@ -169,6 +175,9 @@ export function SplitSection({
   const balances = expenseBalances(expenses, travelerIds, currency, payments);
   const transfers = settlementTransfers(balances);
   const outstanding = balances.reduce((sum, balance) => sum + Math.max(0, -balance.balance), 0);
+  const creditLabel = fmtMoney(creditTotal, currency);
+  const transferCount = transfers.length;
+  const paymentCount = payments.length;
 
   const balanceById = Object.fromEntries(balances.map((b) => [b.id, b]));
   const travelerBalances = travelers.map((m) => ({
@@ -185,27 +194,27 @@ export function SplitSection({
     <div>
       <SectionHead
         kicker="03 · Split"
-        title="分账金额"
-        desc="每笔分别设置谁垫付、每个人承担多少；默认 AA，也可以精确到个人金额"
+        title={t`分账金额`}
+        desc={t`每笔分别设置谁垫付、每个人承担多少；默认 AA，也可以精确到个人金额`}
         actions={
           <>
             <button className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={handleReset}>
               <Icons.swap sw={2.2} />
-              恢复原始
+              <Trans>恢复原始</Trans>
             </button>
             <button
               className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`}
               onClick={() => setScanOpen(true)}
             >
               <Icons.camera sw={2.2} />
-              扫描收据
+              <Trans>扫描收据</Trans>
             </button>
             <button
               className={`${BTN} ${BTN_INK} [&_svg]:size-3.5`}
               onClick={() => setAddOpen(true)}
             >
               <Icons.plus sw={2.4} />
-              新增条目
+              <Trans>新增条目</Trans>
             </button>
           </>
         }
@@ -214,17 +223,17 @@ export function SplitSection({
       <Metrics
         items={[
           {
-            k: `实付合计 (${currency})`,
+            k: t`实付合计 (${currency})`,
             v: fmtMoney(total, currency),
-            sub: `已抵扣 credit ${fmtMoney(creditTotal, currency)}`,
+            sub: t`已抵扣 credit ${creditLabel}`,
           },
           {
-            k: "待结算",
+            k: t`待结算`,
             v: fmtMoney(outstanding, currency),
-            sub: transfers.length > 0 ? `${transfers.length} 笔转账可结清` : "已结清",
+            sub: transferCount > 0 ? t`${transferCount} 笔转账可结清` : t`已结清`,
             color: outstanding > 0.005 ? "#c2553f" : "#3f6f5b",
           },
-          { k: "条目", v: expenses.length, sub: "Line items" },
+          { k: t`条目`, v: expenses.length, sub: "Line items" },
         ]}
       />
 
@@ -232,10 +241,10 @@ export function SplitSection({
       <div className="mt-8 bg-white border border-[#ebe9e3] rounded-[14px] overflow-hidden">
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#ebe9e3] bg-[#fdfdfb]">
           <span className="font-grotesk font-bold text-[11px] tracking-[0.14em] uppercase">
-            花销明细 · Ledger
+            <Trans>花销明细 · Ledger</Trans>
           </span>
           <span className="ml-auto font-grotesk text-[10px] tracking-[0.04em] uppercase text-[#9b988f]">
-            点金额可改 · 铅笔内设置每人承担
+            <Trans>点金额可改 · 铅笔内设置每人承担</Trans>
           </span>
         </div>
 
@@ -248,6 +257,8 @@ export function SplitSection({
           // base-currency equivalent at the captured rate.
           const rowCurrency = expenseCurrency(e, currency);
           const foreign = rowCurrency !== currency;
+          const name = e.name;
+          const netLabel = fmtMoney(netExpense(e), rowCurrency);
           return (
             <div
               key={e.id}
@@ -281,7 +292,7 @@ export function SplitSection({
                     autoComplete="off"
                     data-1p-ignore
                     data-lpignore="true"
-                    aria-label={`${e.name} 金额`}
+                    aria-label={t`${name} 金额`}
                     onBlur={(ev) => commitAmount(e, ev.target.value)}
                     onKeyDown={(ev) => {
                       if (isEnterKey(ev)) ev.currentTarget.blur();
@@ -292,7 +303,7 @@ export function SplitSection({
               <ExpenseItems items={e.items} travelers={travelers} currency={rowCurrency} />
               <div className="flex flex-col items-start gap-2 mt-3">
                 <span className="font-grotesk text-[10px] tracking-[0.1em] uppercase text-[#9b988f]">
-                  谁承担
+                  <Trans>谁承担</Trans>
                 </span>
                 <span className="flex flex-wrap gap-1.5">
                   {responsible.map((traveler) => (
@@ -312,7 +323,7 @@ export function SplitSection({
               <div className="flex items-start gap-x-4 gap-y-2.5 flex-wrap mt-3">
                 <span className="flex flex-col items-start gap-2 w-full">
                   <span className="font-grotesk text-[10px] tracking-[0.1em] uppercase text-[#9b988f]">
-                    谁付的
+                    <Trans>谁付的</Trans>
                   </span>
                   <PaymentSplit
                     travelers={travelers}
@@ -334,10 +345,10 @@ export function SplitSection({
                   </span>
                 ) : null}
                 <span className="ml-auto font-cjk font-semibold text-[12.5px] text-[#76726a]">
-                  实付{" "}
-                  <b className="font-sans font-bold text-[#1c1b19] text-[14px]">
-                    {fmtMoney(netExpense(e), rowCurrency)}
-                  </b>
+                  <Trans>
+                    实付{" "}
+                    <b className="font-sans font-bold text-[#1c1b19] text-[14px]">{netLabel}</b>
+                  </Trans>
                   {foreign && (
                     <span className="ml-1.5 font-sans text-[11.5px] text-[#9b988f]">
                       ≈ {fmtMoney(netExpense(e) * expenseFxRate(e), currency)}
@@ -346,16 +357,16 @@ export function SplitSection({
                 </span>
                 <button
                   className="shrink-0 w-8 h-8 grid place-items-center border border-[#ebe9e3] rounded-[9px] bg-white text-[#76726a] hover:border-[#1c1b19] hover:text-[#1c1b19] transition-colors [&_svg]:size-4"
-                  title="编辑条目"
-                  aria-label={`编辑 ${e.name}`}
+                  title={t`编辑条目`}
+                  aria-label={t`编辑 ${name}`}
                   onClick={() => setEditing(e)}
                 >
                   <Icons.pencil sw={2.2} />
                 </button>
                 <button
                   className="shrink-0 w-8 h-8 grid place-items-center border border-[#ecccc2] rounded-[9px] bg-white text-[#c2553f] hover:bg-[#c2553f] hover:text-white transition-colors [&_svg]:size-4"
-                  title="删除条目"
-                  aria-label={`删除 ${e.name}`}
+                  title={t`删除条目`}
+                  aria-label={t`删除 ${name}`}
                   onClick={() => handleDelete(e)}
                 >
                   <Icons.trash sw={2.2} />
@@ -367,15 +378,21 @@ export function SplitSection({
 
         <div className="bg-[#eef4f0] border-t border-[#ebe9e3]">
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px]">
-            <span>小计 Subtotal ({currency})</span>
+            <span>
+              <Trans>小计 Subtotal ({currency})</Trans>
+            </span>
             <span className="font-sans">{fmtMoney(subtotal, currency)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-2.5 font-cjk font-semibold text-[13.5px] text-[#3f6f5b]">
-            <span>抵扣 Credit</span>
+            <span>
+              <Trans>抵扣 Credit</Trans>
+            </span>
             <span className="font-sans">−{fmtMoney(creditTotal, currency)}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-3.5 bg-[#1c1b19] text-[#fafaf8] font-sans font-bold tracking-[0.02em] text-[16px]">
-            <span>实付合计 Net Total</span>
+            <span>
+              <Trans>实付合计 Net Total</Trans>
+            </span>
             <span className="font-sans text-[20px] text-white">{fmtMoney(total, currency)}</span>
           </div>
         </div>
@@ -384,12 +401,12 @@ export function SplitSection({
       {/* settle */}
       <div className="flex items-center gap-2.5 mt-8 mb-4">
         <span className="font-grotesk font-bold text-[11px] tracking-[0.14em] uppercase">
-          结算 · Settle up
+          <Trans>结算 · Settle up</Trans>
         </span>
         <span className="flex-1 h-px bg-[repeating-linear-gradient(90deg,#cfccc2_0_5px,transparent_5px_10px)]" />
         <button className={`${BTN} ${BTN_GHOST} [&_svg]:size-3.5`} onClick={() => setPayOpen(true)}>
           <Icons.plus sw={2.4} />
-          记录还款
+          <Trans>记录还款</Trans>
         </button>
       </div>
 
@@ -408,28 +425,36 @@ export function SplitSection({
               </div>
               <div className="grid gap-1.5 mt-3.5">
                 <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
-                  <span>已垫付</span>
+                  <span>
+                    <Trans>已垫付</Trans>
+                  </span>
                   <span className="font-sans text-[#1c1b19]">{fmtMoney(p, currency)}</span>
                 </div>
                 <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
-                  <span>应承担</span>
+                  <span>
+                    <Trans>应承担</Trans>
+                  </span>
                   <span className="font-sans text-[#1c1b19]">{fmtMoney(sh, currency)}</span>
                 </div>
                 {repaid > 0.005 && (
                   <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
-                    <span>已还款</span>
+                    <span>
+                      <Trans>已还款</Trans>
+                    </span>
                     <span className="font-sans text-[#3f6f5b]">{fmtMoney(repaid, currency)}</span>
                   </div>
                 )}
                 {received > 0.005 && (
                   <div className="flex items-center justify-between font-cjk font-medium text-[12.5px] text-[#76726a]">
-                    <span>已收款</span>
+                    <span>
+                      <Trans>已收款</Trans>
+                    </span>
                     <span className="font-sans text-[#3f6f5b]">{fmtMoney(received, currency)}</span>
                   </div>
                 )}
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-dashed border-[#ebe9e3] font-cjk font-bold text-[13.5px]">
-                <span>{settled ? "已结清" : owe ? "需补付" : "应收回"}</span>
+                <span>{settled ? t`已结清` : owe ? t`需补付` : t`应收回`}</span>
                 <span
                   className="font-sans text-[16px]"
                   style={{ color: settled ? undefined : owe ? "#c2553f" : "#3f6f5b" }}
@@ -446,10 +471,10 @@ export function SplitSection({
         <div className="mt-4 bg-white border border-[#ebe9e3] rounded-[14px] overflow-hidden">
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#ebe9e3] bg-[#fdfdfb]">
             <span className="font-grotesk font-bold text-[11px] tracking-[0.14em] uppercase">
-              还款记录 · Payments
+              <Trans>还款记录 · Payments</Trans>
             </span>
             <span className="ml-auto font-grotesk text-[10px] tracking-[0.04em] uppercase text-[#9b988f]">
-              {payments.length} 笔
+              <Trans>{paymentCount} 笔</Trans>
             </span>
           </div>
           {payments.map((p) => {
@@ -483,9 +508,9 @@ export function SplitSection({
                 {!counted && (
                   <span
                     className="font-cjk font-semibold text-[11.5px] text-[#c2553f] border border-[#ecccc2] rounded-full px-2 py-[2px]"
-                    title="金额需大于 0，且付款人与收款人必须是不同的同行成员"
+                    title={t`金额需大于 0，且付款人与收款人必须是不同的同行成员`}
                   >
-                    不计入结算
+                    <Trans>不计入结算</Trans>
                   </span>
                 )}
                 <span className="font-cjk text-[12px] text-[#9b988f]">
@@ -493,8 +518,8 @@ export function SplitSection({
                 </span>
                 <button
                   className="ml-auto shrink-0 w-8 h-8 grid place-items-center border border-[#ecccc2] rounded-[9px] bg-white text-[#c2553f] hover:bg-[#c2553f] hover:text-white transition-colors [&_svg]:size-4"
-                  title="删除还款记录"
-                  aria-label="删除还款记录"
+                  title={t`删除还款记录`}
+                  aria-label={t`删除还款记录`}
                   onClick={() => handleDeletePayment(p)}
                 >
                   <Icons.trash sw={2.2} />
@@ -510,7 +535,7 @@ export function SplitSection({
         style={{ boxShadow: "0 18px 40px -18px rgba(20,20,30,0.6)" }}
       >
         <span className="font-grotesk font-bold text-[11px] tracking-[0.14em] uppercase bg-[#3f6f5b] text-white px-2.5 py-1 rounded-full">
-          结算
+          <Trans>结算</Trans>
         </span>
         {transfers.length > 0 ? (
           <span className="flex flex-col gap-2">
@@ -518,6 +543,7 @@ export function SplitSection({
               const from = travelerById[transfer.from];
               const to = travelerById[transfer.to];
               if (!from || !to) return null;
+              const amount = fmtMoney(transfer.amount, currency);
               return (
                 <span
                   key={`${transfer.from}-${transfer.to}-${index}`}
@@ -532,13 +558,17 @@ export function SplitSection({
                     <Avatar m={to} size="xs" />
                     {to.name}
                   </span>
-                  转 <b className="font-sans text-white">{fmtMoney(transfer.amount, currency)}</b>
+                  <Trans>
+                    转 <b className="font-sans text-white">{amount}</b>
+                  </Trans>
                 </span>
               );
             })}
           </span>
         ) : (
-          <span className="font-cjk font-semibold text-[14px]">所有人已结清，无需互相转账。</span>
+          <span className="font-cjk font-semibold text-[14px]">
+            <Trans>所有人已结清，无需互相转账。</Trans>
+          </span>
         )}
       </div>
 

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { StopCat } from "./adminData";
 import type { ItemStatus, TripItem } from "../trip/types";
 
@@ -60,7 +61,7 @@ export const itineraryPlans = (item: TripItem): ItineraryPlan[] => {
       {
         id: `${PARKING_PLAN_PREFIX}primary`,
         kind: "main",
-        label: "主方案",
+        label: t`主方案`,
         text: item.parking.primary,
       },
     ];
@@ -68,7 +69,7 @@ export const itineraryPlans = (item: TripItem): ItineraryPlan[] => {
       plans.push({
         id: `${PARKING_PLAN_PREFIX}backup`,
         kind: "alt",
-        label: "备用",
+        label: t`备用`,
         text: item.parking.backup,
       });
     }
@@ -76,7 +77,7 @@ export const itineraryPlans = (item: TripItem): ItineraryPlan[] => {
       plans.push({
         id: `${PARKING_PLAN_PREFIX}warning`,
         kind: "alt",
-        label: "提醒",
+        label: t`提醒`,
         text: item.parking.warning,
       });
     }
@@ -88,7 +89,7 @@ export const itineraryPlans = (item: TripItem): ItineraryPlan[] => {
   return item.notes.map((text, index) => ({
     id: `${NOTE_PLAN_PREFIX}${index}`,
     kind: index === 0 ? "main" : "alt",
-    label: index === 0 ? "提示" : "备注",
+    label: index === 0 ? t`提示` : t`备注`,
     text,
   }));
 };

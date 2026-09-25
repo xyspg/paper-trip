@@ -1,5 +1,7 @@
+import { useLingui } from "@lingui/react/macro";
 import { Plane } from "lucide-react";
 import type { ReactNode } from "react";
+import { intlLocale } from "../locale";
 import type { Flight } from "../trip/types";
 
 type Traveler = {
@@ -15,11 +17,11 @@ type Props = {
   compact?: boolean;
 };
 
-const formatDate = (date: string) => {
-  if (!date) return "日期待定";
+const formatDate = (date: string): string | null => {
+  if (!date) return null;
   const parsed = new Date(`${date}T00:00:00Z`);
   if (Number.isNaN(parsed.getTime())) return date;
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(intlLocale(), {
     month: "short",
     day: "numeric",
     weekday: "short",
@@ -47,6 +49,7 @@ function TravelerAvatar({ traveler }: { traveler: Traveler }) {
 }
 
 function Endpoint({ endpoint, label }: { endpoint: Flight["departure"]; label: string }) {
+  const { t } = useLingui();
   return (
     <div className="min-w-0">
       <div className="font-grotesk text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[#9b988f]">
@@ -56,7 +59,7 @@ function Endpoint({ endpoint, label }: { endpoint: Flight["departure"]; label: s
         {endpoint.airport}
       </div>
       <div className="mt-1 font-cjk text-[12.5px] font-semibold text-[#3b3833]">
-        {formatDate(endpoint.date)} · {endpoint.time}
+        {formatDate(endpoint.date) ?? t`日期待定`} · {endpoint.time}
       </div>
       {endpoint.timezone && (
         <div className="mt-1 truncate font-mono text-[9.5px] text-[#9b988f]">
@@ -68,6 +71,7 @@ function Endpoint({ endpoint, label }: { endpoint: Flight["departure"]; label: s
 }
 
 export function FlightCard({ flight, traveler, actions, compact }: Props) {
+  const { t } = useLingui();
   const identity = [flight.airline, flight.flightNumber].filter(Boolean).join(" · ");
   return (
     <article className="overflow-hidden rounded-[14px] border border-[#ebe9e3] bg-white">
@@ -89,13 +93,13 @@ export function FlightCard({ flight, traveler, actions, compact }: Props) {
       <div
         className={`grid items-center gap-4 px-5 ${compact ? "grid-cols-[1fr_auto_1fr] py-4" : "grid-cols-[1fr_minmax(62px,0.35fr)_1fr] py-5"} max-[520px]:grid-cols-[1fr_auto_1fr] max-[520px]:gap-3`}
       >
-        <Endpoint endpoint={flight.departure} label="Departure · 出发" />
+        <Endpoint endpoint={flight.departure} label={t`Departure · 出发`} />
         <div className="flex items-center justify-center gap-1 text-[#5b7a99]" aria-hidden="true">
           <span className="h-px min-w-3 flex-1 bg-[#cdd8e2]" />
           <Plane className="shrink-0 rotate-45" size={compact ? 16 : 19} strokeWidth={2.1} />
           <span className="h-px min-w-3 flex-1 bg-[#cdd8e2]" />
         </div>
-        <Endpoint endpoint={flight.arrival} label="Arrival · 到达" />
+        <Endpoint endpoint={flight.arrival} label={t`Arrival · 到达`} />
       </div>
 
       {(flight.confirmation || flight.notes) && (

@@ -1,5 +1,8 @@
 import { useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentType, CSSProperties, ReactNode } from "react";
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Popover } from "@base-ui-components/react/popover";
 import { ChevronRight } from "lucide-react";
 import { appleMapsUrl, googleMapsUrl } from "../maps";
@@ -10,10 +13,11 @@ import { appleMapsUrl, googleMapsUrl } from "../maps";
 // opens it in a new tab.
 type Provider = {
   id: string;
-  label: string;
+  label: MessageDescriptor;
   href: (query: string) => string;
   brand: string;
-  glyph: ReactNode;
+  // Rendered with the translated label as its accessible title.
+  Glyph: ComponentType<{ title: string }>;
   // Both providers use their real app marks, which sit on a plain white tile.
   plainTile?: boolean;
 };
@@ -64,18 +68,18 @@ function GoogleMapsGlyph({ title }: { title: string }) {
 const PROVIDERS: Provider[] = [
   {
     id: "apple",
-    label: "Apple 地图",
+    label: msg`Apple 地图`,
     href: appleMapsUrl,
     brand: "#1f8eff",
-    glyph: <AppleMapsGlyph title="Apple 地图" />,
+    Glyph: AppleMapsGlyph,
     plainTile: true,
   },
   {
     id: "google",
-    label: "Google 地图",
+    label: msg`Google 地图`,
     href: googleMapsUrl,
     brand: "#4285f4",
-    glyph: <GoogleMapsGlyph title="Google 地图" />,
+    Glyph: GoogleMapsGlyph,
     plainTile: true,
   },
 ];
@@ -92,12 +96,13 @@ export function AddressLink({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useLingui();
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
         className={`appearance-none [-webkit-appearance:none] bg-transparent border-0 m-0 p-0 [font:inherit] text-left cursor-pointer${className ? ` ${className}` : ""}`}
-        title="在地图中打开"
+        title={t`在地图中打开`}
       >
         {leading}
         {children}
@@ -109,7 +114,7 @@ export function AddressLink({
               render={<div />}
               className="px-2 pt-1 pb-2 font-grotesk text-[11px] font-bold tracking-[0.08em] uppercase text-ink-soft"
             >
-              在地图中打开
+              <Trans>在地图中打开</Trans>
             </Popover.Title>
             <div className="grid gap-1.5">
               {PROVIDERS.map((p) => (
@@ -125,9 +130,9 @@ export function AddressLink({
                   <span
                     className={`grid place-items-center shrink-0 w-[30px] h-[30px] border-2 border-ink rounded-lg text-white ${p.plainTile ? "bg-white" : "bg-[var(--brand)]"}`}
                   >
-                    {p.glyph}
+                    <p.Glyph title={t(p.label)} />
                   </span>
-                  <span className="flex-1">{p.label}</span>
+                  <span className="flex-1">{t(p.label)}</span>
                   <ChevronRight className="shrink-0 text-ink-soft" size={16} strokeWidth={2.4} />
                 </a>
               ))}

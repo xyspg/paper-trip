@@ -1,17 +1,24 @@
 import { useState } from "react";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { PapertripLogo } from "../components/PapertripLogo";
 import { Icons } from "./AdminIcons";
 import { signInWithGitHub } from "./auth";
 
-const SCOPES = ["读取你的 GitHub 身份与头像", "校验你的行程成员身份", "读写行程 / 建议 / 账目内容"];
+const SCOPES = [
+  msg`读取你的 GitHub 身份与头像`,
+  msg`校验你的行程成员身份`,
+  msg`读写行程 / 建议 / 账目内容`,
+];
 
 // GitHub OAuth full-screen login. The button hands off to better-auth on the
 // Worker, which runs the OAuth round-trip and returns here. Calm editorial design.
 export function AdminLogin({ tripId, tripTitle }: { tripId: string; tripTitle: string }) {
   const [busy, setBusy] = useState(false);
+  const { t } = useLingui();
   const params = new URLSearchParams(window.location.search);
   // better-auth reports OAuth failures as ?error=<code> on the callback URL.
-  const errMsg = params.get("error") ? "登录失败，请重试。" : null;
+  const errMsg = params.get("error") ? t`登录失败，请重试。` : null;
 
   const signIn = () => {
     setBusy(true);
@@ -25,16 +32,18 @@ export function AdminLogin({ tripId, tripTitle }: { tripId: string; tripTitle: s
           <PapertripLogo className="w-10 h-10 rounded-[11px]" />
           <div>
             <div className="font-grotesk text-[11px] tracking-[0.16em] uppercase text-[#3f6f5b]">
-              Admin · 行程作战表后台
+              <Trans>Admin · 行程作战表后台</Trans>
             </div>
             <div className="font-sans font-bold text-[15px] mt-0.5">{tripTitle}</div>
           </div>
         </div>
 
         <div className="bg-white border border-[#ebe9e3] rounded-[14px] p-7">
-          <h1 className="font-sans font-bold text-[24px] tracking-tight">登录管理后台</h1>
+          <h1 className="font-sans font-bold text-[24px] tracking-tight">
+            <Trans>登录管理后台</Trans>
+          </h1>
           <p className="font-cjk text-[13.5px] text-[#76726a] leading-relaxed mt-3">
-            管理行程停靠点、审批同行人建议、更新分账金额。仅该行程的成员可进入。
+            <Trans>管理行程停靠点、审批同行人建议、更新分账金额。仅该行程的成员可进入。</Trans>
           </p>
 
           {errMsg && (
@@ -51,12 +60,16 @@ export function AdminLogin({ tripId, tripTitle }: { tripId: string; tripTitle: s
             {busy ? (
               <>
                 <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-[spin_0.7s_linear_infinite]" />
-                <span>正在跳转 GitHub…</span>
+                <span>
+                  <Trans>正在跳转 GitHub…</Trans>
+                </span>
               </>
             ) : (
               <>
                 <Icons.github />
-                <span>用 GitHub 登录</span>
+                <span>
+                  <Trans>用 GitHub 登录</Trans>
+                </span>
               </>
             )}
           </button>
@@ -64,25 +77,27 @@ export function AdminLogin({ tripId, tripTitle }: { tripId: string; tripTitle: s
           <div className="mt-6 rounded-[12px] border border-[#ebe9e3] overflow-hidden">
             <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[#fafaf8] border-b border-[#ebe9e3]">
               <span className="font-grotesk text-[10px] tracking-[0.14em] uppercase text-[#9b988f]">
-                授权范围
+                <Trans>授权范围</Trans>
               </span>
               <span className="ml-auto font-mono text-[11px] text-[#76726a]">t/{tripId}</span>
             </div>
-            {SCOPES.map((t) => (
+            {SCOPES.map((scope) => (
               <div
-                key={t}
+                key={scope.id}
                 className="flex items-center gap-2.5 px-3.5 py-2.5 font-cjk text-[12.5px] text-[#3b3833] border-b border-[#f0eee8] last:border-0 [&_svg]:w-3 [&_svg]:h-3"
               >
                 <span className="w-[18px] h-[18px] rounded-md bg-[#eef4f0] text-[#3f6f5b] grid place-items-center shrink-0">
                   <Icons.check sw={3} />
                 </span>
-                {t}
+                {t(scope)}
               </div>
             ))}
           </div>
 
           <p className="text-center font-cjk text-[11.5px] text-[#9b988f] mt-5">
-            仅行程 <b className="font-mono text-[#76726a]">成员</b> 可管理内容
+            <Trans>
+              仅行程 <b className="font-mono text-[#76726a]">成员</b> 可管理内容
+            </Trans>
           </p>
         </div>
       </div>

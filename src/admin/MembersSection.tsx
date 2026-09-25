@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Icons } from "./AdminIcons";
 import { Avatar } from "./Avatar";
 import {
@@ -26,6 +27,7 @@ import { useTripAccess } from "../components/TripLayout";
 import type { AdminMember } from "./adminData";
 import type { CreatedInvite } from "../trip/api";
 import { isEnterKey } from "../ime";
+import { intlLocale } from "../locale";
 
 // The trip's roster and, for owners, the email invite flow. The emailed link is
 // a bearer credential: any GitHub account that opens it may join.
@@ -42,50 +44,53 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
   // The accept link exists only in the create response (the server stores a
   // hash), so surface it once right after sending.
   const [lastInvite, setLastInvite] = useState<CreatedInvite | null>(null);
+  const { t } = useLingui();
 
   const sendInvite = async () => {
     const to = email.trim();
     if (!to || !to.includes("@")) {
-      toast("请输入有效的邮箱地址", "warn");
+      toast(t`请输入有效的邮箱地址`, "warn");
       return;
     }
     try {
       const created = await createInvite.mutateAsync(to);
       setLastInvite(created);
       setEmail("");
-      if (created.emailSent) toast("邀请邮件已发送");
-      else toast("已生成邀请链接（邮件未发出，可手动复制）", "warn");
+      if (created.emailSent) toast(t`邀请邮件已发送`);
+      else toast(t`已生成邀请链接（邮件未发出，可手动复制）`, "warn");
     } catch {
-      toast("发送邀请失败，请重试", "warn");
+      toast(t`发送邀请失败，请重试`, "warn");
     }
   };
 
   const copyAcceptUrl = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
-      toast("已复制邀请链接");
+      toast(t`已复制邀请链接`);
     } catch {
-      toast("复制失败，请手动选择复制", "warn");
+      toast(t`复制失败，请手动选择复制`, "warn");
     }
   };
 
   const remove = async (userId: string, name: string) => {
     const ok = await confirm({
-      title: `移除 ${name}？`,
+      title: t`移除 ${name}？`,
       message: (
         <span>
-          移除后 TA 将立即失去该行程的访问与编辑权限（含已签发的 agent
-          token）。账目里已有的分摊记录不受影响。
+          <Trans>
+            移除后 TA 将立即失去该行程的访问与编辑权限（含已签发的 agent
+            token）。账目里已有的分摊记录不受影响。
+          </Trans>
         </span>
       ),
-      confirmLabel: "移除成员",
+      confirmLabel: t`移除成员`,
     });
     if (!ok) return;
     try {
       await removeMember.mutateAsync(userId);
-      toast("已移除成员");
+      toast(t`已移除成员`);
     } catch {
-      toast("移除失败，请重试", "warn");
+      toast(t`移除失败，请重试`, "warn");
     }
   };
 
@@ -100,20 +105,28 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
     avatarUrl: image ?? undefined,
   });
 
+  // Hoisted so the invite notes get readable placeholders.
+  const inviteEmail = lastInvite?.invite.email ?? "";
+  const emailError = lastInvite?.emailError ?? t`未配置`;
+
   return (
     <div>
       <SectionHead
         kicker="06 · Members"
-        title="成员"
-        desc="行程的同行人 · 分账的花名册 · 仅创建者可邀请或移除成员"
+        title={t({ message: "成员", context: "admin-section" })}
+        desc={t`行程的同行人 · 分账的花名册 · 仅创建者可邀请或移除成员`}
         actions={<RefreshButton onClick={() => refetch()} busy={isFetching} />}
       />
 
       {isOwner && (
         <div className="mt-7 max-w-[640px] p-4 bg-white border border-[#ebe9e3] rounded-[14px]">
-          <div className={FIELD_LABEL}>邮件邀请</div>
+          <div className={FIELD_LABEL}>
+            <Trans>邮件邀请</Trans>
+          </div>
           <p className="mt-2 font-cjk text-[12.5px] text-[#76726a] leading-relaxed">
-            输入对方邮箱发送邀请链接（7 天有效）。链接即凭证：任何用它登录的 GitHub 账号都会加入。
+            <Trans>
+              输入对方邮箱发送邀请链接（7 天有效）。链接即凭证：任何用它登录的 GitHub 账号都会加入。
+            </Trans>
           </p>
           <div className="flex gap-2 mt-3 max-[480px]:flex-col">
             <input
@@ -133,7 +146,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
               disabled={createInvite.isPending}
             >
               <Icons.plus sw={2.6} />
-              {createInvite.isPending ? "发送中…" : "发送邀请"}
+              {createInvite.isPending ? <Trans>发送中…</Trans> : <Trans>发送邀请</Trans>}
             </button>
           </div>
 
@@ -141,8 +154,8 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
             <div className="mt-3 p-3 bg-[#fdfdfb] border border-dashed border-[#ebe9e3] rounded-[10px]">
               <div className="font-cjk text-[12px] text-[#76726a]">
                 {lastInvite.emailSent
-                  ? `邀请已发往 ${lastInvite.invite.email}，也可以直接把链接发给对方：`
-                  : `邮件未发出（${lastInvite.emailError ?? "未配置"}），请手动把链接发给 ${lastInvite.invite.email}：`}
+                  ? t`邀请已发往 ${inviteEmail}，也可以直接把链接发给对方：`
+                  : t`邮件未发出（${emailError}），请手动把链接发给 ${inviteEmail}：`}
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <code className="flex-1 min-w-0 font-mono text-[11px] text-[#3b3833] truncate">
@@ -152,7 +165,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
                   className={`${BTN_SM} ${BTN_GHOST} shrink-0`}
                   onClick={() => void copyAcceptUrl(lastInvite.acceptUrl)}
                 >
-                  复制链接
+                  <Trans>复制链接</Trans>
                 </button>
               </div>
             </div>
@@ -160,38 +173,41 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
 
           {invites && invites.length > 0 && (
             <div className="mt-4 flex flex-col gap-2">
-              <div className={FIELD_LABEL}>待接受的邀请</div>
-              {invites.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center gap-3 py-2 px-3 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px]"
-                >
-                  <span className="min-w-0 flex-1 font-mono text-[12px] text-[#3b3833] truncate">
-                    {inv.email}
-                  </span>
-                  <span
-                    className={`shrink-0 font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] ${inv.expired ? "text-[#c2553f]" : "text-[#9b988f]"}`}
+              <div className={FIELD_LABEL}>
+                <Trans>待接受的邀请</Trans>
+              </div>
+              {invites.map((inv) => {
+                const expiresOn = new Date(inv.expiresAt).toLocaleDateString(intlLocale());
+                return (
+                  <div
+                    key={inv.id}
+                    className="flex items-center gap-3 py-2 px-3 bg-[#fdfdfb] border border-[#ebe9e3] rounded-[10px]"
                   >
-                    {inv.expired
-                      ? "已过期"
-                      : `${new Date(inv.expiresAt).toLocaleDateString("zh-CN")} 到期`}
-                  </span>
-                  <button
-                    className={`${BTN_SM} ${BTN_DANGER}`}
-                    onClick={async () => {
-                      try {
-                        await revokeInvite.mutateAsync(inv.id);
-                        toast("已撤销邀请");
-                      } catch {
-                        toast("撤销失败，请重试", "warn");
-                      }
-                    }}
-                    disabled={revokeInvite.isPending}
-                  >
-                    撤销
-                  </button>
-                </div>
-              ))}
+                    <span className="min-w-0 flex-1 font-mono text-[12px] text-[#3b3833] truncate">
+                      {inv.email}
+                    </span>
+                    <span
+                      className={`shrink-0 font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] ${inv.expired ? "text-[#c2553f]" : "text-[#9b988f]"}`}
+                    >
+                      {inv.expired ? <Trans>已过期</Trans> : <Trans>{expiresOn} 到期</Trans>}
+                    </span>
+                    <button
+                      className={`${BTN_SM} ${BTN_DANGER}`}
+                      onClick={async () => {
+                        try {
+                          await revokeInvite.mutateAsync(inv.id);
+                          toast(t`已撤销邀请`);
+                        } catch {
+                          toast(t`撤销失败，请重试`, "warn");
+                        }
+                      }}
+                      disabled={revokeInvite.isPending}
+                    >
+                      <Trans>撤销</Trans>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -200,12 +216,12 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
       <div className="mt-7 max-w-[640px]">
         {isLoading ? (
           <AdminEmptyState
-            title="加载中…"
-            body="正在读取成员列表。"
+            title={t`加载中…`}
+            body={t`正在读取成员列表。`}
             icon={<Icons.users sw={2.2} />}
           />
         ) : isError || !data ? (
-          <AdminEmptyState title="无法加载成员" body="请刷新重试。" warn />
+          <AdminEmptyState title={t`无法加载成员`} body={t`请刷新重试。`} warn />
         ) : (
           <div className="flex flex-col gap-2.5">
             {data.members.map((m) => (
@@ -225,7 +241,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
                 <span
                   className={`shrink-0 inline-flex items-center py-[3px] px-2 rounded-full border font-grotesk font-semibold text-[10px] uppercase tracking-[0.08em] ${m.role === "owner" ? "border-[#b08648] text-[#b08648]" : "border-[#ebe9e3] text-[#76726a]"}`}
                 >
-                  {m.role === "owner" ? "创建者" : "成员"}
+                  {m.role === "owner" ? <Trans>创建者</Trans> : <Trans>成员</Trans>}
                 </span>
                 {isOwner && m.role !== "owner" && (
                   <button
@@ -234,7 +250,7 @@ export function MembersSection({ toast }: { toast: ToastFn }) {
                     disabled={removeMember.isPending}
                   >
                     <Icons.x sw={2.6} />
-                    移除
+                    <Trans>移除</Trans>
                   </button>
                 )}
               </div>

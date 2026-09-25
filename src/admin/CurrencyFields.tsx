@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { fmtMoney } from "./adminData";
 import { FIELD_INPUT } from "./adminUi";
 import { CURRENCIES, fmtFxRate, roundFxRate } from "../trip/currency";
@@ -23,17 +24,18 @@ export function CurrencySelect({
   // An exotic stored code (agent-written, or a pared-down picker list) still
   // has to render as selected instead of snapping to the first option.
   const listed = CURRENCIES.some((c) => c.code === value);
+  const { t } = useLingui();
   return (
     <select
       className={className ?? FIELD_INPUT}
       value={value}
-      aria-label="币种"
+      aria-label={t`币种`}
       onChange={(e) => onChange(e.target.value)}
     >
       {!listed && <option value={value}>{value}</option>}
       {CURRENCIES.map((c) => (
         <option key={c.code} value={c.code}>
-          {c.code} · {c.label}
+          {c.code} · {t(c.label)}
         </option>
       ))}
     </select>
@@ -76,11 +78,15 @@ export function FxRateRow({
   // async quote arriving mid-entry can never wipe what's being typed — the old
   // keyed-remount approach did exactly that when the quote resolved.
   const [draft, setDraft] = useState<string | null>(null);
+  const { t } = useLingui();
   if (currency === base) return null;
   const shown = draft ?? (rate != null ? fmtFxRate(rate) : "");
+  const converted = rate != null ? fmtMoney(amount * rate, base) : "";
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 font-cjk text-[12px] text-[#76726a]">
-      <span className="whitespace-nowrap">汇率 1 {currency} =</span>
+      <span className="whitespace-nowrap">
+        <Trans>汇率 1 {currency} =</Trans>
+      </span>
       <span className="inline-flex items-center gap-1 border border-[#ebe9e3] rounded-[9px] bg-white py-[3px] px-2 focus-within:border-[#1c1b19] transition-colors">
         <input
           key={currency}
@@ -93,8 +99,8 @@ export function FxRateRow({
           autoComplete="off"
           data-1p-ignore
           data-lpignore="true"
-          placeholder="获取中…"
-          aria-label={`1 ${currency} 折合 ${base}`}
+          placeholder={t`获取中…`}
+          aria-label={t`1 ${currency} 折合 ${base}`}
           onFocus={() => setDraft(shown)}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={(e) => {
@@ -110,10 +116,14 @@ export function FxRateRow({
       </span>
       {rate != null ? (
         <span className="whitespace-nowrap">
-          折合 <b className="font-sans font-bold text-[#1c1b19]">{fmtMoney(amount * rate, base)}</b>
+          <Trans>
+            折合 <b className="font-sans font-bold text-[#1c1b19]">{converted}</b>
+          </Trans>
         </span>
       ) : (
-        <span className="text-[#c2553f]">未获取到汇率，请手动填写</span>
+        <span className="text-[#c2553f]">
+          <Trans>未获取到汇率，请手动填写</Trans>
+        </span>
       )}
     </div>
   );
